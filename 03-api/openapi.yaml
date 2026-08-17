@@ -1,0 +1,92 @@
+openapi: 3.1.0
+info:
+  title: Bank Touchpoint Management API
+  version: 0.1.0-draft
+  description: >-
+    Draft contract for the bank touchpoint management system. Complete each
+    domain path before its implementation sprint and keep generated frontend
+    types synchronized with this file.
+servers:
+  - url: /api/v1
+tags:
+  - name: auth
+  - name: organizations
+  - name: customer-managers
+  - name: touchpoint-assets
+  - name: assignments
+  - name: target-resources
+  - name: routing-rules
+  - name: access-events
+  - name: analytics
+  - name: audit-logs
+paths:
+  /auth/me:
+    get:
+      tags: [auth]
+      summary: Return the authenticated user and effective data scope
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /organizations:
+    get:
+      tags: [organizations]
+      summary: List organizations in the caller data scope
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+    post:
+      tags: [organizations]
+      summary: Create an organization
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          $ref: '#/components/responses/Success'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+    Envelope:
+      type: object
+      required: [requestId]
+      properties:
+        requestId:
+          type: string
+        data:
+          nullable: true
+        error:
+          nullable: true
+          $ref: '#/components/schemas/Error'
+  responses:
+    Success:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Envelope'
+    Unauthorized:
+      description: Authentication required or invalid
+    Forbidden:
+      description: Permission or data scope denied
