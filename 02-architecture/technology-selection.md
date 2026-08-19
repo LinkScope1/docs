@@ -35,6 +35,6 @@
 
 ## 选择约束
 
-- 当前后端按 Python/FastAPI 实施，不建设第二套 Java 银行后台。
+- 当前后端按 Python/FastAPI 实施。
 - LinkForty Core 保持外部服务定位。
 - API 契约以 OpenAPI 为前后端共同来源。

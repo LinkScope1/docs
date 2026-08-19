@@ -11,7 +11,6 @@
 | DUPLICATE_CODE | 409 | 编码重复 |
 | STATE_CONFLICT | 409 | 状态不允许当前操作 |
 | ASSIGNMENT_CONFLICT | 409 | 绑定时间或唯一性冲突 |
-| ROUTING_RULE_CONFLICT | 409 | 路由规则冲突 |
 | IDEMPOTENCY_REPLAY | 200 | 重复命令已处理 |
 | WEBHOOK_SIGNATURE_INVALID | 401 | Webhook 签名错误 |
 | WEBHOOK_EVENT_ID_MISSING | 400 | 缺少 event_id |

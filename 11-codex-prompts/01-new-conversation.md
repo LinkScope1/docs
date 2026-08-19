@@ -15,12 +15,15 @@
 
 项目背景：
 - 这是银行 NFC 触点载体管理系统，不是通用短链接后台。
-- MVP 包含 M1～M8：IAM 与审计、组织与客户经理、NFC 触点载体、绑定生命周期、目标资源、路由发布、Webhook 事件、统计分析。
+- 当前业务基线为 V1.3.2 物理模型和 V3.1 模块方案。
+- 正式业务模块为 M1～M5：后台访问与操作审计、组织与员工、NFC 触点资产与载体内容、触点载体员工绑定、访问事件接入与关联。
+- 统计与报表是依赖 M5 和 LinkForty 只读数据的非编号横向能力；目标资源、路由规则和本地 IAM 表不建设。
 - 银行后端采用 Python、FastAPI、SQLAlchemy、Alembic、PostgreSQL、Redis、Celery。
 - 银行前端采用 React、TypeScript、Vite、Ant Design、TanStack Query。
 - `core/` 是 LinkForty Core，负责短链接、跳转和原始访问事件。
-- Casdoor 负责身份、角色和功能权限；本地 IAM 负责映射和数据范围。
+- Casdoor 负责身份、角色和功能权限；银行后台用 `employee_code` Claim 定位员工，并按业务表范围字段执行数据过滤。
 - LinkForty 写入必须通过 API，禁止直接修改平台表。
+- `touchpoint_payloads` 不保存 LinkForty 专属同步状态，外部调用结果通过 `operation_logs`、`trace_id` 和任务日志追踪。
 - `event_id` 是全局唯一幂等键，`click_id` 不是唯一键。
 - 一期只支持 NFC，不纳入业务办理量和办理金额。
 

@@ -14,7 +14,7 @@ hotfix/*    生产紧急修复
 
 ```text
 feature/M3-001-touchpoint-assets
-fix/M7-004-webhook-idempotency
+fix/M5-004-webhook-idempotency
 ```
 
 ## 合并规则
@@ -32,7 +32,7 @@ fix/M7-004-webhook-idempotency
 
 ```text
 feat(M3): add touchpoint asset creation
-fix(M7): handle duplicate webhook event
+fix(M5): handle duplicate webhook event
 docs(api): update assignment contract
 test(M4): add transfer snapshot cases
 refactor(auth): extract permission dependency

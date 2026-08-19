@@ -2,31 +2,30 @@
 
 ## 状态
 
-待外部平台确认。
+银行后台物理模型 V1.3.2 约定使用 Token 中的 `employee_code` Claim 定位员工；issuer、audience、JWKS 和 Claim 实际格式仍需外部平台确认。
 
 ## 必须确认
 
 - issuer
 - audience
 - JWKS URI
-- subject 格式
+- `employee_code` Claim 名称、类型和稳定性
 - 角色和权限编码
-- 用户停用同步方式
+- 员工停用同步方式
 - JWKS 轮换策略
 - 时钟偏差容忍范围
 
 ## 后端行为
 
 1. 获取并缓存 JWKS。
-2. 校验 JWT 签名。
-3. 校验 issuer、audience、subject 和过期时间。
-4. 将 subject 映射到 `iam_users`。
-5. 用户停用时拒绝访问。
-6. 使用本地投影完成 API 映射和组织数据范围。
+2. 校验 JWT 签名、issuer、audience、subject 和过期时间。
+3. 读取 `employee_code`。
+4. 查询 `employees.employee_code`。
+5. 员工停用时拒绝访问。
+6. 使用 Casdoor 功能角色和银行业务表范围字段完成授权。
 
 ## 禁止
 
-- 保存密码。
-- 保存 Token。
-- 本地另建身份权威。
+- 保存密码或 Token。
+- 使用本地 IAM 表复制 Casdoor 权威数据。
 - 用前端菜单代替后端权限。

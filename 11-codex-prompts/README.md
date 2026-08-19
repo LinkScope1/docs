@@ -16,7 +16,7 @@
 |---|---|
 | [01-new-conversation](./01-new-conversation.md) | 新建对话、加载项目背景 |
 | [02-repository-analysis](./02-repository-analysis.md) | 只读分析代码库和文档 |
-| [03-feature-development](./03-feature-development.md) | 开发 M1～M8 业务功能 |
+| [03-feature-development](./03-feature-development.md) | 开发 M1～M5 业务功能或明确的横向能力 |
 | [04-backend-api-and-database](./04-backend-api-and-database.md) | Python 后端、API 和数据库 |
 | [05-frontend-development](./05-frontend-development.md) | React 前端页面和交互 |
 | [06-external-integration](./06-external-integration.md) | Casdoor、LinkForty、Webhook、NFC |

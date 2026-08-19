@@ -10,14 +10,16 @@
 6. 修复原因后执行小批量重试。
 7. 核对 `access_events` 数量。
 
-## LinkForty 发布失败
+## LinkForty 外部调用失败
 
-1. 查询 `publish_status` 和 `publish_message`。
-2. 查询外部请求日志。
+1. 从告警或请求上下文取得 `trace_id`、`external_request_id` 和 `celery_task_id`。
+2. 按 `trace_id` 查询 M1 的 `operation_logs`、Worker 任务日志和外部请求日志。
 3. 判断是否为参数、权限、超时或平台错误。
 4. 参数错误不得盲目重试。
-5. 平台错误按策略重试。
-6. 最终失败转人工处理。
+5. 平台错误按策略重试或执行补偿。
+6. 最终失败转人工处理，并核对 `operation_logs` 的结果和错误摘要。
+
+不得通过查询或修改 `touchpoint_payloads` 同步状态字段处理故障。
 
 ## 数据库连接异常
 

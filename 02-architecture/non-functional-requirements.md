@@ -11,13 +11,13 @@
 ## 可用性
 
 - Webhook 接收失败可重试。
-- LinkForty 发布失败可追踪和补偿。
+- LinkForty API 调用失败可追踪、重试和补偿。
 - Redis 故障不能导致业务事实丢失。
 - 数据库迁移和回滚必须可演练。
 
 ## 可观测性
 
-统一记录 `request_id`、`trace_id`、`operator_id`、`event_id`、`click_id`、`external_request_id` 和 `celery_task_id`。
+统一记录 `request_id`、`trace_id`、`operator_id`、`event_id`、`click_id`、`external_request_id` 和 `celery_task_id`。外部调用结果必须能够关联 M1 的 `operation_logs`，但不得依赖 Payload 同步状态字段。
 
 ## 性能
 
