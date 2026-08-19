@@ -1,6 +1,6 @@
 # V1.3.2 数据物理模型与数据字典
 
-> **主版本来源**：本 Markdown 文件；[原始 DOCX](../银行触点载体管理系统_数据物理模型_V1.3.2.docx) 仅作只读归档。
+> **主版本来源**：本 Markdown 文件；[原始 DOCX](../archive/baselines/physical-model/v1.3.2.docx) 仅作只读归档。
 > **关系图**：参见 [V1.3.2 数据关系图](./erd.md)。
 
 > 版本定位：V1.3.2 正式模型：7 张银行业务表 + 8 张 LinkForty 外部现有表 + Casdoor 外部身份边界。

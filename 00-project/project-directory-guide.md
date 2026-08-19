@@ -1,6 +1,6 @@
 # bank-touchpoint-platform：项目目录建设与说明
 
-> **主版本来源**：本 Markdown 文件；[原始 DOCX](../银行触点载体管理系统_项目目录建设与说明_V2.0.docx) 仅作只读归档。
+> **主版本来源**：本 Markdown 文件；[原始 DOCX](../archive/baselines/project-directory/v2.0.docx) 仅作只读归档。
 
 > **版本**：V2.0
 > **基线**：数据物理模型 V1.3.2；MVP 功能模块划分分析方案 V3.1
