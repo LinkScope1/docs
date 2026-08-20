@@ -11,7 +11,7 @@ Python + FastAPI
         +-- PostgreSQL bank_admin schema: 7 V1.3.2 tables
         +-- Redis + Celery
         +-- Casdoor
-        +-- LinkForty API
+        +-- LinkForty API（私有网络 + ACL + HTTPS/TLS；无应用层认证）
         +-- LinkForty PostgreSQL read-only access
         |
         v
@@ -23,6 +23,8 @@ TypeScript + Fastify
 
 - 银行后台服务写银行业务表。
 - LinkForty 写入必须走 LinkForty API。
+- 银行后台直接通过私有网络调用 LinkForty Core，不经过 API 网关或其他中间代理。
+- LinkForty Core 管理 API 仅允许银行后台服务网段访问，不暴露公网；该链路不使用 API Key、JWT、OAuth 或 mTLS 客户端证书。
 - M5 和非编号统计与报表能力只能只读 `docs/04-database/db-permissions.md` 白名单中的 LinkForty 表和必要字段。
 - 不读取 `webhooks.secret`。
 - 前端只能调用银行后台 API，不直接调用 LinkForty Core。

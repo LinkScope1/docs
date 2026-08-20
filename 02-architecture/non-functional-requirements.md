@@ -2,11 +2,14 @@
 
 ## 安全
 
-- 所有后台 API 必须认证。
+- 面向浏览器、用户和业务调用方的银行后台 API 必须认证。
+- 银行后台至 LinkForty Core 的出站服务间调用采用登记的网络隔离安全例外：使用私有网络、来源 ACL、防火墙、私有 DNS、HTTPS/TLS 和网络审计，不使用应用层 API Key、JWT、OAuth 或其他调用凭证。
 - 所有业务 API 必须执行功能权限和数据范围校验。
 - 禁止保存密码、Token 或密码哈希。
 - LinkForty 只读账号不得读取 `webhooks.secret`。
 - 关键操作和导出必须审计。
+
+LinkForty 的网络隔离例外不改变银行后台用户 API 的 Casdoor JWT 要求，也不替代 LinkForty Webhook 的 HMAC 签名验证。生产启用该例外前必须取得安全负责人审批；网络区域内其他被攻陷服务可能冒用银行后台调用 LinkForty Core。
 
 ## 可用性
 

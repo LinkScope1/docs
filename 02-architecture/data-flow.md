@@ -25,12 +25,14 @@ M1 -> operation_logs: 写入操作审计
 ## LinkForty 外部调用
 
 ```text
-M3 -> LinkForty API: 发起 LinkForty 调用
+M3 -> LinkForty API: 私有网络 + ACL + HTTPS/TLS 直连；无应用层认证
 M3 -> Worker: 提交需要重试或补偿的任务
 Worker -> LinkForty API: 执行重试和补偿
 M3/Worker -> M1: 提交调用结果、trace_id 和错误摘要
 M1 -> operation_logs: 记录成功、失败或部分成功
 ```
+
+银行后台到 LinkForty Core 不经过 API 网关或其他中间代理。`issuer`、`audience`、`subject` 和 API Credential 对该出站链路不适用；银行后台面向浏览器的业务 API 仍使用 Casdoor JWT。
 
 `touchpoint_payloads` 只保存 `linkforty_link_id` 等必要逻辑引用，不保存 LinkForty 专属同步状态。
 

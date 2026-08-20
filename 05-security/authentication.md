@@ -33,3 +33,16 @@ Casdoor 负责身份、角色和功能权限。银行后台负责 JWT 验证、�
 ## 外部契约待验证
 
 Casdoor 必须确认 `employee_code` Claim 的名称、格式、稳定性和停用同步策略；在契约确认前不得宣称认证链路已完成。
+
+## LinkForty 出站调用安全例外
+
+银行后台直连 LinkForty Core，不经过 API 网关。该出站链路不使用 API Key、JWT、OAuth、mTLS 客户端证书或其他应用层调用凭证；调用安全边界由以下网络控制组成：
+
+- 仅允许指定银行后台服务网段访问；
+- 使用私有网络、来源 ACL、防火墙和私有 DNS；
+- 使用 HTTPS/TLS 并校验 LinkForty Core 服务端证书；
+- LinkForty Core 管理 API 不暴露公网；
+- 请求、连通性失败和调用结果写入网络审计及 M1 `operation_logs`；
+- `issuer`、`audience`、`subject` 和 API Credential 对该链路不适用。
+
+该例外不适用于银行后台面向浏览器的业务 API。LinkForty Core 投递到银行后台的 Webhook 仍必须执行 HMAC 签名验证，验签失败不得进入业务处理。生产启用该例外前必须取得安全负责人审批。
