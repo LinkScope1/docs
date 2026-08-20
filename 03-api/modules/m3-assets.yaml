@@ -1,0 +1,80 @@
+# M3：NFC实物资产。责任员工变化必须通过M4绑定流程。
+assets:
+  get:
+    tags: [touchpoint-assets]
+    summary: 分页查询触点资产
+    x-status: planned
+    x-owner: 待确认
+    x-permission: touchpoint.asset.read
+    x-data-scope: org_id_and_employee_id
+    x-idempotency: false
+    x-audit: false
+    responses: {}
+  post:
+    tags: [touchpoint-assets]
+    summary: 创建库存资产
+    x-status: planned
+    x-owner: 待确认
+    x-permission: touchpoint.asset.manage
+    x-data-scope: org_id
+    x-idempotency: true
+    x-audit: true
+    responses: {}
+
+assetById:
+  get:
+    tags: [touchpoint-assets]
+    summary: 查询资产详情
+    x-status: planned
+    x-owner: 待确认
+    x-permission: touchpoint.asset.read
+    x-data-scope: org_id_and_employee_id
+    x-idempotency: false
+    x-audit: false
+    responses: {}
+  patch:
+    tags: [touchpoint-assets]
+    summary: 修改资产基本信息
+    x-status: planned
+    x-owner: 待确认
+    x-permission: touchpoint.asset.manage
+    x-data-scope: org_id_and_employee_id
+    x-idempotency: true
+    x-audit: true
+    responses: {}
+
+assetEnable:
+  post:
+    tags: [touchpoint-assets]
+    summary: 启用资产
+    x-status: planned
+    x-owner: 待确认
+    x-permission: touchpoint.asset.manage
+    x-data-scope: org_id_and_employee_id
+    x-idempotency: true
+    x-audit: true
+    responses: {}
+
+assetDisable:
+  post:
+    tags: [touchpoint-assets]
+    summary: 停用资产
+    x-status: planned
+    x-owner: 待确认
+    x-permission: touchpoint.asset.manage
+    x-data-scope: org_id_and_employee_id
+    x-idempotency: true
+    x-audit: true
+    responses: {}
+
+assetScrap:
+  post:
+    tags: [touchpoint-assets]
+    summary: 永久作废资产
+    x-status: planned
+    x-owner: 待确认
+    x-permission: touchpoint.asset.scrap
+    x-data-scope: org_id_and_employee_id
+    x-idempotency: true
+    x-audit: true
+    responses: {}

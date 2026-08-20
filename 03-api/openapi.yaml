@@ -112,7 +112,7 @@ components:
     PageSize:
       in: query
       name: pageSize
-      schema: { type: integer, minimum: 1, maximum: 200, default: 20 }
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
     IdempotencyKey:
       in: header
       name: Idempotency-Key
@@ -124,31 +124,57 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    ErrorDetail:
+      type: object
+      required: [field, reason]
+      properties:
+        field: { type: string }
+        reason: { type: string }
     Error:
       type: object
       required: [code, message]
       properties:
         code: { type: string }
         message: { type: string }
-        details: { type: object, additionalProperties: true }
-    Envelope:
+        details:
+          type: array
+          items: { $ref: '#/components/schemas/ErrorDetail' }
+    SuccessEnvelope:
       type: object
-      required: [requestId]
+      required: [requestId, data]
       properties:
         requestId: { type: string }
         data: { nullable: true }
+    ErrorEnvelope:
+      type: object
+      required: [requestId, error]
+      properties:
+        requestId: { type: string }
         error:
-          nullable: true
           $ref: '#/components/schemas/Error'
   responses:
     Success:
       description: Successful response
       content:
         application/json:
-          schema: { $ref: '#/components/schemas/Envelope' }
+          schema: { $ref: '#/components/schemas/SuccessEnvelope' }
     BadRequest:
       description: Invalid input or row validation failure
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
     Unauthorized:
       description: Authentication required, invalid, or inactive employee
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
     Forbidden:
       description: Permission or data scope denied
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    UnprocessableEntity:
+      description: Request field, type, or structural validation failure
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }

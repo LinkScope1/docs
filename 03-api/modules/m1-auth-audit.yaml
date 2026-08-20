@@ -1,0 +1,36 @@
+# M1：后台访问与操作审计。以下为Path Item片段，由总OpenAPI逐项引用。
+authMe:
+  get:
+    tags: [auth]
+    summary: 查询当前访问上下文
+    x-status: planned
+    x-owner: 待确认
+    x-permission: authenticated
+    x-data-scope: current_employee
+    x-idempotency: false
+    x-audit: false
+    responses: {}
+
+auditLogs:
+  get:
+    tags: [audit-logs]
+    summary: 分页查询操作日志
+    x-status: planned
+    x-owner: 待确认
+    x-permission: audit.read
+    x-data-scope: org_id_and_employee_id
+    x-idempotency: false
+    x-audit: false
+    responses: {}
+
+auditLogById:
+  get:
+    tags: [audit-logs]
+    summary: 查询操作日志详情
+    x-status: planned
+    x-owner: 待确认
+    x-permission: audit.read
+    x-data-scope: org_id_and_employee_id
+    x-idempotency: false
+    x-audit: false
+    responses: {}

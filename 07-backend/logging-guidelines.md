@@ -9,8 +9,8 @@ service
 environment
 request_id
 trace_id
-operator_id
-operation_id
+employee_id
+operation_log_id
 event_id
 click_id
 external_request_id
