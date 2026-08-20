@@ -1,0 +1,22 @@
+name: docs-ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: docs-quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Validate documentation structure
+        run: python scripts/validate_docs.py
+      - name: Check whitespace errors
+        run: git diff --check
