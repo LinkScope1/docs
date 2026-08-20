@@ -362,7 +362,7 @@ main
 
 - FastAPI、React、PostgreSQL、Redis、Celery、Alembic 和 CI 均可启动并通过基础检查。
 
-- Casdoor JWT、employee_code Claim、LinkForty API、Webhook 签名和 NFC Mock 均有已确认的联调方案。
+- Casdoor JWT、employee_code Claim、LinkForty 网络访问边界、Webhook 验签要求和 NFC Mock 均有明确的验证范围；LinkForty 正式路径、字段、错误、幂等契约和真实 Webhook 样例仍待外部确认。
 
 - 7 张银行业务表可在空数据库完成迁移，权限、数据范围、事件幂等、外部失败补偿和审计测试已准备。
 

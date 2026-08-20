@@ -96,7 +96,7 @@ Total output lines: 463
 | P0-CAS-004 | P0 | P0 | 平台横向 | M1/认证 | 确认 `employee_code` Claim 名称、类型、稳定性和缺失行为。 | 阻塞待确认 | 决策记录/外部确认 | 平台 | 安全/平台 | ENV-CAS-002 | Claim 契约和样例 | 正确 Claim 能定位员工，缺失或类型错误被拒绝。 | V1.3.2 | 是 | — | Claim 不稳定会导致主体映射错误。 | 1 |
 | P0-CAS-005 | P0 | P0 | 平台横向 | M1/权限 | 确认角色和功能权限编码，以及总行管理员、机构管理员、员工、观察者的授权范围。 | 阻塞待确认 | 决策记录/外部确认 | 平台 | 安全/平台 | EPIC-SEC-001 | Casdoor 权限映射表 | 每个 API 和页面都有唯一功能权限编码。 | V1.3.2 | 是 | — | 角色复制到本地会违反系统边界。 | 1 |
 | P0-CAS-006 | P0 | P0 | 平台横向 | M1/认证 | 确认员工停用同步方式、Token 时钟偏差容忍范围和 subject 规则。 | 阻塞待确认 | 决策记录/外部确认 | 平台 | 安全/平台 | DEC-CAS-004 | 认证异常处理规则 | 不存在、停用、过期、时钟偏差和 subject 异常均有明确结果。 | V1.3.2 | 是 | — | 停用同步延迟存在访问风险。 | 1 |
-| P0-LF-001 | P0 | P0 | 平台横向 | M3/LinkForty | 获取 LinkForty 创建 Link、查询 Link 和认证方式的正式 API 契约。 | 阻塞待确认 | 决策记录/外部确认 | LinkForty | LinkForty/硬件 | ENV-LF-001 | API 契约和测试地址 | 能使用测试凭证完成一次创建和查询，银行侧只保留逻辑 UUID。 | V1.3.2 | 是 | — | 外部 API 尚未冻结。 | 1 |
+| P0-LF-001 | P0 | P0 | 平台横向 | M3/LinkForty | 获取 LinkForty 创建 Link、查询 Link、网络访问方式和安全例外的正式契约。 | 阻塞待确认 | 决策记录/外部确认 | LinkForty | LinkForty/安全/运维 | ENV-LF-001 | API 契约、网络访问和测试地址 | 测试环境仅允许银行后台网段访问；非允许来源无法建立连接；HTTPS/TLS 校验成功；不发送 API Key、JWT 或其他调用凭证；受限网络完成创建和查询；银行侧只保留逻辑 UUID。 | V1.3.2 | 是 | — | 安全例外审批和正式外部 API 尚未冻结。 | 1 |
 | P0-LF-002 | P0 | P0 | 平台横向 | M3/LinkForty | 确认 LinkForty API 的超时、4xx、5xx、限流、幂等和缓存失效规则。 | 阻塞待确认 | 决策记录/外部确认 | LinkForty | LinkForty/硬件 | DEC-LF-001 | 错误处理矩阵 | 每类错误都有是否重试、审计和人工处理结论。 | V1.3.2 | 是 | — | 错误策略不明会导致重复外部写入。 | 1 |
 | P0-LF-003 | P0 | P0 | 平台横向 | M5/Webhook | 获取真实 Webhook 样例，确认签名算法、Header、原始载荷计算方式和重试策略。 | 阻塞待确认 | 决策记录/外部确认 | LinkForty | LinkForty/DBA | ENV-LF-002 | 脱敏 Webhook 样例 | 测试环境可用真实格式验签；密钥不进入仓库和文档。 | V1.3.2 | 是 | — | 没有真实样例不能完成验签联调。 | 1 |
 | P0-LF-004 | P0 | P0 | 平台横向 | M5/Webhook | 确认 `event_id`、`click_id`、事件时间和外部链接标识的字段路径与类型。 | 阻塞待确认 | 决策记录/外部确认 | LinkForty | LinkForty/DBA | DEC-LF-003 | Webhook 字段映射表 | 缺少 event_id、重复 event_id 和重复 click_id 的行为可测试。 | V1.3.2 | 是 | — | 字段路径错误会造成事件错关联。 | 1 |
@@ -122,7 +122,7 @@ Total output lines: 463
 | DEC-CAS-004 | P0 | P0 | 平台横向 | Casdoor | 确认 employee_code Claim 的名称、类型和缺失行为 | 阻塞待确认 | 决策记录/外部确认 | 平台 | 后端/测试 | ENV-CAS-002 | Claim 样例和映射 | 正确 Claim 精确定位员工；缺失或类型错误拒绝访问。 | V1.3.2 前置决策 | 是 | — | Claim 不稳定会造成主体映射错误。 | 1 |
 | DEC-CAS-005 | P0 | P0 | 平台横向 | Casdoor | 确认角色、功能权限编码和角色范围 | 阻塞待确认 | 决策记录/外部确认 | 产品 | 后端/测试 | EPIC-SEC-001 | 权限映射表 | 每个 API/页面对应唯一功能权限；总行、机构、员工、观察者范围明确。 | V1.3.2 前置决策 | 是 | — | 不能把 Casdoor 角色复制为本地 IAM 表。 | 1 |
 | DEC-CAS-006 | P0 | P0 | 平台横向 | Casdoor | 确认停用同步、时钟偏差和 subject 规则 | 阻塞待确认 | 决策记录/外部确认 | 平台 | 后端/测试 | DEC-CAS-004, DEC-CAS-005 | 认证异常处理规则 | 不存在、停用、过期、时钟偏差和 subject 异常均有明确结果。 | V1.3.2 前置决策 | 是 | — | 停用同步延迟存在访问风险。 | 1 |
-| DEC-LF-001 | P0 | P0 | 平台横向 | LinkForty | 确认创建 Link、查询 Link、认证和逻辑 ID API | 阻塞待确认 | 决策记录/外部确认 | LinkForty | 后端/测试 | ENV-LF-001 | LinkForty API 契约 | 测试凭证可完成创建和查询；银行侧只保存逻辑 linkforty_link_id。 | V1.3.2 前置决策 | 是 | — | 正式外部契约未冻结前只能使用 Mock。 | 1 |
+| DEC-LF-001 | P0 | P0 | 平台横向 | LinkForty | 确认创建 Link、查询 Link、网络访问和安全例外及逻辑 ID API | 阻塞待确认 | 决策记录/外部确认 | LinkForty | 安全/运维/后端/测试 | ENV-LF-001 | LinkForty API 契约和网络安全例外记录 | 私有网络、来源 ACL、防火墙、HTTPS/TLS 和无应用层认证边界已记录；测试环境受限网络可完成创建和查询；银行侧只保存逻辑 `linkforty_link_id`。 | V1.3.2 前置决策 | 是 | — | 安全例外审批或正式外部契约未完成前只能使用 Mock/测试实例。 | 1 |
 | DEC-LF-002 | P0 | P0 | 平台横向 | LinkForty | 确认超时、4xx、5xx、限流、重试和外部幂等 | 阻塞待确认 | 决策记录/外部确认 | LinkForty | 后端/测试 | DEC-LF-001 | 错误/重试矩阵 | 每类错误都有重试、审计、补偿和稳定幂等标识结论。 | V1.3.2 前置决策 | 是 | — | 错误策略不明会导致重复外部写入。 | 1 |
 | DEC-LF-003 | P0 | P0 | 平台横向 | Webhook | 确认签名算法、Header、原始 body 计算和重试 | 阻塞待确认 | 决策记录/外部确认 | LinkForty | 后端/测试 | ENV-LF-002 | 脱敏 Webhook 契约 | 真实格式可验签；密钥不进入代码、fixture、日志或文档。 | V1.3.2 前置决策 | 是 | — | 没有真实样例不能完成联调。 | 1 |
 | DEC-LF-004 | P0 | P0 | 平台横向 | Webhook | 确认 event_id、click_id、事件时间和链接标识字段 | 阻塞待确认 | 决策记录/外部确认 | LinkForty | 后端/测试 | DEC-LF-003 | 字段映射表 | 缺 event_id、重复 event_id、重复 click_id、乱序和事件时间异常均有测试结论。 | V1.3.2 前置决策 | 是 | — | 字段路径错误会造成错关联。 | 1 |
@@ -169,7 +169,7 @@ Total output lines: 463
 | T-M3-001 | P3 | P0 | 测试 | M3/LinkForty | 执行 LinkForty 外部 API 错误、稳定幂等和审计测试 | 阻塞待确认 | 决策记录/外部确认 | 测试 | LinkForty/硬件 | B-M3-018, B-M3-020, DEC-LF-001, DEC-LF-002 | LinkForty integration tests | 覆盖超时、4xx、5xx、限流、重复请求、错误回执和 Secret 脱敏。 | V1.3.2 | 是 | — | 真实契约未冻结时使用 Mock。 | 1.5 |
 | T-M3-002 | P3 | P0 | 测试 | M3/NFC | 执行 NFC Mock 读 UID、写入、设备失败和读回核验失败测试 | 阻塞待确认 | 决策记录/外部确认 | 测试 | LinkForty/硬件 | B-M3-019, DEC-NFC-001, DEC-NFC-002 | NFC Mock test report | 失败不会标记为真实成功；设备替换不影响 Service 测试；真机任务保持条件状态。 | V1.3.2 | 是 | — | 不把真机缺失当作软件 MVP 阻塞。 | 1 |
 | R-P5-007 | P5 | P0 | 运维 | 发布门禁 | 核对需求验收和 CI 质量门禁证据 | 待开发 | 待产生测试 | 发布负责人 | 后端/测试 | T-ACC-001, T-QA-001 | 验收/CI 门禁核对表 | 验收证据、后端 Ruff/mypy/pytest、前端类型/lint/typecheck/Vitest/build/必要 E2E 均有结果和例外说明。 | V1.3.2 | 是 | — | 环境未准备好不得宣称全绿。 | 1 |
-| R-P5-008 | P5 | P0 | 运维 | 发布门禁 | 核对安全、权限、外部只读和配置审批证据 | 阻塞待确认 | 决策记录/外部确认 | 发布负责人 | 后端/测试 | R-P3-007, X-SEC-002, DEC-REL-001 | 安全/外部门禁核对表 | Casdoor、权限范围、日志脱敏、只读账号、密钥托管和外部契约均有审批记录。 | V1.3.2 | 是 | — | 未通过不得上线。 | 1 |
+| R-P5-008 | P5 | P0 | 运维 | 发布门禁 | 核对安全、权限、外部只读、网络隔离安全例外和配置审批证据 | 阻塞待确认 | 决策记录/外部确认 | 发布负责人 | 后端/测试 | R-P3-007, X-SEC-002, DEC-REL-001, DEC-LF-001 | 安全/外部门禁核对表 | Casdoor、权限范围、日志脱敏、LinkForty 网络隔离安全例外、只读账号、密钥托管和外部契约均有审批记录。 | V1.3.2 | 是 | — | 未通过不得上线。 | 1 |
 | R-P5-009 | P5 | P0 | 运维 | 发布门禁 | 核对迁移、备份恢复和应用回滚证据 | 待开发 | 待产生 | DBA | 后端/测试 | T-MIG-001, T-MIG-002, R-P4-001, R-P4-002, R-P4-003, R-P4-004 | 迁移/备份/回滚门禁核对表 | 迁移范围、恢复演练、版本回滚和健康检查均有记录；不执行未经审批的破坏性 downgrade。 | V1.3.2 | 是 | — | 缺备份或回滚点不得发布。 | 1 |
 | R-P5-010 | P5 | P0 | 运维 | 发布门禁 | 核对外部连通、监控告警和冒烟准备 | 阻塞待确认 | 决策记录/外部确认 | 运维 | 后端/测试 | R-P3-003, R-P3-004, R-P3-005, R-P3-006, DEC-PERF-001, DEC-REL-001 | 发布运行准备核对表 | API/Worker/DB/Redis/LinkForty/Webhook 监控、告警、Runbook 和冒烟脚本均可执行。 | V1.3.2 | 是 | — | 外部平台不稳定时按回滚条件延期。 | 1 |
 | T-ACC-002 | P5 | P0 | 测试 | 分域验收/M1-M2 | 完成 M1 认证审计和 M2 组织员工验收 | 待开发 | 待产生 | 产品 | 安全/平台 | T-API-001, T-SEC-001, T-SEC-002, A-M1-012, A-M2-017 | M1/M2 acceptance report | JWT 伪造/过期/issuer/audience/Claim/停用、组织编码/唯一/停用、员工唯一/范围/停用/手机号安全均有证据。 | V1.3.2 | 是 | — | Casdoor 决策未完成时不能关闭。 | 1.5 |
@@ -490,7 +490,7 @@ Webhook 验签 → 解析 event_id/click_id/linkforty_link_id → 唯一解析 a
 | 事项 | 负责人角色 | 影响任务 | 当前状态 |
 |---|---|---|---|
 | Casdoor issuer、audience、JWKS、Claim、角色编码和停用同步 | 平台/安全 | P0-CAS、A-M1、P1 认证、前端登录 | 待确认 |
-| LinkForty 创建/查询 API、认证、错误、限流、幂等 | LinkForty | P0-LF、B-M3、X-WORK | 待确认 |
+| LinkForty 创建/查询 API、网络隔离安全例外、错误、限流、幂等 | LinkForty/安全/运维 | P0-LF、B-M3、X-WORK | 待确认 |
 | Webhook 签名、Header、event_id、click_id、事件时间和重试 | LinkForty/安全 | P0-LF、B-M5、T-EXT | 待确认 |
 | LinkForty 只读账号、表字段白名单和网络访问 | DBA/LinkForty/安全 | P0-LF-005、P1-BE-020、X-ANL、B-M5 | 待确认 |
 | NFC 介质、UID、NDEF、设备、SDK、读回核验 | 硬件/供应商 | P0-NFC、B-M3、F-M3-003 | 待确认 |

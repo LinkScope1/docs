@@ -22,7 +22,16 @@
 ## 网络原则
 
 - 浏览器只访问网关或银行后台 API。
-- 银行后台到 LinkForty API 使用服务间网络。
+- 银行后台直接到 LinkForty API 使用私有服务间网络、来源 ACL、防火墙、私有 DNS 和 HTTPS/TLS，不经过 API 网关。
+- LinkForty Core 管理 API 不暴露公网，只允许银行后台服务网段访问；该链路不使用 API Key、JWT、OAuth 或 mTLS 客户端证书。
 - 数据库不直接暴露公网。
 - LinkForty 只读账号只授予白名单表和字段。
 - 生产环境外部调用必须配置超时、TLS 和审计。
+
+## LinkForty 网络隔离验收
+
+- local 仅使用 Mock，不连接生产 Core；
+- test 使用测试网段 ACL 和测试 Core；
+- staging 使用预生产网段和预生产 Core；
+- production 使用独立网段、独立 ACL、独立 Core 地址和审批变更；
+- 非允许来源无法建立连接；允许来源必须通过 HTTPS/TLS 服务端证书校验。
