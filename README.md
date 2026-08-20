@@ -18,6 +18,16 @@ V2.0 是当前工作区目录边界、后端和前端目标落点、现有/目�
 
 其他 Markdown 文档用于描述当前规则、架构、接口、权限、测试、部署和运维；如内容存在不一致，以以上三份基线为准。
 
+## 开发治理规范
+
+- [团队协作者项目阅读指南](./00-project/collaborator-onboarding-guide.md)：新协作者的首次阅读路径、项目边界、事实判断和第一个 PR 操作指南。
+- [MVP 项目开发与 Pull Request 协作规范](./00-project/development-workflow.md)：唯一协作开发主规范，覆盖 Issue、分支、Commit、PR、Review、测试、API、数据库、CI、发布、回滚和 AI 协作。
+- [Git 工作流快速入口](./00-project/git-workflow.md)：只保留日常命令和规则摘要，完整规则以主规范为准。
+- [项目总工作清单](./00-project/master-checklist.md)：开发前、开发中、发布前门禁。
+- [详细开发任务清单](./00-project/development-task-checklist.md)：将需求拆分为可直接创建 Issue、看板卡片和验收项的任务明细。
+
+推荐阅读顺序：先读本文件和 [团队协作者项目阅读指南](./00-project/collaborator-onboarding-guide.md)，再读 [项目章程](./00-project/project-charter.md)、[协作开发主规范](./00-project/development-workflow.md)、[总工作清单](./00-project/master-checklist.md)、[详细开发任务清单](./00-project/development-task-checklist.md) 和任务相关的产品、架构、API、数据库、安全文档。开发、测试和发布任务必须继续核对对应任务 ID、依赖和验收标准。
+
 ## 目录
 
 - `00-project`：项目范围、职责、Git 工作流和总清单
