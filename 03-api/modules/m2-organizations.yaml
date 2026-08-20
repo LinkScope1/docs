@@ -1,0 +1,68 @@
+# M2：组织管理。状态变化必须使用enable/disable命令接口。
+organizations:
+  get:
+    tags: [organizations]
+    summary: 分页查询组织
+    x-status: planned
+    x-owner: 待确认
+    x-permission: organization.read
+    x-data-scope: org_id
+    x-idempotency: false
+    x-audit: false
+    responses: {}
+  post:
+    tags: [organizations]
+    summary: 创建组织
+    x-status: planned
+    x-owner: 待确认
+    x-permission: organization.manage
+    x-data-scope: org_id
+    x-idempotency: true
+    x-audit: true
+    responses: {}
+
+organizationById:
+  get:
+    tags: [organizations]
+    summary: 查询组织详情
+    x-status: planned
+    x-owner: 待确认
+    x-permission: organization.read
+    x-data-scope: org_id
+    x-idempotency: false
+    x-audit: false
+    responses: {}
+  patch:
+    tags: [organizations]
+    summary: 修改组织基本信息
+    x-status: planned
+    x-owner: 待确认
+    x-permission: organization.manage
+    x-data-scope: org_id
+    x-idempotency: true
+    x-audit: true
+    responses: {}
+
+organizationEnable:
+  post:
+    tags: [organizations]
+    summary: 启用组织
+    x-status: planned
+    x-owner: 待确认
+    x-permission: organization.manage
+    x-data-scope: org_id
+    x-idempotency: true
+    x-audit: true
+    responses: {}
+
+organizationDisable:
+  post:
+    tags: [organizations]
+    summary: 停用组织
+    x-status: planned
+    x-owner: 待确认
+    x-permission: organization.manage
+    x-data-scope: org_id
+    x-idempotency: true
+    x-audit: true
+    responses: {}
