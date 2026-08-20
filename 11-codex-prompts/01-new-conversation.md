@@ -1,5 +1,7 @@
 # 新建对话模板
 
+开发、测试和发布类任务的任务 ID 来源于[详细开发任务清单](../00-project/development-task-checklist.md)；普通分析任务不强制引用完整清单。
+
 ```text
 你正在继续开发“银行触点载体管理系统”。
 
@@ -12,6 +14,7 @@
 3. docs/00-project/project-charter.md
 4. docs/00-project/master-checklist.md
 5. 与本次任务相关的产品、架构、API、数据库、权限和测试文档
+6. 如果本次是开发、测试或发布任务，继续读取 `docs/00-project/development-task-checklist.md`，填写对应任务 ID；普通分析任务不强制读取完整任务清单。
 
 项目背景：
 - 这是银行 NFC 触点载体管理系统，不是通用短链接后台。

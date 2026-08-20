@@ -1,0 +1,16 @@
+# Placeholder teams: replace with approved GitHub teams before production enforcement.
+# More specific rules below override the repository-wide owner.
+* @bank-touchpoint-docs-owners
+
+/00-project/** @bank-touchpoint-architecture-owners
+/01-product/** @bank-touchpoint-product-owners
+/02-architecture/** @bank-touchpoint-architecture-owners
+/03-api/** @bank-touchpoint-api-owners
+/04-database/** @bank-touchpoint-database-owners
+/05-security/** @bank-touchpoint-security-owners
+/06-frontend/** @bank-touchpoint-frontend-owners
+/07-backend/** @bank-touchpoint-backend-owners
+/08-testing/** @bank-touchpoint-qa-owners
+/09-deployment/** @bank-touchpoint-release-owners
+/10-operations/** @bank-touchpoint-operations-owners
+/.github/** @bank-touchpoint-docs-owners
