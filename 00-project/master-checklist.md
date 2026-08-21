@@ -15,12 +15,12 @@
 - [x] 确认 Python 后端和前端真实代码目录：`bank-touchpoint-backend/`、`bank-touchpoint-frontend/`；当前仅为工程骨架
 - [x] 确认 MVP 范围和不纳入项
 - [x] 确认 M1～M5 负责人以及工作包 A、B 的主负责人
-- [ ] 完成 Casdoor PoC，并确认 `employee_code` Claim
-- [ ] 完成 LinkForty API PoC
+- [x] 完成 Casdoor PoC，并确认 `employee_code` Claim
+- [x] 完成 LinkForty API PoC
 - [x] 获取并验证真实 Webhook 样例（本地真实投递、验证和负责人正式确认已完成）
-- [ ] 确认 NFC/NDEF 设备或 Mock 方案
-- [ ] 确认 PostgreSQL、Redis 和环境访问权限
-- [ ] 确认数据库角色和 LinkForty 只读权限
+- [x] 确认 NFC/NDEF 设备或 Mock 方案
+- [x] 确认 PostgreSQL、Redis 和环境访问权限
+- [ ] 确认数据库角色权限
 - [ ] 冻结 V1.3.2 物理模型、V3.1 模块方案、权限矩阵、API 规范、7 张表数据字典和状态机
 - [ ] 配置 Git 分支保护、PR 模板和 CI 基础检查
 - [ ] 为每个 Issue 关联[详细开发任务清单](./development-task-checklist.md)中的任务 ID，并确认任务状态不是“阻塞待确认”或“延期”
