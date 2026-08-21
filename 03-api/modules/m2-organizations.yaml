@@ -3,21 +3,21 @@ organizations:
   get:
     tags: [organizations]
     summary: 分页查询组织
-    x-status: planned
-    x-owner: 待确认
+    x-status: reviewed
+    x-owner: API/后端
     x-permission: organization.read
-    x-data-scope: org_id
-    x-idempotency: false
+    x-data-scope: ORG_SUBTREE
+    x-idempotency: none
     x-audit: false
     responses: {}
   post:
     tags: [organizations]
     summary: 创建组织
-    x-status: planned
-    x-owner: 待确认
+    x-status: reviewed
+    x-owner: API/后端
     x-permission: organization.manage
-    x-data-scope: org_id
-    x-idempotency: true
+    x-data-scope: ORG_SUBTREE
+    x-idempotency: domain_key_org_code
     x-audit: true
     responses: {}
 
@@ -25,21 +25,21 @@ organizationById:
   get:
     tags: [organizations]
     summary: 查询组织详情
-    x-status: planned
-    x-owner: 待确认
+    x-status: reviewed
+    x-owner: API/后端
     x-permission: organization.read
-    x-data-scope: org_id
-    x-idempotency: false
+    x-data-scope: ORG_SUBTREE
+    x-idempotency: none
     x-audit: false
     responses: {}
   patch:
     tags: [organizations]
     summary: 修改组织基本信息
-    x-status: planned
-    x-owner: 待确认
+    x-status: reviewed
+    x-owner: API/后端
     x-permission: organization.manage
-    x-data-scope: org_id
-    x-idempotency: true
+    x-data-scope: ORG_SUBTREE
+    x-idempotency: domain_key_object_version
     x-audit: true
     responses: {}
 
@@ -47,11 +47,11 @@ organizationEnable:
   post:
     tags: [organizations]
     summary: 启用组织
-    x-status: planned
-    x-owner: 待确认
+    x-status: reviewed
+    x-owner: API/后端
     x-permission: organization.manage
-    x-data-scope: org_id
-    x-idempotency: true
+    x-data-scope: ORG_SUBTREE
+    x-idempotency: domain_key_state_command
     x-audit: true
     responses: {}
 
@@ -59,10 +59,10 @@ organizationDisable:
   post:
     tags: [organizations]
     summary: 停用组织
-    x-status: planned
-    x-owner: 待确认
+    x-status: reviewed
+    x-owner: API/后端
     x-permission: organization.manage
-    x-data-scope: org_id
-    x-idempotency: true
+    x-data-scope: ORG_SUBTREE
+    x-idempotency: domain_key_state_command
     x-audit: true
     responses: {}

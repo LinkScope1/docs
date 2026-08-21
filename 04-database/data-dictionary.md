@@ -91,6 +91,20 @@ V1.3.2 将组织层级、员工责任范围、NFC 载体、载体实际内容、
 
 - operation_logs 只追加；写接口、Webhook、批处理、外部同步和导入均须有明确幂等策略。
 
+## 2.5 V1.3.2 冻结约束对照
+
+以下约束是 `V1.3.2-FREEZE-001` 的数据库验收基线，迁移必须逐项落地；已应用迁移不得回改，修正只能新增 Alembic revision。
+
+| 约束域 | 冻结值 |
+| --- | --- |
+| 表数量 | 银行库固定 7 张业务表：`organization_units`、`employees`、`touchpoint_assets`、`touchpoint_payloads`、`touchpoint_employee_assignments`、`access_events`、`operation_logs`。 |
+| 外键与删除 | 不建立本地数据库外键，不使用数据库级级联删除；逻辑引用由 Service 校验并保留历史语义。 |
+| 枚举 | 组织/员工状态为 `0/1`；资产类型固定 `1=NFC`，资产状态为 `0/1/2/9`；Payload 类型为 `1/2/3/99`、来源为 `1/2/3/4`、提供方为 `1/2/3/99`、状态为 `0/1/2/3`；绑定状态为 `1/2`；访问关联状态为 `0/1/2/3`；操作结果为 `1/2/3`。 |
+| 标识唯一性 | `asset_code`、`employee_code`、`org_code`、`event_id` 全局唯一；非空 `carrier_uid` 唯一；非空 `linkforty_link_id` 全局唯一；`click_id` 不唯一。 |
+| 绑定一致性 | 当前绑定 `assignment_status=1` 必须 `effective_to IS NULL`；已解绑记录必须有 `effective_to > effective_from` 和 `unbind_reason_type`；时间区间使用 PostgreSQL 排他约束防重叠。 |
+| 事件语义 | `access_events.asset_id` 非空；无法唯一解析本地资产时拒绝写入事件表，只保留安全审计和补偿记录。 |
+| 审计 | `operation_logs` 只追加，禁止 UPDATE/DELETE；不得保存 Token、JWT、密码、Webhook Secret 或未脱敏个人信息。 |
+
 # 3. 本系统表清单
 
 | 序号 | 表名 | 归属模块 | 用途 |
@@ -188,7 +202,7 @@ asset_code 用于业务查询和导入，carrier_uid 用于 NFC 物理盘点，�
 | payload_value | VARCHAR(2048) | 否 | — | 卡内实际写入内容，不是最终目标 |
 | payload_source | SMALLINT | 否 | — | 1 供应商预写 / 2 本系统 / 3 外部导入 / 4 人工录入 |
 | provider_type | SMALLINT | 否 | 1 | 1 LinkForty / 2 供应商 / 3 无平台 / 99 其他 |
-| linkforty_link_id | UUID | 是 | — | LinkForty 链接逻辑引用 |
+| linkforty_link_id | UUID | 是 | — | LinkForty 链接逻辑引用；非空时全局唯一，一个外部 Link 只能关联一条 Payload |
 | status | SMALLINT | 否 | 0 | 0 待登记 / 1 有效 / 2 停用 / 3 失效 |
 | metadata | JSONB | 否 | {} | 低频扩展属性对象 |
 | created_by_employee_id | BIGINT | 是 | — | 创建员工 |

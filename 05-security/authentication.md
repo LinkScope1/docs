@@ -6,15 +6,13 @@ Casdoor 负责身份、角色和功能权限。银行后台负责 JWT 验证、�
 
 ## 验证步骤
 
-1. 获取并缓存 JWKS。
-2. 验证 JWT 签名。
-3. 验证 issuer。
-4. 验证 audience。
-5. 验证 subject、过期时间和时钟偏差。
-6. 读取稳定的 `employee_code` Claim。
-7. 用 `employee_code` 查询 `bank_admin.employees`。
-8. 检查员工状态是否启用。
-9. 构建员工、组织和数据范围上下文。
+1. 获取并缓存 JWKS；缓存只保存公钥。
+2. 遇到未知 `kid` 立即刷新 JWKS，再次验证签名。
+3. 验证 JWT 签名、issuer、audience、非空 `sub`、过期时间和 60 秒时钟偏差。
+4. 读取非空字符串类型的 `employee_code` Claim。
+5. 每次请求用 `employee_code` 查询 `bank_admin.employees`。
+6. 员工不存在或状态不是启用时拒绝访问。
+7. 构建员工、组织和数据范围上下文。
 
 ## 数据范围
 

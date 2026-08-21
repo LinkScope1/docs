@@ -18,11 +18,11 @@
 
 每个接口至少维护以下扩展字段：
 
-- `x-status`：`planned`、`reviewed`、`implemented`或`deprecated`。
-- `x-owner`：负责人；未分配时使用`待确认`。
+- `x-status`：`planned`、`reviewed`、`implemented`或`deprecated`。V1.3.2 冻结接口使用 `reviewed`；这不表示业务代码已实现。
+- `x-owner`：负责人或负责岗位；外部负责人尚未确认时必须在冻结证据中列为待补证，不得伪造个人签字。
 - `x-permission`：所需功能权限。
-- `x-data-scope`：`org_id`、`employee_id`或系统级范围。
-- `x-idempotency`：是否要求`Idempotency-Key`。
+- `x-data-scope`：`GLOBAL`、`ORG_SUBTREE`、`ORG_SELF`、`EMPLOYEE_SELF`、`ASSET_SCOPE`、`SOURCE_AND_TARGET_ORG`或`SYSTEM`。
+- `x-idempotency`：V1.3.2 的领域幂等策略；通用响应回放延期到 V1.4。
 - `x-audit`：是否写入`operation_logs`。
 
 ## 修改流程

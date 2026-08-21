@@ -28,6 +28,13 @@
 - LinkForty 只读账号只授予白名单表和字段。
 - 生产环境外部调用必须配置超时、TLS 和审计。
 
+## Redis/Celery 隔离
+
+- Redis 只承载 Broker、缓存和任务支撑，不是业务事实来源；业务唯一性和状态以 PostgreSQL 为准。
+- API、Worker 和测试环境使用不同 Redis 实例或至少不同 DB、队列名和命名空间；测试任务不得消费生产队列。
+- 生产建议 API 缓存、Celery Broker/Result 使用独立 Redis 实例，并为队列、连接和故障恢复设置独立监控。
+- Redis 故障时不得丢失已提交的银行业务事实；任务失败只能进入重试/补偿和 M1 审计路径。
+
 ## LinkForty 网络隔离验收
 
 - local 仅使用 Mock，不连接生产 Core；

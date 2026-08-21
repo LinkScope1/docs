@@ -3,21 +3,21 @@ employees:
   get:
     tags: [employees]
     summary: 分页查询员工
-    x-status: planned
-    x-owner: 待确认
+    x-status: reviewed
+    x-owner: API/后端
     x-permission: employee.read
-    x-data-scope: org_id_and_employee_id
-    x-idempotency: false
+    x-data-scope: ORG_SUBTREE
+    x-idempotency: none
     x-audit: false
     responses: {}
   post:
     tags: [employees]
     summary: 创建员工
-    x-status: planned
-    x-owner: 待确认
+    x-status: reviewed
+    x-owner: API/后端
     x-permission: employee.manage
-    x-data-scope: org_id
-    x-idempotency: true
+    x-data-scope: ORG_SUBTREE
+    x-idempotency: domain_key_employee_code
     x-audit: true
     responses: {}
 
@@ -25,21 +25,21 @@ employeeById:
   get:
     tags: [employees]
     summary: 查询员工详情
-    x-status: planned
-    x-owner: 待确认
+    x-status: reviewed
+    x-owner: API/后端
     x-permission: employee.read
-    x-data-scope: org_id_and_employee_id
-    x-idempotency: false
+    x-data-scope: ORG_SUBTREE
+    x-idempotency: none
     x-audit: false
     responses: {}
   patch:
     tags: [employees]
     summary: 修改员工基本信息
-    x-status: planned
-    x-owner: 待确认
+    x-status: reviewed
+    x-owner: API/后端
     x-permission: employee.manage
-    x-data-scope: org_id
-    x-idempotency: true
+    x-data-scope: ORG_SUBTREE
+    x-idempotency: domain_key_object_version
     x-audit: true
     responses: {}
 
@@ -47,11 +47,11 @@ employeeEnable:
   post:
     tags: [employees]
     summary: 启用员工
-    x-status: planned
-    x-owner: 待确认
+    x-status: reviewed
+    x-owner: API/后端
     x-permission: employee.manage
-    x-data-scope: org_id
-    x-idempotency: true
+    x-data-scope: ORG_SUBTREE
+    x-idempotency: domain_key_state_command
     x-audit: true
     responses: {}
 
@@ -59,11 +59,11 @@ employeeDisable:
   post:
     tags: [employees]
     summary: 停用员工
-    x-status: planned
-    x-owner: 待确认
+    x-status: reviewed
+    x-owner: API/后端
     x-permission: employee.manage
-    x-data-scope: org_id
-    x-idempotency: true
+    x-data-scope: ORG_SUBTREE
+    x-idempotency: domain_key_state_command
     x-audit: true
     responses: {}
 
@@ -71,10 +71,10 @@ employeeTransfer:
   post:
     tags: [employees]
     summary: 调动员工到其他组织
-    x-status: planned
-    x-owner: 待确认
+    x-status: reviewed
+    x-owner: API/后端
     x-permission: employee.transfer
-    x-data-scope: source_and_target_org
-    x-idempotency: true
+    x-data-scope: SOURCE_AND_TARGET_ORG
+    x-idempotency: domain_key_transfer
     x-audit: true
     responses: {}

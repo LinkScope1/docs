@@ -1,0 +1,36 @@
+# M5：访问事件接入与关联。Webhook 先验签和 event_id 幂等，再解析本地 asset_id。
+accessEvents:
+  get:
+    tags: [access-events]
+    summary: 分页查询访问事件
+    x-status: reviewed
+    x-owner: API/后端
+    x-permission: access-event.read
+    x-data-scope: ORG_SUBTREE
+    x-idempotency: none
+    x-audit: false
+    responses: {}
+
+accessEventById:
+  get:
+    tags: [access-events]
+    summary: 查询访问事件详情
+    x-status: reviewed
+    x-owner: API/后端
+    x-permission: access-event.read
+    x-data-scope: ORG_SUBTREE
+    x-idempotency: none
+    x-audit: false
+    responses: {}
+
+accessEventWebhook:
+  post:
+    tags: [webhooks]
+    summary: 接收 LinkForty 访问事件 Webhook
+    x-status: reviewed
+    x-owner: API/后端/LinkForty联调
+    x-permission: system_webhook
+    x-data-scope: SYSTEM
+    x-idempotency: event_id
+    x-audit: true
+    responses: {}

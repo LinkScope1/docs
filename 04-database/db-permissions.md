@@ -8,6 +8,13 @@
 | bank_linkforty_ro | 指定 LinkForty 表只读 |
 | bank_migration | 银行业务 Schema 迁移 |
 
+## 运行与迁移分离
+
+- `bank_admin_rw` 只用于银行 API/Worker 运行，不能拥有 DDL、创建扩展、`TRUNCATE` 或执行 Alembic。
+- `bank_migration` 只在受审批的发布作业中使用，负责 `bank_admin` Schema 的 Alembic upgrade；测试迁移账号与生产迁移账号分离。
+- 生产数据库连接、迁移连接和 `bank_linkforty_ro` 凭据不得写入仓库、日志或审计详情。
+- 本地迁移验证使用临时数据库或离线 SQL；不得从银行迁移脚本修改 LinkForty 表。
+
 ## LinkForty 只读边界
 
 - M5：只读 `links`、`click_events` 的必要字段，用于访问事件接入与关联。
