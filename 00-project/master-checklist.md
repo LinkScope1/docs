@@ -30,13 +30,13 @@
 
 ## P1：第一轮开发前完成
 
-- [ ] FastAPI 工程可启动
-- [ ] React 工程可启动
-- [ ] PostgreSQL 可连接
-- [ ] Redis 和 Worker 可启动
-- [ ] Alembic 初始迁移可执行
-- [ ] Casdoor JWT 可验证
-- [ ] 测试用户、角色和组织已准备
+- [x] FastAPI 工程可启动
+- [x] React 工程可启动
+- [x] PostgreSQL 可连接
+- [x] Redis 和 Worker 可启动
+- [x] Alembic 初始迁移可执行
+- [x] Casdoor JWT 可验证
+- [x] 测试用户、角色和组织已准备
 - [ ] 第一条垂直业务切片已确定
 
 ## P2：开发中持续完成
