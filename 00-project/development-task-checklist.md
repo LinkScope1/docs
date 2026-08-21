@@ -17,7 +17,7 @@ Total output lines: 463
 - 阶段固定映射：P0 外部契约和范围冻结；P1 工程基础；P2 M1/M2 与 M3 基础能力；P3 M4/M5 闭环；P4 导入/统计/导出/补偿；P5 发布和运维。
 - linkforty/core 是独立的 LinkForty Core；card-switch-demo 是演示项目；两者不计入银行后台业务完成度。
 - 不创建本地 iam_*、target_resources、routing_rules、导入批次表或导入明细表。
-- 银行后台只通过 LinkForty API 写外部系统；LinkForty 事件表仅通过受限只读边界读取；不读取、记录或输出 webhooks.secret。
+- 银行后台只通过 LinkForty API 写外部系统；LinkForty 事件表仅通过受限只读边界读取；不得通过数据库直读、记录或输出 `webhooks.secret`，Secret provisioning 只能通过受控 Core API 一次性交付给配置服务。
 
 ### 1.2 关联权威文档与引用规则
 
@@ -127,6 +127,7 @@ Total output lines: 463
 | DEC-LF-003 | P0 | P0 | 平台横向 | Webhook | 确认签名算法、Header、原始 body 计算和重试 | 已完成 | 决策记录/外部确认 | LinkForty | 后端/测试 | ENV-LF-002 | 脱敏 Webhook 契约 | 真实格式可验签；密钥不进入代码、fixture、日志或文档。 | V1.3.2 前置决策 | 是 | — | 本地真实投递、脱敏报告和负责人确认已完成。 | 1 |
 | DEC-LF-004 | P0 | P0 | 平台横向 | Webhook | 确认 event_id、click_id、事件时间和链接标识字段 | 已完成 | 决策记录/外部确认 | LinkForty | 后端/测试 | DEC-LF-003 | 字段映射表 | 缺 event_id、重复 event_id、重复 click_id、乱序和事件时间异常均有测试结论。 | V1.3.2 前置决策 | 是 | — | 字段路径已有真实样例和负责人确认；乱序和异常时间仍需补充专项测试。 | 1 |
 | DEC-LF-005 | P0 | P0 | 平台横向 | 只读边界 | 确认 LinkForty 只读账号、表字段白名单和网络方式 | 阻塞待确认 | 决策记录/外部确认 | DBA | 后端/测试 | ENV-DB-002 | 只读权限记录 | 账号无法 INSERT/UPDATE/DELETE/DDL/TRUNCATE；不包含 webhooks.secret。 | V1.3.2 前置决策 | 是 | — | 读取边界不清会造成数据泄漏。 | 1 |
+| DEC-LF-006 | P0 | P0 | 平台横向 | Webhook/Secret | 冻结 Core 现有 Webhook API 的一次性 Secret provisioning 方案 | 已确认 | 决策记录/配置流程说明 | LinkForty/安全/运维 | 后端/测试 | DEC-LF-003, DEC-LF-005 | provisioning 流程说明 | 配置服务通过 `POST /api/webhooks` 创建或通过 `GET /api/webhooks/:id` 受控读取；不直读数据库、不按事件调用 Core、不进入银行业务表、日志、fixture、文档或前端。 | V1.3.2 前置决策 | 是 | — | 配置服务联调、网络访问审计和生产配置接入仍待完成。 | 1 |
 | DEC-DATA-001 | P0 | P0 | 平台横向 | M5 数据语义 | 确认 access_events.asset_id 保持非空及资产解析失败处理 | 阻塞待确认 | 决策记录/外部确认 | 架构 | LinkForty/DBA | EPIC-DATA-001 | 数据语义决议 | 资产无法唯一解析时拒绝接收、不写 access_events，只写安全审计/补偿结果；resolution_status 仅表示绑定/组织/员工关联。 | V1.3.2 前置决策 | 是 | — | 不得用占位 asset_id 绕过 NOT NULL。 | 1 |
 | DEC-DATA-002 | P0 | P0 | 平台横向 | M3/M5 数据语义 | 确认 linkforty_link_id 一对一关联和唯一索引推荐方案 | 阻塞待确认 | 决策记录/外部确认 | 架构 | LinkForty/硬件 | EPIC-DATA-001 | 关联约束决议 | 明确一个 linkforty_link_id 是否只能对应一个有效 Payload/资产，并记录增加部分唯一索引的推荐方案；未采纳方案也要记录原因。 | V1.3.2 前置决策 | 是 | — | 多 Payload/多资产时必须阻止进入有效状态。 | 1 |
 | DEC-IDEMP-001 | P0 | P0 | 平台横向 | 幂等 | 确认通用 Idempotency-Key 的持久化方式和适用命令 | 阻塞待确认 | 决策记录/外部确认 | 架构 | 后端/测试 | EPIC-API-001 | 通用幂等决议 | 明确持久化事实来源、响应回放、TTL、payload 冲突和并发语义；Redis 不作为最终来源；决策前普通命令保持阻塞。 | V1.3.2 前置决策 | 是 | — | 不允许以模糊抽象提前创建未确认表或接口。 | 1 |
@@ -440,7 +441,7 @@ Total output lines: 180
 | R-P3-004 | P5 | P1 | 运维 | 监控 | 增加 LinkForty 失败/延迟/重试补偿、Webhook 验签/解析失败、导入和导出失败指标。 | 待开发 | 待产生 | 后端 | 后端/测试 | EPIC-B-M3-001, EPIC-B-M5-001, EPIC-X-IMP-001, EPIC-X-EXP-001 | Monitoring rules | 告警可关联 trace_id、event_id、task_id，不输出 Secret。 | V1.3.2 | 否 | — | 告警阈值需压测后调整。 | 1 |
 | R-P3-005 | P5 | P1 | 运维 | 监控 | 增加审计写入失败和事件长期待关联告警。 | 待开发 | 待产生 | 后端 | 后端/测试 | A-M1-009, B-M5-010 | Alert rules | 审计写失败不静默；待关联积压有告警。 | V1.3.2 | 否 | — | 告警风暴需限流。 | 0.5 |
 | R-P3-006 | P5 | P1 | 运维 | 运维 | 编写 Webhook 大量失败、LinkForty 失败和数据库连接异常 Runbook。 | 部分具备 | 代码骨架/迁移 | 运维 | 后端/测试 | R-P3-003, R-P3-004, R-P3-005 | Runbook | 包含排查、暂停重试、小批量恢复、数据核对和升级路径。 | V1.3.2 | 否 | — | Runbook 必须禁止直接改业务表。 | 1 |
-| R-P3-007 | P5 | P1 | 运维 | 安全 | 审核生产配置、密钥托管、数据库角色、网络白名单和日志保留。 | 阻塞待确认 | 决策记录/外部确认 | 安全 | 后端/测试 | P0-DB-001, DEC-LF-005, R-P3-001 | Security approval | 对应负责人签字或审批记录齐全。 | V1.3.2 | 否 | — | 未通过不得上线。 | 1 |
+| R-P3-007 | P5 | P1 | 运维 | 安全 | 审核生产配置、Secret provisioning、数据库角色、网络白名单和日志保留。 | 阻塞待确认 | 决策记录/外部确认 | 安全 | 后端/测试 | P0-DB-001, DEC-LF-005, DEC-LF-006, R-P3-001 | Security approval | 对应负责人签字或审批记录齐全；Core API provisioning 仅允许受控服务网段访问，Secret 不进入日志或业务表。 | V1.3.2 | 否 | — | 未通过不得上线。 | 1 |
 | R-P4-001 | P5 | P1 | 运维 | 备份 | 配置生产数据库定期全量备份、加密存储和访问审计。 | 部分具备 | 代码骨架/迁移 | DBA | 后端/测试 | R-P3-007 | Backup config | 备份不与生产主机同点；访问可审计。 | V1.3.2 | 否 | — | 备份密钥和恢复权限需独立管理。 | 1 |
 | R-P4-002 | P5 | P1 | 运维 | 恢复 | 在隔离环境执行数据库恢复演练。 | 待开发 | 待产生 | DBA | 后端/测试 | R-P4-001, T-MIG-002 | Restore report | 表、索引、关键数据数量、event_id 唯一性和应用连接均通过。 | V1.3.2 | 否 | — | 恢复耗时可能影响 RTO。 | 1.5 |
 | R-P4-003 | P5 | P1 | 运维 | 回滚 | 准备应用上一稳定版本、API/Worker 重启和健康检查回滚脚本。 | 部分具备 | 代码骨架 | DevOps | 后端/测试 | R-P3-002 | Rollback runbook | 可停止发布、切换版本、重启、检查和记录结果。 | V1.3.2 | 否 | — | 不允许直接破坏性数据库 downgrade。 | 1 |
@@ -492,6 +493,7 @@ Webhook 验签 → 解析 event_id/click_id/linkforty_link_id → 唯一解析 a
 | Casdoor issuer、audience、JWKS、Claim、角色编码和停用同步 | 平台/安全 | P0-CAS、A-M1、P1 认证、前端登录 | 待确认 |
 | LinkForty 创建/查询 API、网络隔离安全例外、错误、限流、幂等 | LinkForty/安全/运维 | P0-LF、B-M3、X-WORK | 待确认 |
 | Webhook 签名、Header、event_id、click_id、事件时间和重试 | LinkForty/安全 | P0-LF、B-M5、T-EXT | 已确认；本地真实联调和负责人确认完成 |
+| Webhook Secret provisioning、Core API 网络访问和生产配置接入 | LinkForty/安全/运维 | DEC-LF-006、R-P3-007 | 方案已确认；联调、审计和上线配置待完成 |
 | LinkForty 只读账号、表字段白名单和网络访问 | DBA/LinkForty/安全 | P0-LF-005、P1-BE-020、X-ANL、B-M5 | 待确认 |
 | NFC 介质、UID、NDEF、设备、SDK、读回核验 | 硬件/供应商 | P0-NFC、B-M3、F-M3-003 | 待确认 |
 | PostgreSQL、Redis、Celery、Schema、备份和生产权限 | DBA/运维 | P0-DB、P1-ENV、R-P3/P4 | 待确认 |

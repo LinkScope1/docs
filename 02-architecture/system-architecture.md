@@ -25,11 +25,14 @@ TypeScript + Fastify
 - LinkForty 写入必须走 LinkForty API。
 - 银行后台直接通过私有网络调用 LinkForty Core，不经过 API 网关或其他中间代理。
 - LinkForty Core 管理 API 仅允许银行后台服务网段访问，不暴露公网；该链路不使用 API Key、JWT、OAuth 或 mTLS 客户端证书。
+- Webhook 配置由银行后台配置服务在创建或恢复配置时调用 Core 现有管理 API 一次性 provisioning；不按事件运行时调用 Core。
 - M5 和非编号统计与报表能力只能只读 `docs/04-database/db-permissions.md` 白名单中的 LinkForty 表和必要字段。
-- 不读取 `webhooks.secret`。
+- 银行后台不得通过 LinkForty 数据库直读 `webhooks.secret`；受控 API provisioning 只向配置服务一次性交付验签运行时配置。
 - 前端只能调用银行后台 API，不直接调用 LinkForty Core。
 - 银行库不创建 `iam_*` 表；Casdoor 角色和功能权限不复制到本地。
 - V1.3.2 暂不建设目标资源和路由规则。M3 通过 LinkForty API 发起外部调用，M1 负责结果审计。
+
+Webhook Secret provisioning 方案已确认，但配置服务自动接入、网络访问审计和生产配置接入尚未完成；该决策不等同于 M5 业务功能已全部实现。
 
 ## 后端分层
 

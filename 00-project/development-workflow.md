@@ -277,7 +277,7 @@ API 变更必须说明兼容性、调用方影响、迁移步骤、弃用周期�
 
 - `.env`、本地密钥和生产配置不提交；提供脱敏的 `.env.example`。
 - 不在源代码、测试输出、日志、截图、PR 或 Issue 中写入密码、Token、JWT、Webhook Secret、数据库密码或个人敏感信息。
-- LinkForty `webhooks.secret` 不得读取、记录或输出；只通过受控验签适配器使用。
+- LinkForty `webhooks.secret` 不得通过数据库直读、记录或输出；仅允许由受控 Core API provisioning 一次性交付给配置服务，并通过验签适配器使用运行时配置。
 - 依赖升级必须说明版本、原因、兼容性、许可证和测试结果；锁文件与 manifest 同步提交。
 - CI 使用最小权限，默认只读仓库内容；生产凭据通过平台 Secret 注入。
 - 发现安全事件时先停止扩散、撤销凭据、保留必要证据，再按事件响应流程处理，不在公开 PR 中暴露秘密。
@@ -353,7 +353,7 @@ PR 合并 main
 任何情况下都必须遵守以下底线：
 
 1. 不直接 Push 或 Force Push 到 `main`。
-2. 不提交秘密，不输出 `webhooks.secret`。
+2. 不提交秘密，不通过数据库直读或输出 `webhooks.secret`；Secret provisioning 只允许走受控 Core API 配置流程。
 3. 不绕过 PR、Review、CI 或 CODEOWNER 门禁。
 4. 不把多个无关问题混在一个 PR。
 5. 不直接修改已应用 migration 或 LinkForty 平台表。

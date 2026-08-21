@@ -27,7 +27,7 @@
 | 横向：统计与报表 | 点击、访问、安装和 App 事件统计，以及同步导出 | 统计只读 `access_events` 和获授权的 LinkForty 事件数据；不包含银行办理量、金额或真实业务转化；异步导出为 V1.4 |
 | 横向：Worker | Webhook、LinkForty 外部调用和关联失败的重试、补偿和审计 | Worker 不是新的业务模块；Redis/Celery 不能作为唯一事实来源；结果通过 `operation_logs` 和 `trace_id` 追踪 |
 | 横向：文档导入契约 | 载体内容、载体员工绑定、载体内容关系模板，以及稳定匹配键、预校验和逐行结果契约预留 | 使用 `org_code`、`employee_code`、`asset_code`、`carrier_uid` 等稳定键；缺少某行不推导删除、停用或解绑 |
-| 外部依赖：LinkForty | API 写入、授权事件只读访问和 Webhook 事件接入 | 只读账号只能访问白名单表和字段；银行后台不得直接执行 LinkForty DML、DDL 或 TRUNCATE |
+| 外部依赖：LinkForty | API 写入、授权事件只读访问、Webhook 事件接入和受控 Secret provisioning | 只读账号只能访问白名单表和字段；银行后台不得直接执行 LinkForty DML、DDL 或 TRUNCATE；Secret 仅通过受控 Core API 一次性交付 |
 | 外部依赖：NFC | NFC 适配器接口和明确的 Mock 流程 | 真实硬件写卡依赖硬件/SDK确认；没有真实设备时 Mock 不得伪造真实核验成功 |
 
 ## 二、不纳入本期或延期至后续版本
@@ -49,10 +49,20 @@
 
 - 银行后台只拥有 7 张银行业务表：`operation_logs`、`organization_units`、`employees`、`touchpoint_assets`、`touchpoint_payloads`、`touchpoint_employee_assignments`、`access_events`。
 - `touchpoint_payloads` 只保存卡内实际内容和必要的 `linkforty_link_id` 逻辑引用，不保存 LinkForty 专属同步状态、同步时间、错误摘要或重试次数。
-- 银行后台对 LinkForty 的写入必须通过 API；读取外部事件只能使用受限只读账号；禁止读取、记录或输出 `webhooks.secret`。
+- 银行后台对 LinkForty 的写入必须通过 API；读取外部事件只能使用受限只读账号；不得通过 LinkForty 数据库直读 `webhooks.secret`。当前方案允许银行后端配置服务通过受控 Core API 一次性 provisioning Secret；不得记录、前端暴露或输出 Secret。
 - `event_id` 是访问事件全局唯一幂等键，`click_id` 只能作为非唯一逻辑引用；重复 `event_id` 必须幂等成功。
 - 统计与报表不拥有本地专属事实表；银行业务办理量和金额不进入 MVP 正式验收。
 - `linkforty/core/` 是独立外部系统，`card-switch-demo/` 是演示项目；两者的目录、页面或接口不能作为银行后台业务完成证据。
+
+### DEC-LF-006：Webhook Secret provisioning
+
+| 项目 | 决策 |
+|---|---|
+| 当前方案 | 沿用 Core 现有 `POST /api/webhooks` 创建响应获取 Secret；已存在订阅可受控调用 `GET /api/webhooks/:id` 一次性读取；不新增 provisioning API。 |
+| 调用方 | 银行后端配置服务；前端、普通业务 API 和 LinkForty 数据库只读账号不参与。 |
+| 运行时行为 | Secret 写入受保护运行时配置；Webhook 事件和重试由银行后台本地验签，不按事件调用 Core。 |
+| 安全边界 | Core 管理 API 仅通过私有网络、来源 ACL、防火墙、私有 DNS、HTTPS/TLS 和网络审计访问；Secret 不进入银行业务表、日志、审计、fixture、文档或前端。 |
+| 状态 | 方案已确认；配置服务联调、网络访问审计和生产配置接入仍待实施和验收。 |
 
 ## 四、影响分析
 

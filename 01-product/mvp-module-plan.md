@@ -52,7 +52,7 @@ V1.3.2 的正式范围为 7 张银行业务表、8 张 LinkForty 外部现有表
 | LinkForty | 链接、点击和 Webhook 等底层能力 | 写入走 API；读取受限；不直接迁移或修改外部表 |
 | NFC | 一期触点载体类型 | 资产类型固定为 NFC，写入和核验通过适配能力完成 |
 
-> 外部表保护 银行系统不得对 LinkForty 物理表执行 DDL、DML、TRUNCATE 或迁移，也不得读取、记录或输出 Webhook 密钥值。
+> 外部表保护：银行系统不得对 LinkForty 物理表执行 DDL、DML、TRUNCATE 或迁移，不得通过数据库直读、记录或输出 Webhook 密钥值；受控 Core API provisioning 仅可向银行配置服务一次性交付验签运行时配置。
 
 # 4. 模块划分原则
 

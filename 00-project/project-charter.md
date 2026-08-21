@@ -23,7 +23,7 @@
 - 对外 Webhook 投递
 - LinkForty 平台自身 API 和数据维护
 
-银行后台对 LinkForty 的写入必须通过 API；读取事件表时使用受限只读账号，不允许读取 `webhooks.secret`，不允许执行 LinkForty DML、DDL 或 TRUNCATE。
+银行后台对 LinkForty 的写入必须通过 API；读取事件表时使用受限只读账号，不允许通过数据库直读 `webhooks.secret`，不允许执行 LinkForty DML、DDL 或 TRUNCATE。Secret 只能由受控 Core API provisioning 一次性交付给银行配置服务。
 
 ## MVP 范围
 
