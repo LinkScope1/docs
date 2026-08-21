@@ -4,10 +4,10 @@
 
 ## P0：开发前必须完成
 
-- [ ] 确认银行后台与 LinkForty Core 边界
+- [x] 确认银行后台与 LinkForty Core 边界
 - [x] 确认 Python 后端和前端真实代码目录：`bank-touchpoint-backend/`、`bank-touchpoint-frontend/`；当前仅为工程骨架
-- [ ] 确认 MVP 范围和不纳入项
-- [ ] 确认 M1～M5 负责人以及工作包 A、B 的主负责人
+- [x] 确认 MVP 范围和不纳入项
+- [x] 确认 M1～M5 负责人以及工作包 A、B 的主负责人
 - [ ] 完成 Casdoor PoC，并确认 `employee_code` Claim
 - [ ] 完成 LinkForty API PoC
 - [ ] 获取并验证真实 Webhook 样例
