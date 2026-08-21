@@ -8,7 +8,16 @@
 | M3-001 | 触点资产 | `touchpoint_assets` | 资产编码、UID 唯一、状态、范围字段 | 待测 |
 | M3-002 | 载体内容 | `touchpoint_payloads` | 内容类型、实际写入值、范围同步、LinkForty 逻辑引用、无本地同步状态字段 | 待测 |
 | M4-001 | 绑定 | `touchpoint_employee_assignments` | 重叠、当前唯一、历史无快照、转交 | 待测 |
-| M5-001 | Webhook | `access_events` | 签名、幂等、重复 click、关联重试 | 待测 |
+| M5-001 | Webhook | `access_events` | 签名、幂等、重复 click、关联重试 | 通过：本地真实联调和负责人正式确认已完成 |
 | CAP-ANL-001 | 统计与报表横向能力（不编号） | analytics | 时间、机器人、范围、只读边界、审计 | 待测 |
 | IMP-001 | 文档导入预留 | `/imports/validate` | 模板、稳定匹配键、逐行错误 | 待测 |
 | IMP-002 | 文档导入预留 | `/imports/execute` | 更新并新增、幂等、显式解绑、审计 | 待测 |
+
+## M5-001 当前进度
+
+- Core `1.21.0` 真实访问短链后投递 `click_event`，银行接收端返回 202 并完成 HMAC-SHA256 验签。
+- 已确认字段路径：`event`、`event_id`、`timestamp`、`data.id`、`data.linkId`；真实 body SHA-256 为 `29b71f9eb0a8989b9af32533ea944cd489ec856a34c6d4b29c3cb38c564dfc43`。
+- 同一完整请求重复投递只保留一条 `access_events`；body 篡改和签名篡改返回 401；删除 `event_id` 返回 400。
+- 一次性失败探针已观察到 500 → 202，间隔约 1.027 秒；探针和旧测试数据已清理。
+- 证据目录：`/private/tmp/linkforty-webhook-evidence/`（仓库外、限权、不纳入 Git）。
+- 正式关闭条件已满足：LinkForty 负责人已确认签名、字段和重试契约。

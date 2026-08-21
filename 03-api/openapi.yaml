@@ -17,6 +17,7 @@ tags:
   - name: assignments
   - name: imports
   - name: access-events
+  - name: linkforty-webhooks
   - name: analytics
   - name: audit-logs
 paths:
@@ -96,6 +97,37 @@ paths:
       security: [{ bearerAuth: [] }]
       responses:
         '200': { $ref: '#/components/responses/Success' }
+  /webhooks/linkforty:
+    post:
+      tags: [linkforty-webhooks]
+      summary: Receive a signed LinkForty Webhook event
+      description: >-
+        The server verifies the HMAC signature against the exact raw request
+        bytes before parsing or writing an access event. The endpoint is called
+        by LinkForty and does not use browser bearer authentication.
+      parameters:
+        - in: header
+          name: X-LinkForty-Signature
+          required: true
+          schema: { type: string }
+        - in: header
+          name: X-LinkForty-Event
+          required: false
+          schema: { type: string }
+        - in: header
+          name: X-LinkForty-Event-ID
+          required: false
+          schema: { type: string, maxLength: 255 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LinkFortyWebhookEnvelope' }
+      responses:
+        '202': { $ref: '#/components/responses/Success' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '503': { $ref: '#/components/responses/DataSourceUnavailable' }
   /audit-logs:
     get:
       tags: [audit-logs]
@@ -152,6 +184,16 @@ components:
         requestId: { type: string }
         error:
           $ref: '#/components/schemas/Error'
+    LinkFortyWebhookEnvelope:
+      type: object
+      required: [event, event_id, data]
+      properties:
+        event: { type: string, maxLength: 64 }
+        event_id: { type: string, maxLength: 255 }
+        timestamp: { type: string, format: date-time }
+        data:
+          type: object
+          additionalProperties: true
   responses:
     Success:
       description: Successful response
@@ -170,6 +212,11 @@ components:
           schema: { $ref: '#/components/schemas/ErrorEnvelope' }
     Forbidden:
       description: Permission or data scope denied
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    DataSourceUnavailable:
+      description: External configuration or association data is unavailable
       content:
         application/json:
           schema: { $ref: '#/components/schemas/ErrorEnvelope' }
