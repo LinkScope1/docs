@@ -2,6 +2,13 @@
 
 本清单只维护开发前、开发中和发布前的高层门禁，不复制单项任务的状态和验收内容。可执行的 Issue/看板任务、依赖、负责人、产出物和验收标准以[详细开发任务清单](./development-task-checklist.md)为准。
 
+## 当前进度快照（2026-08-21）
+
+- LinkForty Core `1.21.0` 已通过本地 Docker 环境完成一次真实短链点击和 `click_event` 投递；本地接收端已完成原始 body、Header、HMAC、字段、幂等、负向和重试验证。
+- 脱敏验证报告保存在仓库外受控目录 `/private/tmp/linkforty-webhook-evidence/verification-report.json`，不纳入 Git，且不含 Secret 或完整 payload。
+- LinkForty 负责人已确认正式签名、字段和重试契约（2026-08-21）；P0 Webhook 门禁和 M5-001 具备关闭条件。
+- Webhook Secret provisioning 方案已确认：配置服务一次性调用 Core 现有管理 API 获取 Secret；配置服务联调、网络访问审计和生产配置接入仍待实施与验收。
+
 ## P0：开发前必须完成
 
 - [x] 确认银行后台与 LinkForty Core 边界
@@ -10,7 +17,7 @@
 - [x] 确认 M1～M5 负责人以及工作包 A、B 的主负责人
 - [ ] 完成 Casdoor PoC，并确认 `employee_code` Claim
 - [ ] 完成 LinkForty API PoC
-- [ ] 获取并验证真实 Webhook 样例
+- [x] 获取并验证真实 Webhook 样例（本地真实投递、验证和负责人正式确认已完成）
 - [ ] 确认 NFC/NDEF 设备或 Mock 方案
 - [ ] 确认 PostgreSQL、Redis 和环境访问权限
 - [ ] 确认数据库角色和 LinkForty 只读权限
@@ -51,7 +58,7 @@
 ## P3：上线前完成
 
 - [ ] 权限和越权测试通过
-- [ ] Webhook 幂等和重放测试通过
+- [x] Webhook 幂等和重放测试通过（本地真实样例和负责人正式确认已完成）
 - [ ] 外部失败补偿验证通过
 - [ ] 数据迁移和数据质量检查通过
 - [ ] 备份恢复演练通过
@@ -80,6 +87,6 @@
 | 银行后台 Python/React 工程目录及实现状态 | 待指定 | 2026-08-19 | 已确认目录；业务闭环待开发 |
 | Casdoor issuer/audience/JWKS/employee_code Claim | 平台/安全 | 待指定 | 待确认 |
 | LinkForty API 契约 | LinkForty 负责人 | 待指定 | 待确认 |
-| Webhook 签名和事件样例 | LinkForty 负责人 | 待指定 | 待确认 |
+| Webhook 签名和事件样例 | LinkForty 负责人 | 待指定 | 本地真实样例已验证；负责人正式确认已完成 |
 | NFC 设备和 NDEF 方案 | 硬件/业务 | 待指定 | 待确认 |
 | 数据库部署和只读账号 | 数据库/运维 | 待指定 | 待确认 |

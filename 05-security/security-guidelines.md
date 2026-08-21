@@ -10,6 +10,6 @@
 - 所有关键命令记录审计。
 - 日志不得输出密码、Token、JWT 或 Secret。
 - 导出必须校验权限和数据范围。
-- LinkForty 只读账号不得读取 `webhooks.secret`。
+- LinkForty 只读账号不得读取 `webhooks` 或 `webhooks.secret`；受控 Core API provisioning 只能向银行配置服务一次性交付验签运行时配置。
 - 生产密钥只能通过密钥管理或环境注入。
 - 生产数据不得直接复制到开发环境。

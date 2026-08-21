@@ -276,7 +276,7 @@ asset_code 用于业务查询和导入，carrier_uid 用于 NFC 物理盘点，�
 
 LinkForty 的 8 张现有表属于外部系统物理模型，本节仅用于说明银行后台的逻辑引用和数据边界。银行系统通过 API 写入 LinkForty，通过受限读取或 Webhook 获取访问结果，不直接执行其物理表 DDL、DML、TRUNCATE 或迁移。
 
-> 安全边界：Webhook 签名密钥由 LinkForty 管理；本文不展示 webhooks.secret，也不写入银行日志。
+> 安全边界：Webhook 签名密钥由 LinkForty 管理；本文不展示 `webhooks.secret`，银行系统不通过 LinkForty 数据库直读该字段。受控 Core API provisioning 仅将 Secret 一次性交付为银行后台验签运行时配置，不写入银行业务表或日志。
 
 ## 5.1 link_templates
 
@@ -427,6 +427,8 @@ LinkForty 的 8 张现有表属于外部系统物理模型，本节仅用于说�
 | headers | JSONB | 是 | '{}' | — | 附加请求头 |
 | created_at | TIMESTAMP | 是 | NOW() | — | 创建时间 |
 | updated_at | TIMESTAMP | 是 | NOW() | — | 更新时间 |
+
+> `webhooks.secret` 属于 LinkForty 外部敏感字段，故不在银行侧数据字典字段表、银行业务表或只读字段白名单中展示；受控 API provisioning 不改变该数据库边界。
 
 ## 5.8 webhook_deliveries
 

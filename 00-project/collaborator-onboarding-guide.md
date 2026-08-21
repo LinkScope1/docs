@@ -113,7 +113,7 @@
 
 ### 外部系统和运维协作者
 
-先确认 LinkForty、Casdoor、NFC、环境、监控、备份和回滚边界。不要在银行项目中直接执行 LinkForty 平台表的 DDL、DML、TRUNCATE 或迁移，也不要读取或输出 `webhooks.secret`。
+先确认 LinkForty、Casdoor、NFC、环境、监控、备份和回滚边界。不要在银行项目中直接执行 LinkForty 平台表的 DDL、DML、TRUNCATE 或迁移，也不要通过数据库读取、记录或输出 `webhooks.secret`；Secret 只通过受控 Core API provisioning 交付给配置服务。
 
 ## 7. 第一次进入代码仓库的操作
 
