@@ -15,11 +15,13 @@
 
 - [ ] 列表/事件/统计/同步导出分别满足 P95 500 ms/1 s/2 s/5 s。
 - [ ] 错误率 < 1%，Celery 队列积压 < 100，连续观察 30 分钟。
-- [ ] LinkForty 只读账号、字段白名单、TLS/ACL 和负向测试报告已审批。
+- [ ] LinkForty API-only 边界、正式字段/能力报告和 TLS/ACL 已审批；LinkForty 数据库只读账号、字段白名单 SQL 授权和负向测试延期至 V1.4，不作为 V1.3.2 关闭条件。
 - [ ] 生产 Secret provisioning、数据库角色、网络白名单和日志脱敏已审批。
 - [ ] 备份、恢复、回滚和外部系统冒烟证据齐全。
-- [ ] Casdoor 真实认证、NFC 真机能力和 LinkForty 同 Key 重复创建 Link 风险已在发布结论中明确；未补齐 Casdoor/NFC 外部证据前不得生产发布。
+- [ ] Casdoor 真实认证和 NFC 真机能力已明确为 V1.4 延期；Core 缺少安装/App 聚合 API 的限制、API-only 统计 503 行为和 LinkForty 同 Key 重复创建 Link 已知缺陷已写入发布结论；未补齐 Casdoor/NFC 外部证据前不得生产发布。
 - [ ] BLOCKER/MAJOR 已清零或具备书面延期版本和批准人；不得口头豁免。
+
+当前阶段固定结论：V1.3.2 可继续开发、测试和内部验收，但因真实外部证据、生产配置、安全审批、性能报告和发布门禁未完成，不得生产发布。发布前的执行入口包括银行 API `/health`、LinkForty Core `/health/ready`、PostgreSQL/Redis 连通性、`celery inspect ping`、LinkForty 创建/查询/点击分析、Webhook 验签、统计正常/无权限/503、导入预校验、同步导出、操作审计和 Trace ID 冒烟。
 
 ## 发布后
 
@@ -29,3 +31,5 @@
 - [ ] Webhook 接收正常
 - [ ] 统计查询正常
 - [ ] 错误率和延迟正常
+- [ ] 正式发布批准后连续观察 30 分钟，并记录 API、PostgreSQL、Redis/Celery、LinkForty、Webhook、统计和审计指标。
+- [ ] 超过 P95/错误率/队列积压阈值、外部服务异常或备份/回滚证据缺失时，按回滚 Runbook 执行回滚或延期；形成观察报告后才可关闭 `R-P5-004`。

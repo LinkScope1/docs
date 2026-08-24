@@ -686,6 +686,7 @@ paths:
       operationId: getAnalyticsSummary
       x-owner: API/后端/统计
       summary: Read click, access, install and App event metrics
+      description: V1.3.2 reads LinkForty data through API-only integration. The current Core API exposes click analytics; unavailable install or App aggregates fail with DATA_SOURCE_UNAVAILABLE rather than using a database readonly connection.
       x-permission: analytics.read
       x-data-scope: ORG_SUBTREE
       x-idempotency: none
