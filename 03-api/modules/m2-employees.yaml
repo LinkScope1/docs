@@ -1,6 +1,8 @@
 # M2：员工管理。员工调动不得通过普通PATCH直接修改org_id。
 employees:
+  x-canonical-path: /employees
   get:
+    operationId: listEmployees
     tags: [employees]
     summary: 分页查询员工
     x-status: reviewed
@@ -11,6 +13,7 @@ employees:
     x-audit: false
     responses: {}
   post:
+    operationId: createEmployee
     tags: [employees]
     summary: 创建员工
     x-status: reviewed
@@ -22,7 +25,9 @@ employees:
     responses: {}
 
 employeeById:
+  x-canonical-path: /employees/{id}
   get:
+    operationId: getEmployee
     tags: [employees]
     summary: 查询员工详情
     x-status: reviewed
@@ -33,6 +38,7 @@ employeeById:
     x-audit: false
     responses: {}
   patch:
+    operationId: updateEmployee
     tags: [employees]
     summary: 修改员工基本信息
     x-status: reviewed
@@ -44,7 +50,9 @@ employeeById:
     responses: {}
 
 employeeEnable:
+  x-canonical-path: /employees/{id}/enable
   post:
+    operationId: enableEmployee
     tags: [employees]
     summary: 启用员工
     x-status: reviewed
@@ -56,7 +64,9 @@ employeeEnable:
     responses: {}
 
 employeeDisable:
+  x-canonical-path: /employees/{id}/disable
   post:
+    operationId: disableEmployee
     tags: [employees]
     summary: 停用员工
     x-status: reviewed
@@ -68,7 +78,9 @@ employeeDisable:
     responses: {}
 
 employeeTransfer:
+  x-canonical-path: /employees/{id}/transfer
   post:
+    operationId: transferEmployee
     tags: [employees]
     summary: 调动员工到其他组织
     x-status: reviewed

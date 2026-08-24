@@ -1,6 +1,8 @@
 # M2：组织管理。状态变化必须使用enable/disable命令接口。
 organizations:
+  x-canonical-path: /organizations
   get:
+    operationId: listOrganizations
     tags: [organizations]
     summary: 分页查询组织
     x-status: reviewed
@@ -11,6 +13,7 @@ organizations:
     x-audit: false
     responses: {}
   post:
+    operationId: createOrganization
     tags: [organizations]
     summary: 创建组织
     x-status: reviewed
@@ -22,7 +25,9 @@ organizations:
     responses: {}
 
 organizationById:
+  x-canonical-path: /organizations/{id}
   get:
+    operationId: getOrganization
     tags: [organizations]
     summary: 查询组织详情
     x-status: reviewed
@@ -33,6 +38,7 @@ organizationById:
     x-audit: false
     responses: {}
   patch:
+    operationId: updateOrganization
     tags: [organizations]
     summary: 修改组织基本信息
     x-status: reviewed
@@ -44,7 +50,9 @@ organizationById:
     responses: {}
 
 organizationEnable:
+  x-canonical-path: /organizations/{id}/enable
   post:
+    operationId: enableOrganization
     tags: [organizations]
     summary: 启用组织
     x-status: reviewed
@@ -56,7 +64,9 @@ organizationEnable:
     responses: {}
 
 organizationDisable:
+  x-canonical-path: /organizations/{id}/disable
   post:
+    operationId: disableOrganization
     tags: [organizations]
     summary: 停用组织
     x-status: reviewed

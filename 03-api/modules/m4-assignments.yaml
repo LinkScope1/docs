@@ -1,6 +1,8 @@
 # M4：触点载体员工绑定生命周期。普通绑定限同组织；跨组织必须使用 transfer 命令。
 assignments:
+  x-canonical-path: /touchpoint-assignments
   get:
+    operationId: listTouchpointAssignments
     tags: [touchpoint-assignments]
     summary: 分页查询绑定历史
     x-status: reviewed
@@ -11,18 +13,21 @@ assignments:
     x-audit: false
     responses: {}
   post:
+    operationId: createTouchpointAssignment
     tags: [touchpoint-assignments]
     summary: 建立同组织绑定
     x-status: reviewed
     x-owner: API/后端
     x-permission: touchpoint.assignment.manage
     x-data-scope: ASSET_SCOPE
-    x-idempotency: assignment_command
+    x-idempotency: domain_key_assignment
     x-audit: true
     responses: {}
 
 assignmentById:
+  x-canonical-path: /touchpoint-assignments/{id}
   get:
+    operationId: getTouchpointAssignment
     tags: [touchpoint-assignments]
     summary: 查询绑定详情
     x-status: reviewed
@@ -34,25 +39,29 @@ assignmentById:
     responses: {}
 
 assignmentUnbind:
+  x-canonical-path: /touchpoint-assignments/{id}/unbind
   post:
+    operationId: unbindTouchpointAssignment
     tags: [touchpoint-assignments]
     summary: 立即解绑
     x-status: reviewed
     x-owner: API/后端
     x-permission: touchpoint.assignment.manage
     x-data-scope: ASSET_SCOPE
-    x-idempotency: assignment_command
+    x-idempotency: domain_key_assignment_unbind
     x-audit: true
     responses: {}
 
 assignmentTransfer:
+  x-canonical-path: /touchpoint-assignments/transfer
   post:
+    operationId: transferTouchpointAssignment
     tags: [touchpoint-assignments]
     summary: 跨组织转交绑定
     x-status: reviewed
     x-owner: API/后端
     x-permission: touchpoint.assignment.transfer
     x-data-scope: SOURCE_AND_TARGET_ORG
-    x-idempotency: assignment_command
+    x-idempotency: domain_key_assignment_transfer
     x-audit: true
     responses: {}

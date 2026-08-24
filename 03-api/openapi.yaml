@@ -26,6 +26,7 @@ paths:
     get:
       tags: [auth]
       operationId: getAuthMe
+      x-owner: API/后端
       summary: Return the authenticated employee and effective data scope
       x-permission: authenticated
       x-data-scope: EMPLOYEE_SELF
@@ -34,6 +35,7 @@ paths:
       x-status: reviewed
       security: [{ bearerAuth: [] }]
       responses:
+        '403': { $ref: '#/components/responses/Forbidden' }
         '200': { $ref: '#/components/responses/Success' }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
@@ -41,6 +43,7 @@ paths:
     get:
       tags: [organizations]
       operationId: listOrganizations
+      x-owner: API/后端
       summary: List organizations in the caller scope
       x-permission: organization.read
       x-data-scope: ORG_SUBTREE
@@ -56,6 +59,7 @@ paths:
     post:
       tags: [organizations]
       operationId: createOrganization
+      x-owner: API/后端
       summary: Create an organization
       x-permission: organization.manage
       x-data-scope: ORG_SUBTREE
@@ -63,7 +67,7 @@ paths:
       x-audit: true
       x-status: reviewed
       security: [{ bearerAuth: [] }]
-      requestBody: { $ref: '#/components/requestBodies/JsonObject' }
+      requestBody: { $ref: '#/components/requestBodies/OrganizationCreate' }
       responses:
         '201': { $ref: '#/components/responses/Success' }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -75,6 +79,7 @@ paths:
     get:
       tags: [organizations]
       operationId: getOrganization
+      x-owner: API/后端
       summary: Get an organization
       x-permission: organization.read
       x-data-scope: ORG_SUBTREE
@@ -83,11 +88,14 @@ paths:
       x-status: reviewed
       security: [{ bearerAuth: [] }]
       responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '200': { $ref: '#/components/responses/Success' }
         '404': { $ref: '#/components/responses/NotFound' }
     patch:
       tags: [organizations]
       operationId: updateOrganization
+      x-owner: API/后端
       summary: Update organization fields except orgCode
       x-permission: organization.manage
       x-data-scope: ORG_SUBTREE
@@ -95,17 +103,20 @@ paths:
       x-audit: true
       x-status: reviewed
       security: [{ bearerAuth: [] }]
-      requestBody: { $ref: '#/components/requestBodies/JsonObject' }
+      requestBody: { $ref: '#/components/requestBodies/OrganizationPatch' }
       responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '200': { $ref: '#/components/responses/Success' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
 
   /organizations/{id}/enable:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
     post:
       tags: [organizations]
       operationId: enableOrganization
+      x-owner: API/后端
       summary: Enable an organization
       x-permission: organization.manage
       x-data-scope: ORG_SUBTREE
@@ -114,12 +125,16 @@ paths:
       x-status: reviewed
       security: [{ bearerAuth: [] }]
       responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '200': { $ref: '#/components/responses/Success' }
         '409': { $ref: '#/components/responses/Conflict' }
   /organizations/{id}/disable:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
     post:
       tags: [organizations]
       operationId: disableOrganization
+      x-owner: API/后端
       summary: Disable an organization
       x-permission: organization.manage
       x-data-scope: ORG_SUBTREE
@@ -128,6 +143,8 @@ paths:
       x-status: reviewed
       security: [{ bearerAuth: [] }]
       responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '200': { $ref: '#/components/responses/Success' }
         '409': { $ref: '#/components/responses/Conflict' }
 
@@ -135,6 +152,7 @@ paths:
     get:
       tags: [employees]
       operationId: listEmployees
+      x-owner: API/后端
       summary: List employees in the caller scope
       x-permission: employee.read
       x-data-scope: ORG_SUBTREE
@@ -144,10 +162,13 @@ paths:
       security: [{ bearerAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
       responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '200': { $ref: '#/components/responses/Success' }
     post:
       tags: [employees]
       operationId: createEmployee
+      x-owner: API/后端
       summary: Create an employee
       x-permission: employee.manage
       x-data-scope: ORG_SUBTREE
@@ -155,8 +176,10 @@ paths:
       x-audit: true
       x-status: reviewed
       security: [{ bearerAuth: [] }]
-      requestBody: { $ref: '#/components/requestBodies/JsonObject' }
+      requestBody: { $ref: '#/components/requestBodies/EmployeeCreate' }
       responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '201': { $ref: '#/components/responses/Success' }
         '409': { $ref: '#/components/responses/Conflict' }
 
@@ -165,6 +188,7 @@ paths:
     get:
       tags: [employees]
       operationId: getEmployee
+      x-owner: API/后端
       summary: Get an employee
       x-permission: employee.read
       x-data-scope: ORG_SUBTREE
@@ -173,11 +197,14 @@ paths:
       x-status: reviewed
       security: [{ bearerAuth: [] }]
       responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '200': { $ref: '#/components/responses/Success' }
         '404': { $ref: '#/components/responses/NotFound' }
     patch:
       tags: [employees]
       operationId: updateEmployee
+      x-owner: API/后端
       summary: Update employee fields except orgId
       x-permission: employee.manage
       x-data-scope: ORG_SUBTREE
@@ -185,14 +212,18 @@ paths:
       x-audit: true
       x-status: reviewed
       security: [{ bearerAuth: [] }]
-      requestBody: { $ref: '#/components/requestBodies/JsonObject' }
+      requestBody: { $ref: '#/components/requestBodies/EmployeePatch' }
       responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '200': { $ref: '#/components/responses/Success' }
         '409': { $ref: '#/components/responses/Conflict' }
   /employees/{id}/enable:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
     post:
       tags: [employees]
       operationId: enableEmployee
+      x-owner: API/后端
       summary: Enable an employee
       x-permission: employee.manage
       x-data-scope: ORG_SUBTREE
@@ -200,11 +231,17 @@ paths:
       x-audit: true
       x-status: reviewed
       security: [{ bearerAuth: [] }]
-      responses: { '200': { $ref: '#/components/responses/Success' } }
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200': { $ref: '#/components/responses/Success' }
+        '409': { $ref: '#/components/responses/Conflict' }
   /employees/{id}/disable:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
     post:
       tags: [employees]
       operationId: disableEmployee
+      x-owner: API/后端
       summary: Disable an employee after current bindings are ended or transferred
       x-permission: employee.manage
       x-data-scope: ORG_SUBTREE
@@ -213,12 +250,16 @@ paths:
       x-status: reviewed
       security: [{ bearerAuth: [] }]
       responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '200': { $ref: '#/components/responses/Success' }
         '409': { $ref: '#/components/responses/Conflict' }
   /employees/{id}/transfer:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
     post:
       tags: [employees]
       operationId: transferEmployee
+      x-owner: API/后端
       summary: Transfer an employee between organizations
       x-permission: employee.transfer
       x-data-scope: SOURCE_AND_TARGET_ORG
@@ -226,8 +267,9 @@ paths:
       x-audit: true
       x-status: reviewed
       security: [{ bearerAuth: [] }]
-      requestBody: { $ref: '#/components/requestBodies/JsonObject' }
+      requestBody: { $ref: '#/components/requestBodies/EmployeeTransfer' }
       responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '200': { $ref: '#/components/responses/Success' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '409': { $ref: '#/components/responses/Conflict' }
@@ -236,6 +278,7 @@ paths:
     get:
       tags: [touchpoint-assets]
       operationId: listTouchpointAssets
+      x-owner: API/后端
       summary: List NFC touchpoint assets
       x-permission: touchpoint.asset.read
       x-data-scope: ASSET_SCOPE
@@ -244,10 +287,14 @@ paths:
       x-status: reviewed
       security: [{ bearerAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
-      responses: { '200': { $ref: '#/components/responses/Success' } }
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200': { $ref: '#/components/responses/Success' }
     post:
       tags: [touchpoint-assets]
       operationId: createTouchpointAsset
+      x-owner: API/后端
       summary: Create an NFC inventory asset
       x-permission: touchpoint.asset.manage
       x-data-scope: ORG_SUBTREE
@@ -255,8 +302,10 @@ paths:
       x-audit: true
       x-status: reviewed
       security: [{ bearerAuth: [] }]
-      requestBody: { $ref: '#/components/requestBodies/JsonObject' }
+      requestBody: { $ref: '#/components/requestBodies/TouchpointAssetCreate' }
       responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '201': { $ref: '#/components/responses/Success' }
         '409': { $ref: '#/components/responses/Conflict' }
 
@@ -265,6 +314,7 @@ paths:
     get:
       tags: [touchpoint-assets]
       operationId: getTouchpointAsset
+      x-owner: API/后端
       summary: Get an NFC touchpoint asset
       x-permission: touchpoint.asset.read
       x-data-scope: ASSET_SCOPE
@@ -272,10 +322,14 @@ paths:
       x-audit: false
       x-status: reviewed
       security: [{ bearerAuth: [] }]
-      responses: { '200': { $ref: '#/components/responses/Success' } }
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200': { $ref: '#/components/responses/Success' }
     patch:
       tags: [touchpoint-assets]
       operationId: updateTouchpointAsset
+      x-owner: API/后端
       summary: Update asset fields except responsibility employee
       x-permission: touchpoint.asset.manage
       x-data-scope: ASSET_SCOPE
@@ -283,12 +337,18 @@ paths:
       x-audit: true
       x-status: reviewed
       security: [{ bearerAuth: [] }]
-      requestBody: { $ref: '#/components/requestBodies/JsonObject' }
-      responses: { '200': { $ref: '#/components/responses/Success' } }
+      requestBody: { $ref: '#/components/requestBodies/TouchpointAssetPatch' }
+      responses:
+        '409': { $ref: '#/components/responses/Conflict' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200': { $ref: '#/components/responses/Success' }
   /touchpoint-assets/{id}/enable:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
     post:
       tags: [touchpoint-assets]
       operationId: enableTouchpointAsset
+      x-owner: API/后端
       summary: Enable an asset
       x-permission: touchpoint.asset.manage
       x-data-scope: ASSET_SCOPE
@@ -296,11 +356,17 @@ paths:
       x-audit: true
       x-status: reviewed
       security: [{ bearerAuth: [] }]
-      responses: { '200': { $ref: '#/components/responses/Success' } }
+      responses:
+        '409': { $ref: '#/components/responses/Conflict' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200': { $ref: '#/components/responses/Success' }
   /touchpoint-assets/{id}/disable:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
     post:
       tags: [touchpoint-assets]
       operationId: disableTouchpointAsset
+      x-owner: API/后端
       summary: Disable an asset
       x-permission: touchpoint.asset.manage
       x-data-scope: ASSET_SCOPE
@@ -308,11 +374,17 @@ paths:
       x-audit: true
       x-status: reviewed
       security: [{ bearerAuth: [] }]
-      responses: { '200': { $ref: '#/components/responses/Success' } }
+      responses:
+        '409': { $ref: '#/components/responses/Conflict' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200': { $ref: '#/components/responses/Success' }
   /touchpoint-assets/{id}/scrap:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
     post:
       tags: [touchpoint-assets]
       operationId: scrapTouchpointAsset
+      x-owner: API/后端
       summary: Permanently scrap an asset
       x-permission: touchpoint.asset.scrap
       x-data-scope: ASSET_SCOPE
@@ -321,6 +393,8 @@ paths:
       x-status: reviewed
       security: [{ bearerAuth: [] }]
       responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '200': { $ref: '#/components/responses/Success' }
         '409': { $ref: '#/components/responses/Conflict' }
 
@@ -328,6 +402,7 @@ paths:
     get:
       tags: [touchpoint-payloads]
       operationId: listTouchpointPayloads
+      x-owner: API/后端
       summary: List carrier payloads
       x-permission: touchpoint.payload.read
       x-data-scope: ASSET_SCOPE
@@ -336,10 +411,14 @@ paths:
       x-status: reviewed
       security: [{ bearerAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
-      responses: { '200': { $ref: '#/components/responses/Success' } }
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200': { $ref: '#/components/responses/Success' }
     post:
       tags: [touchpoint-payloads]
       operationId: createTouchpointPayload
+      x-owner: API/后端
       summary: Create a carrier payload
       x-permission: touchpoint.payload.manage
       x-data-scope: ASSET_SCOPE
@@ -347,13 +426,18 @@ paths:
       x-audit: true
       x-status: reviewed
       security: [{ bearerAuth: [] }]
-      requestBody: { $ref: '#/components/requestBodies/JsonObject' }
-      responses: { '201': { $ref: '#/components/responses/Success' } }
+      requestBody: { $ref: '#/components/requestBodies/TouchpointPayloadCreate' }
+      responses:
+        '409': { $ref: '#/components/responses/Conflict' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '201': { $ref: '#/components/responses/Success' }
   /touchpoint-payloads/{id}:
     parameters: [{ $ref: '#/components/parameters/Id' }]
     get:
       tags: [touchpoint-payloads]
       operationId: getTouchpointPayload
+      x-owner: API/后端
       summary: Get a carrier payload
       x-permission: touchpoint.payload.read
       x-data-scope: ASSET_SCOPE
@@ -361,10 +445,14 @@ paths:
       x-audit: false
       x-status: reviewed
       security: [{ bearerAuth: [] }]
-      responses: { '200': { $ref: '#/components/responses/Success' } }
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200': { $ref: '#/components/responses/Success' }
     patch:
       tags: [touchpoint-payloads]
       operationId: updateTouchpointPayload
+      x-owner: API/后端
       summary: Update payload fields before invalidation
       x-permission: touchpoint.payload.manage
       x-data-scope: ASSET_SCOPE
@@ -372,12 +460,18 @@ paths:
       x-audit: true
       x-status: reviewed
       security: [{ bearerAuth: [] }]
-      requestBody: { $ref: '#/components/requestBodies/JsonObject' }
-      responses: { '200': { $ref: '#/components/responses/Success' } }
+      requestBody: { $ref: '#/components/requestBodies/TouchpointPayloadPatch' }
+      responses:
+        '409': { $ref: '#/components/responses/Conflict' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200': { $ref: '#/components/responses/Success' }
   /touchpoint-payloads/{id}/enable:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
     post:
       tags: [touchpoint-payloads]
       operationId: enableTouchpointPayload
+      x-owner: API/后端
       summary: Enable a payload
       x-permission: touchpoint.payload.manage
       x-data-scope: ASSET_SCOPE
@@ -385,11 +479,17 @@ paths:
       x-audit: true
       x-status: reviewed
       security: [{ bearerAuth: [] }]
-      responses: { '200': { $ref: '#/components/responses/Success' } }
+      responses:
+        '409': { $ref: '#/components/responses/Conflict' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200': { $ref: '#/components/responses/Success' }
   /touchpoint-payloads/{id}/disable:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
     post:
       tags: [touchpoint-payloads]
       operationId: disableTouchpointPayload
+      x-owner: API/后端
       summary: Disable a payload
       x-permission: touchpoint.payload.manage
       x-data-scope: ASSET_SCOPE
@@ -397,11 +497,17 @@ paths:
       x-audit: true
       x-status: reviewed
       security: [{ bearerAuth: [] }]
-      responses: { '200': { $ref: '#/components/responses/Success' } }
+      responses:
+        '409': { $ref: '#/components/responses/Conflict' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200': { $ref: '#/components/responses/Success' }
   /touchpoint-payloads/{id}/invalidate:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
     post:
       tags: [touchpoint-payloads]
       operationId: invalidateTouchpointPayload
+      x-owner: API/后端
       summary: Invalidate a payload permanently
       x-permission: touchpoint.payload.manage
       x-data-scope: ASSET_SCOPE
@@ -409,12 +515,17 @@ paths:
       x-audit: true
       x-status: reviewed
       security: [{ bearerAuth: [] }]
-      responses: { '200': { $ref: '#/components/responses/Success' } }
+      responses:
+        '409': { $ref: '#/components/responses/Conflict' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200': { $ref: '#/components/responses/Success' }
 
   /touchpoint-assignments:
     get:
       tags: [assignments]
       operationId: listTouchpointAssignments
+      x-owner: API/后端
       summary: List current and historical assignments
       x-permission: touchpoint.assignment.read
       x-data-scope: ASSET_SCOPE
@@ -423,10 +534,14 @@ paths:
       x-status: reviewed
       security: [{ bearerAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
-      responses: { '200': { $ref: '#/components/responses/Success' } }
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200': { $ref: '#/components/responses/Success' }
     post:
       tags: [assignments]
       operationId: createTouchpointAssignment
+      x-owner: API/后端
       summary: Create an immediately effective same-organization assignment
       x-permission: touchpoint.assignment.manage
       x-data-scope: ASSET_SCOPE
@@ -434,8 +549,10 @@ paths:
       x-audit: true
       x-status: reviewed
       security: [{ bearerAuth: [] }]
-      requestBody: { $ref: '#/components/requestBodies/JsonObject' }
+      requestBody: { $ref: '#/components/requestBodies/AssignmentCreate' }
       responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '201': { $ref: '#/components/responses/Success' }
         '409': { $ref: '#/components/responses/Conflict' }
   /touchpoint-assignments/{id}:
@@ -443,6 +560,7 @@ paths:
     get:
       tags: [assignments]
       operationId: getTouchpointAssignment
+      x-owner: API/后端
       summary: Get an assignment
       x-permission: touchpoint.assignment.read
       x-data-scope: ASSET_SCOPE
@@ -450,11 +568,16 @@ paths:
       x-audit: false
       x-status: reviewed
       security: [{ bearerAuth: [] }]
-      responses: { '200': { $ref: '#/components/responses/Success' } }
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200': { $ref: '#/components/responses/Success' }
   /touchpoint-assignments/{id}/unbind:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
     post:
       tags: [assignments]
       operationId: unbindTouchpointAssignment
+      x-owner: API/后端
       summary: End an active assignment
       x-permission: touchpoint.assignment.manage
       x-data-scope: ASSET_SCOPE
@@ -462,14 +585,17 @@ paths:
       x-audit: true
       x-status: reviewed
       security: [{ bearerAuth: [] }]
-      requestBody: { $ref: '#/components/requestBodies/JsonObject' }
+      requestBody: { $ref: '#/components/requestBodies/AssignmentUnbind' }
       responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '200': { $ref: '#/components/responses/Success' }
         '409': { $ref: '#/components/responses/Conflict' }
   /touchpoint-assignments/transfer:
     post:
       tags: [assignments]
       operationId: transferTouchpointAssignment
+      x-owner: API/后端
       summary: Transfer an asset assignment across organizations
       x-permission: touchpoint.assignment.transfer
       x-data-scope: SOURCE_AND_TARGET_ORG
@@ -477,8 +603,9 @@ paths:
       x-audit: true
       x-status: reviewed
       security: [{ bearerAuth: [] }]
-      requestBody: { $ref: '#/components/requestBodies/JsonObject' }
+      requestBody: { $ref: '#/components/requestBodies/AssignmentTransfer' }
       responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '200': { $ref: '#/components/responses/Success' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '409': { $ref: '#/components/responses/Conflict' }
@@ -487,6 +614,7 @@ paths:
     get:
       tags: [access-events]
       operationId: listAccessEvents
+      x-owner: API/后端
       summary: List access events in the caller scope
       x-permission: access-event.read
       x-data-scope: ORG_SUBTREE
@@ -495,12 +623,16 @@ paths:
       x-status: reviewed
       security: [{ bearerAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
-      responses: { '200': { $ref: '#/components/responses/Success' } }
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200': { $ref: '#/components/responses/Success' }
   /access-events/{id}:
     parameters: [{ $ref: '#/components/parameters/Id' }]
     get:
       tags: [access-events]
       operationId: getAccessEvent
+      x-owner: API/后端
       summary: Get an access event
       x-permission: access-event.read
       x-data-scope: ORG_SUBTREE
@@ -508,12 +640,16 @@ paths:
       x-audit: false
       x-status: reviewed
       security: [{ bearerAuth: [] }]
-      responses: { '200': { $ref: '#/components/responses/Success' } }
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200': { $ref: '#/components/responses/Success' }
 
   /webhooks/linkforty:
     post:
       tags: [linkforty-webhooks]
       operationId: receiveLinkFortyWebhook
+      x-owner: API/后端/LinkForty联调
       summary: Receive a signed LinkForty click event
       x-permission: system_webhook
       x-data-scope: SYSTEM
@@ -548,6 +684,7 @@ paths:
     get:
       tags: [analytics]
       operationId: getAnalyticsSummary
+      x-owner: API/后端/统计
       summary: Read click, access, install and App event metrics
       x-permission: analytics.read
       x-data-scope: ORG_SUBTREE
@@ -556,16 +693,32 @@ paths:
       x-status: reviewed
       security: [{ bearerAuth: [] }]
       parameters:
-        - { in: query, name: from, required: true, schema: { type: string, format: date-time } }
-        - { in: query, name: to, required: true, schema: { type: string, format: date-time } }
+        - in: query
+          name: from
+          required: true
+          description: Inclusive timezone-aware start time; must be earlier than to.
+          schema: { type: string, format: date-time }
+        - in: query
+          name: to
+          required: true
+          description: Exclusive timezone-aware end time; must be later than from.
+          schema: { type: string, format: date-time }
+        - in: query
+          name: orgCodePrefix
+          required: false
+          description: Optional scope narrowing prefix; it cannot expand AccessContext.
+          schema: { type: string, maxLength: 64, pattern: '^1([0-9]{3})*$' }
       responses:
-        '200': { $ref: '#/components/responses/Success' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200': { $ref: '#/components/responses/AnalyticsSuccess' }
         '503': { $ref: '#/components/responses/DataSourceUnavailable' }
 
   /imports/validate:
     post:
       tags: [imports]
       operationId: validateImport
+      x-owner: API/后端/导入
       summary: Validate an import file without writing business tables
       x-permission: import.validate
       x-data-scope: ORG_SUBTREE
@@ -584,6 +737,7 @@ paths:
                 file: { type: string, format: binary }
                 templateType: { type: string, enum: [payload, assignment, asset_payload_relation] }
       responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '200': { $ref: '#/components/responses/Success' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -592,6 +746,7 @@ paths:
     get:
       tags: [exports]
       operationId: exportResource
+      x-owner: API/后端/导出
       summary: Synchronously export a whitelisted resource within the caller scope
       x-permission: export.read
       x-data-scope: ORG_SUBTREE
@@ -607,6 +762,7 @@ paths:
             type: string
             enum: [organizations, employees, touchpoint-assets, touchpoint-payloads, assignments, access-events, audit-logs, analytics]
       responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '200':
           description: UTF-8 CSV export
           headers:
@@ -620,6 +776,7 @@ paths:
     get:
       tags: [audit-logs]
       operationId: listAuditLogs
+      x-owner: API/后端
       summary: List operation logs in the caller scope
       x-permission: audit.read
       x-data-scope: ORG_SUBTREE
@@ -628,12 +785,16 @@ paths:
       x-status: reviewed
       security: [{ bearerAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
-      responses: { '200': { $ref: '#/components/responses/Success' } }
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200': { $ref: '#/components/responses/Success' }
   /audit-logs/{id}:
     parameters: [{ $ref: '#/components/parameters/Id' }]
     get:
       tags: [audit-logs]
       operationId: getAuditLog
+      x-owner: API/后端
       summary: Get an operation log
       x-permission: audit.read
       x-data-scope: ORG_SUBTREE
@@ -641,7 +802,10 @@ paths:
       x-audit: false
       x-status: reviewed
       security: [{ bearerAuth: [] }]
-      responses: { '200': { $ref: '#/components/responses/Success' } }
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200': { $ref: '#/components/responses/Success' }
 
 components:
   parameters:
@@ -659,23 +823,361 @@ components:
       name: pageSize
       schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
   requestBodies:
-    JsonObject:
+    OrganizationCreate:
       required: true
       content:
         application/json:
-          schema: { type: object, additionalProperties: true }
+          schema: { $ref: '#/components/schemas/OrganizationCreateRequest' }
+    OrganizationPatch:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/OrganizationPatchRequest' }
+    EmployeeCreate:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/EmployeeCreateRequest' }
+    EmployeePatch:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/EmployeePatchRequest' }
+    EmployeeTransfer:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/EmployeeTransferRequest' }
+    TouchpointAssetCreate:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/TouchpointAssetCreateRequest' }
+    TouchpointAssetPatch:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/TouchpointAssetPatchRequest' }
+    TouchpointPayloadCreate:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/TouchpointPayloadCreateRequest' }
+    TouchpointPayloadPatch:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/TouchpointPayloadPatchRequest' }
+    AssignmentCreate:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/AssignmentCreateRequest' }
+    AssignmentUnbind:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/AssignmentUnbindRequest' }
+    AssignmentTransfer:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/AssignmentTransferRequest' }
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    Id:
+      type: string
+      pattern: '^[0-9]+$'
+      description: BIGINT identifiers are transported as strings.
+    NullableId:
+      type: [string, 'null']
+      pattern: '^[0-9]+$'
+    Status:
+      type: integer
+      minimum: 0
+    Metadata:
+      type: object
+      additionalProperties: true
+    OrganizationCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [orgCode, orgName]
+      properties:
+        orgCode: { type: string, maxLength: 64, pattern: '^1([0-9]{3})*$' }
+        orgName: { type: string, minLength: 1, maxLength: 128 }
+        sortNo: { type: integer, default: 100 }
+        locationCode: { type: [string, 'null'], maxLength: 64 }
+        doorNo: { type: [string, 'null'], maxLength: 32 }
+        contactName: { type: [string, 'null'], maxLength: 100 }
+        contactPhone: { type: [string, 'null'], maxLength: 32, writeOnly: true }
+        description: { type: [string, 'null'], maxLength: 500 }
+    OrganizationPatchRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        orgName: { type: string, minLength: 1, maxLength: 128 }
+        sortNo: { type: integer }
+        locationCode: { type: [string, 'null'], maxLength: 64 }
+        doorNo: { type: [string, 'null'], maxLength: 32 }
+        contactName: { type: [string, 'null'], maxLength: 100 }
+        contactPhone: { type: [string, 'null'], maxLength: 32, writeOnly: true }
+        description: { type: [string, 'null'], maxLength: 500 }
+    EmployeeCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [employeeCode, employeeName, orgId]
+      properties:
+        employeeCode: { type: string, minLength: 1, maxLength: 64 }
+        employeeName: { type: string, minLength: 1, maxLength: 100 }
+        orgId: { $ref: '#/components/schemas/Id' }
+        phone: { type: [string, 'null'], maxLength: 32, writeOnly: true }
+        description: { type: [string, 'null'], maxLength: 500 }
+    EmployeePatchRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        employeeName: { type: string, minLength: 1, maxLength: 100 }
+        phone: { type: [string, 'null'], maxLength: 32, writeOnly: true }
+        description: { type: [string, 'null'], maxLength: 500 }
+    EmployeeTransferRequest:
+      type: object
+      additionalProperties: false
+      required: [targetOrgId]
+      properties:
+        targetOrgId: { $ref: '#/components/schemas/Id' }
+        reason: { type: [string, 'null'], maxLength: 500 }
+    TouchpointAssetCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [assetCode, orgId]
+      properties:
+        assetCode: { type: string, minLength: 1, maxLength: 64 }
+        assetType: { type: integer, const: 1, default: 1 }
+        carrierUid: { type: [string, 'null'], maxLength: 128 }
+        orgId: { $ref: '#/components/schemas/Id' }
+        supplierCode: { type: [string, 'null'], maxLength: 64 }
+        supplierBatchNo: { type: [string, 'null'], maxLength: 64 }
+        metadata: { $ref: '#/components/schemas/Metadata' }
+        description: { type: [string, 'null'], maxLength: 500 }
+    TouchpointAssetPatchRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        carrierUid: { type: [string, 'null'], maxLength: 128 }
+        supplierCode: { type: [string, 'null'], maxLength: 64 }
+        supplierBatchNo: { type: [string, 'null'], maxLength: 64 }
+        metadata: { $ref: '#/components/schemas/Metadata' }
+        description: { type: [string, 'null'], maxLength: 500 }
+    TouchpointPayloadCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [assetId, payloadType, payloadValue, payloadSource]
+      properties:
+        assetId: { $ref: '#/components/schemas/Id' }
+        payloadType: { type: integer, enum: [1, 2, 3, 99] }
+        payloadValue: { type: string, minLength: 1, maxLength: 2048 }
+        payloadSource: { type: integer, enum: [1, 2, 3, 4] }
+        providerType: { type: integer, enum: [1, 2, 3, 99], default: 1 }
+        linkfortyLinkId: { type: [string, 'null'], format: uuid }
+        metadata: { $ref: '#/components/schemas/Metadata' }
+    TouchpointPayloadPatchRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        payloadValue: { type: string, minLength: 1, maxLength: 2048 }
+        payloadSource: { type: integer, enum: [1, 2, 3, 4] }
+        providerType: { type: integer, enum: [1, 2, 3, 99] }
+        linkfortyLinkId: { type: [string, 'null'], format: uuid }
+        metadata: { $ref: '#/components/schemas/Metadata' }
+    AssignmentCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [assetId, employeeId]
+      properties:
+        assetId: { $ref: '#/components/schemas/Id' }
+        employeeId: { $ref: '#/components/schemas/Id' }
+    AssignmentUnbindRequest:
+      type: object
+      additionalProperties: false
+      required: [reasonType]
+      properties:
+        reasonType: { type: integer, minimum: 1 }
+        reason: { type: [string, 'null'], maxLength: 500 }
+    AssignmentTransferRequest:
+      type: object
+      additionalProperties: false
+      required: [assetId, targetEmployeeId, reasonType]
+      properties:
+        assetId: { $ref: '#/components/schemas/Id' }
+        targetEmployeeId: { $ref: '#/components/schemas/Id' }
+        reasonType: { type: integer, minimum: 1 }
+        reason: { type: [string, 'null'], maxLength: 500 }
+    Organization:
+      type: object
+      additionalProperties: false
+      required: [id, orgCode, orgName, status]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        orgCode: { type: string }
+        orgName: { type: string }
+        status: { $ref: '#/components/schemas/Status' }
+        sortNo: { type: integer }
+        locationCode: { type: [string, 'null'] }
+        doorNo: { type: [string, 'null'] }
+        contactName: { type: [string, 'null'] }
+        contactPhoneMasked: { type: [string, 'null'] }
+        description: { type: [string, 'null'] }
+    Employee:
+      type: object
+      additionalProperties: false
+      required: [id, employeeCode, employeeName, orgId, status]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        employeeCode: { type: string }
+        employeeName: { type: string }
+        orgId: { $ref: '#/components/schemas/Id' }
+        phoneMasked: { type: [string, 'null'] }
+        status: { $ref: '#/components/schemas/Status' }
+        description: { type: [string, 'null'] }
+    TouchpointAsset:
+      type: object
+      additionalProperties: false
+      required: [id, assetCode, assetType, orgId, assetStatus]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        assetCode: { type: string }
+        assetType: { type: integer, const: 1 }
+        carrierUid: { type: [string, 'null'] }
+        orgId: { $ref: '#/components/schemas/Id' }
+        employeeId: { $ref: '#/components/schemas/NullableId' }
+        assetStatus: { $ref: '#/components/schemas/Status' }
+        supplierCode: { type: [string, 'null'] }
+        supplierBatchNo: { type: [string, 'null'] }
+        metadata: { $ref: '#/components/schemas/Metadata' }
+        description: { type: [string, 'null'] }
+    TouchpointPayload:
+      type: object
+      additionalProperties: false
+      required: [id, assetId, payloadType, payloadValue, payloadSource, providerType, status]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        assetId: { $ref: '#/components/schemas/Id' }
+        orgId: { $ref: '#/components/schemas/Id' }
+        employeeId: { $ref: '#/components/schemas/NullableId' }
+        payloadType: { type: integer }
+        payloadValue: { type: string }
+        payloadSource: { type: integer }
+        providerType: { type: integer }
+        linkfortyLinkId: { type: [string, 'null'], format: uuid }
+        status: { $ref: '#/components/schemas/Status' }
+        metadata: { $ref: '#/components/schemas/Metadata' }
+    Assignment:
+      type: object
+      additionalProperties: false
+      required: [id, assetId, orgId, employeeId, assignmentStatus, effectiveFrom]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        assetId: { $ref: '#/components/schemas/Id' }
+        orgId: { $ref: '#/components/schemas/Id' }
+        employeeId: { $ref: '#/components/schemas/Id' }
+        assignmentStatus: { type: integer, enum: [1, 2] }
+        effectiveFrom: { type: string, format: date-time }
+        effectiveTo: { type: [string, 'null'], format: date-time }
+        unbindReasonType: { type: [integer, 'null'] }
+        unbindReason: { type: [string, 'null'] }
+        replayed: { type: boolean }
+    AccessEvent:
+      type: object
+      additionalProperties: false
+      required: [id, eventId, clickId, assetId, resolutionStatus, receivedAt]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        eventId: { type: string }
+        clickId: { type: string, format: uuid }
+        assetId: { $ref: '#/components/schemas/Id' }
+        bindingId: { $ref: '#/components/schemas/NullableId' }
+        orgId: { $ref: '#/components/schemas/NullableId' }
+        employeeId: { $ref: '#/components/schemas/NullableId' }
+        resolutionStatus: { type: integer, enum: [0, 1, 2, 3] }
+        resolutionReason: { type: [string, 'null'] }
+        receivedAt: { type: string, format: date-time }
+        resolvedAt: { type: [string, 'null'], format: date-time }
+    AuditLog:
+      type: object
+      additionalProperties: false
+      required: [id, traceId, operationType, objectType]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        traceId: { type: string }
+        orgId: { $ref: '#/components/schemas/NullableId' }
+        employeeId: { $ref: '#/components/schemas/NullableId' }
+        operationType: { type: integer }
+        objectType: { type: integer }
+        objectId: { $ref: '#/components/schemas/NullableId' }
+        resultCode: { type: [string, 'null'] }
+        createdAt: { type: string, format: date-time }
+    Page:
+      type: object
+      additionalProperties: false
+      required: [items, page, pageSize, total]
+      properties:
+        items:
+          type: array
+          items:
+            oneOf:
+              - { $ref: '#/components/schemas/Organization' }
+              - { $ref: '#/components/schemas/Employee' }
+              - { $ref: '#/components/schemas/TouchpointAsset' }
+              - { $ref: '#/components/schemas/TouchpointPayload' }
+              - { $ref: '#/components/schemas/Assignment' }
+              - { $ref: '#/components/schemas/AccessEvent' }
+              - { $ref: '#/components/schemas/AuditLog' }
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1 }
+        total: { type: integer, minimum: 0 }
+    AnalyticsSummaryData:
+      type: object
+      additionalProperties: false
+      required: [from, to, orgCodePrefix, clickCount, accessCount, installCount, inAppCount]
+      properties:
+        from: { type: string, format: date-time }
+        to: { type: string, format: date-time }
+        orgCodePrefix: { type: [string, 'null'], maxLength: 64 }
+        clickCount: { type: integer, minimum: 0 }
+        accessCount: { type: integer, minimum: 0 }
+        installCount: { type: integer, minimum: 0 }
+        inAppCount: { type: integer, minimum: 0 }
+      description: >-
+        Clicks use click_events.clicked_at and exclude bots; access uses
+        access_events.received_at; installs use install_events.installed_at;
+        in-app events use in_app_events.event_timestamp. All counts are
+        filtered by AccessContext and unavailable required sources return
+        DATA_SOURCE_UNAVAILABLE instead of partial data.
     SuccessEnvelope:
       type: object
       required: [requestId, data]
       properties:
         requestId: { type: string }
-        data: { type: object, nullable: true, additionalProperties: true }
+        data:
+          nullable: true
+          oneOf:
+            - { $ref: '#/components/schemas/Page' }
+            - { $ref: '#/components/schemas/Organization' }
+            - { $ref: '#/components/schemas/Employee' }
+            - { $ref: '#/components/schemas/TouchpointAsset' }
+            - { $ref: '#/components/schemas/TouchpointPayload' }
+            - { $ref: '#/components/schemas/Assignment' }
+            - { $ref: '#/components/schemas/AccessEvent' }
+            - { $ref: '#/components/schemas/AuditLog' }
+            - { $ref: '#/components/schemas/AnalyticsSummaryData' }
     ErrorDetail:
       type: object
       required: [field, reason]
@@ -712,14 +1214,23 @@ components:
             linkId: { type: string, format: uuid }
           additionalProperties: true
   responses:
+    AnalyticsSuccess:
+      description: Analytics summary with four aggregate counters
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [requestId, data]
+            additionalProperties: false
+            properties:
+              requestId: { type: string }
+              data: { $ref: '#/components/schemas/AnalyticsSummaryData' }
     Success:
       description: Successful response
       content:
         application/json: { schema: { $ref: '#/components/schemas/SuccessEnvelope' } }
     Accepted:
-      description: Accepted or idempotently replayed response
-      headers:
-        Idempotency-Replayed: { schema: { type: boolean } }
+      description: Accepted or duplicate event acknowledged; no generic response replay is provided in V1.3.2.
       content:
         application/json: { schema: { $ref: '#/components/schemas/SuccessEnvelope' } }
     BadRequest:

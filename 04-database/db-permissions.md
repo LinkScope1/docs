@@ -23,3 +23,4 @@
 - 只读账号默认拒绝未列入白名单的表、字段和任何 LinkForty 写操作。
 - 禁止 LinkForty DML、DDL 和 TRUNCATE。
 - 所有权限变更必须经过审批并记录。
+- 隔离测试库的授权脚本见银行后台仓库 `database/checks/linkforty_readonly_permissions.sql`；负向测试必须由 DBA 在 LinkForty 测试/预发布库实际执行，不能用本地 Mock 代替。

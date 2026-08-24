@@ -16,7 +16,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Install contract validation dependencies
+        run: python -m pip install --requirement requirements-ci.txt
       - name: Validate documentation structure
         run: python scripts/validate_docs.py
+      - name: Validate OpenAPI contract and module mirrors
+        run: python scripts/validate_openapi_contract.py
+      - name: Validate task governance
+        run: python scripts/validate_task_governance.py
       - name: Check whitespace errors
         run: git diff --check

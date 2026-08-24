@@ -145,6 +145,15 @@
 - [错误码清单](./error-codes.md) 是 M1–M5 唯一的错误码及 HTTP 映射来源；本文件不重复维护第二份清单。
 - 模块新增错误码时必须先更新错误码清单，并同步更新 OpenAPI 和测试，不得在 Router 中临时拼接错误结构。
 
+## 7.1 统计汇总契约
+
+`GET /api/v1/analytics/summary` 只返回 `clickCount`、`accessCount`、`installCount` 和 `inAppCount` 四项汇总计数，以及 `from`、`to` 和可选的 `orgCodePrefix`。
+
+- 点击使用 `click_events.clicked_at` 并排除机器人；访问使用 `access_events.received_at`；安装使用 `install_events.installed_at`；App 事件使用 `in_app_events.event_timestamp`。
+- `orgCodePrefix` 只能在 `AccessContext` 已授权范围内进一步收窄；不能通过请求参数扩大数据范围。
+- 任一必要数据源不可用时返回 `503 DATA_SOURCE_UNAVAILABLE`，不返回部分成功的统计结果。
+- 统计不创建本地专属表，不返回趋势数组、未经确认的统计维度或银行业务办理量。
+
 ## 8. 权限和数据范围
 
 - 每个接口必须定义功能权限和组织、员工数据范围。

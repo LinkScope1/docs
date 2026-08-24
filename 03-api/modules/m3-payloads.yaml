@@ -1,6 +1,8 @@
 # M3：载体内容。org_id和employee_id由资产同步，禁止客户端指定。
 payloads:
+  x-canonical-path: /touchpoint-payloads
   get:
+    operationId: listTouchpointPayloads
     tags: [touchpoint-payloads]
     summary: 分页查询载体内容
     x-status: reviewed
@@ -11,6 +13,7 @@ payloads:
     x-audit: false
     responses: {}
   post:
+    operationId: createTouchpointPayload
     tags: [touchpoint-payloads]
     summary: 创建载体内容
     x-status: reviewed
@@ -22,7 +25,9 @@ payloads:
     responses: {}
 
 payloadById:
+  x-canonical-path: /touchpoint-payloads/{id}
   get:
+    operationId: getTouchpointPayload
     tags: [touchpoint-payloads]
     summary: 查询载体内容详情
     x-status: reviewed
@@ -33,6 +38,7 @@ payloadById:
     x-audit: false
     responses: {}
   patch:
+    operationId: updateTouchpointPayload
     tags: [touchpoint-payloads]
     summary: 修改载体内容基本信息
     x-status: reviewed
@@ -44,7 +50,9 @@ payloadById:
     responses: {}
 
 payloadEnable:
+  x-canonical-path: /touchpoint-payloads/{id}/enable
   post:
+    operationId: enableTouchpointPayload
     tags: [touchpoint-payloads]
     summary: 启用载体内容
     x-status: reviewed
@@ -56,7 +64,9 @@ payloadEnable:
     responses: {}
 
 payloadDisable:
+  x-canonical-path: /touchpoint-payloads/{id}/disable
   post:
+    operationId: disableTouchpointPayload
     tags: [touchpoint-payloads]
     summary: 停用载体内容
     x-status: reviewed
@@ -68,7 +78,9 @@ payloadDisable:
     responses: {}
 
 payloadInvalidate:
+  x-canonical-path: /touchpoint-payloads/{id}/invalidate
   post:
+    operationId: invalidateTouchpointPayload
     tags: [touchpoint-payloads]
     summary: 将载体内容标记为失效
     x-status: reviewed

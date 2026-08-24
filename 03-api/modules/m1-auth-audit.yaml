@@ -1,6 +1,8 @@
 # M1：后台访问与操作审计。以下为Path Item片段，由总OpenAPI逐项引用。
 authMe:
+  x-canonical-path: /auth/me
   get:
+    operationId: getAuthMe
     tags: [auth]
     summary: 查询当前访问上下文
     x-status: reviewed
@@ -12,7 +14,9 @@ authMe:
     responses: {}
 
 auditLogs:
+  x-canonical-path: /audit-logs
   get:
+    operationId: listAuditLogs
     tags: [audit-logs]
     summary: 分页查询操作日志
     x-status: reviewed
@@ -24,7 +28,9 @@ auditLogs:
     responses: {}
 
 auditLogById:
+  x-canonical-path: /audit-logs/{id}
   get:
+    operationId: getAuditLog
     tags: [audit-logs]
     summary: 查询操作日志详情
     x-status: reviewed

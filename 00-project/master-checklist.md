@@ -13,6 +13,40 @@
 - M4 绑定、解绑和调拨已补齐 Router → Service → Repository 的本地事务边界，继续使用既有 OpenAPI 路径和 7 张银行表；真实 M2 主数据、PostgreSQL 并发和发布证据仍未关闭。
 - 本次自动化验证已通过：银行后端 93 项通过；Ruff/mypy、前端 lint/typecheck/build、LinkForty Core 188 项测试和文档校验均通过。Docker 中的银行 PostgreSQL/Redis 与 LinkForty Core/Redis 健康检查已通过，但银行数据库当前 revision 为 `0002`、`bank_linkforty_ro` 角色不存在，且银行后台/Worker 未在该 Compose 环境运行；相关迁移、只读权限、队列隔离和生产配置证据不关闭。
 - LinkForty 本地真实 API 的重复请求验证发现：相同 `Idempotency-Key` 产生两个不同 Link，临时测试资源已清理；该结果作为 V1.3.2 已知缺陷记录，不作为幂等通过，也不创建 V1.4 修复任务。正式字段、TLS/ACL 和只读权限门禁仍待外部证据。
+- 本次剩余阻塞实施已补齐 M2 组织/员工生命周期、同步导入预校验、同步白名单导出、analytics 汇总和 LinkForty 固定只读 Adapter；真实只读账号/负向测试、隔离环境、性能报告、生产配置、备份恢复、回滚和审批仍是外部门禁。
+- 性能/发布默认阈值已冻结：列表/事件/统计/同步导出 P95 为 500ms/1s/2s/5s，错误率 <1%，队列积压 <100，观察 30 分钟；P99 仅记录。未完成这些证据不得关闭发布任务。
+
+## Epic/Issue/任务索引
+
+本索引是任务治理入口，不复制单项任务状态，也不构成阻塞收敛矩阵。任务状态、负责人、依赖、产出物和验收条件仍以[详细开发任务清单](./development-task-checklist.md)为准。
+
+- Issue #7：承载 V1.3.2 当前任务，包括 API、M1～M5、横向能力、前端、测试、环境和发布门禁；当前仍为内部开发/测试基线，不因索引建立而关闭外部阻塞。
+- Issue #9：承载 Casdoor 真实认证与权限延期任务 `P0-CAS-001～006`、`DEC-CAS-001～006`，目标版本 V1.4。
+- Issue #10：承载 NFC 真机、硬件和 SDK 延期任务 `P0-NFC-001～002`、`DEC-NFC-001～002`，目标版本 V1.4。
+
+| Epic ID | Issue | 任务 ID/范围 | 主负责人 | 前置依赖 | 阶段验收文档 | 版本边界 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `EPIC-CHARTER-001` | #7 | `P0-BASE-001` | 架构师 | 关联任务依赖列 | `project-charter.md` | V1.3.2 |
+| `EPIC-P0-001` | #7 | `R-P3-001` | 产品/架构 | 关联任务依赖列 | `master-checklist.md` | V1.3.2 |
+| `EPIC-P1-001` | #7 | `R-P3-001` | 产品/架构 | 关联任务依赖列 | `master-checklist.md` | V1.3.2 |
+| `EPIC-API-001` | #7 | `DEC-IDEMP-001`、`DEC-ANL-001`、`F-COM-004` | API/后端 | 关联任务依赖列 | `../03-api/openapi.yaml`、`../08-testing/acceptance-matrix.md` | V1.3.2 |
+| `EPIC-API-002` | #7 | `T-SEC-002` | API/安全 | 关联任务依赖列 | `../05-security/permission-matrix.md` | V1.3.2 |
+| `EPIC-DATA-001` | #7 | `P0-DB-002`、`DEC-DATA-001`、`DEC-DATA-002` | 架构/DBA | 关联任务依赖列 | `../04-database/data-dictionary.md` | V1.3.2 |
+| `EPIC-SEC-001` | #7；Casdoor 子集→#9 | `P0-CAS-005`、`DEC-CAS-005` | 安全/平台 | 关联任务依赖列 | `../05-security/permission-matrix.md` | V1.3.2；Casdoor V1.4 |
+| `EPIC-SCHEMA-001` | #7 | `T-UNIT-001` | 后端/测试 | 关联任务依赖列 | `../08-testing/test-strategy.md` | V1.3.2 |
+| `EPIC-REF-001` | #7 | `T-API-001` | 后端/测试 | 关联任务依赖列 | `../08-testing/acceptance-matrix.md` | V1.3.2 |
+| `EPIC-A-M2-001` | #7 | `X-IMP-003`、`T-UNIT-002` | 后端/M2 | 关联任务依赖列 | `../01-product/business-rules.md` | V1.3.2 |
+| `EPIC-A-M4-001` | #7 | `T-UNIT-002` | 后端/M4 | 关联任务依赖列 | `../01-product/state-machines.md` | V1.3.2 |
+| `EPIC-B-M3-001` | #7 | `X-IMP-003`、`T-UNIT-002`、`R-P3-004` | 后端/M3 | 关联任务依赖列 | `../03-api/openapi.yaml` | V1.3.2；NFC 真机 V1.4 |
+| `EPIC-B-M5-001` | #7 | `T-UNIT-002`、`R-P3-004` | 后端/M5 | 关联任务依赖列 | `../03-api/openapi.yaml`、`../08-testing/acceptance-matrix.md` | V1.3.2 |
+| `EPIC-IMP-001` | #7 | `DEC-IMP-001` | 产品/后端 | 关联任务依赖列 | `../03-api/openapi.yaml` | V1.3.2；异步执行 V1.4 |
+| `EPIC-X-IMP-001` | #7 | `R-P3-004` | 后端/运维 | 关联任务依赖列 | `../09-deployment/release-process.md` | V1.3.2；异步执行 V1.4 |
+| `EPIC-EXP-001` | #7 | `DEC-EXP-001` | 产品/安全 | 关联任务依赖列 | `../03-api/openapi.yaml` | V1.3.2 |
+| `EPIC-X-EXP-001` | #7 | `R-P3-004` | 后端/运维 | 关联任务依赖列 | `../09-deployment/release-process.md` | V1.3.2；异步导出 V1.4 |
+| `EPIC-FRONTEND-001` | #7 | `F-COM-006`、`F-M1-001`、`F-M1-002`、`F-M2-001`、`F-M2-002`、`F-M3-001`、`F-M3-002`、`F-M4-001`、`F-M5-001`、`F-EXP-001`、`F-E2E-001`、`F-PERF-001`、`T-FE-001`、`T-FE-002` | 前端 | 关联任务依赖列 | `../08-testing/acceptance-matrix.md` | V1.3.2；真实 Casdoor/NFC V1.4 |
+| `EPIC-RELEASE-001` | #7 | `DEC-PERF-001`、`DEC-REL-001` | 运维/发布 | 关联任务依赖列 | `../09-deployment/release-process.md`、`../09-deployment/rollback.md` | V1.3.2 |
+| `EPIC-M2-001` | #7 | `DEC-M4-001` | 产品/M2 | 关联任务依赖列 | `../01-product/business-rules.md` | V1.3.2 |
+| `EPIC-M4-001` | #7 | `DEC-M4-004` | 产品/M4 | 关联任务依赖列 | `../01-product/state-machines.md` | V1.3.2；预约绑定 V1.4 |
 
 ## P0：开发前必须完成
 
@@ -28,8 +62,9 @@
 - [ ] 确认数据库角色权限（本地单账号配置可用于测试；生产权限分离及 LinkForty 只读账号证据待补）
 - [ ] 冻结 V1.3.2 物理模型、V3.1 模块方案、权限矩阵、API 规范、7 张表数据字典和状态机（见 [V1.3.2-FREEZE-001](./v1.3.2-freeze-001.md)；外部证据门禁未闭合）
 - [x] 配置 Git 分支保护、PR 模板和 CI 基础检查
-- [ ] 为每个 Issue 关联[详细开发任务清单](./development-task-checklist.md)中的任务 ID，并确认任务状态不是“阻塞待确认”或“延期”
-- [ ] 创建 Issue，明确目标、范围、验收、负责人、依赖、风险和回滚方案
+- [x] 在现有 Issue #7、#9、#10 中关联[详细开发任务清单](./development-task-checklist.md)中的任务 ID；保留已明确的阻塞和延期状态，不把它们误标为完成
+- [x] 使用现有 Issue #7、#9、#10 维护目标、范围、验收、负责人、依赖、风险和回滚方案；不为子任务新建 Issue
+- [x] 建立 Epic/Issue/任务治理索引并接入自动校验
 - [ ] 完成 API、数据库、权限、外部集成、幂等、测试和文档影响分析
 - [ ] 从最新 `main` 创建带任务号的短期分支
 
