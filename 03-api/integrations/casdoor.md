@@ -18,11 +18,11 @@
 ## 后端行为
 
 1. 获取并缓存 JWKS。
-2. 校验 JWT 签名、issuer、audience、subject 和过期时间。
-3. 读取 `employee_code`。
-4. 查询 `employees.employee_code`。
-5. 员工停用时拒绝访问。
-6. 使用 Casdoor 功能角色和银行业务表范围字段完成授权。
+2. 未知 `kid` 触发 JWKS 刷新；缓存只保存公钥，不保存私钥。
+3. 校验 JWT 签名、issuer、audience、subject 和过期时间；默认时钟偏差为 60 秒。
+4. 读取非空字符串 `employee_code`。
+5. 每次请求查询 `employees.employee_code`，不存在、停用、Claim 缺失或类型错误均拒绝访问。
+6. 使用 Casdoor 功能角色和银行业务表范围字段完成授权；不把角色复制到本地 IAM。
 
 ## 禁止
 

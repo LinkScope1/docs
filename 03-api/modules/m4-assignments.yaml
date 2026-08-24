@@ -1,0 +1,58 @@
+# M4：触点载体员工绑定生命周期。普通绑定限同组织；跨组织必须使用 transfer 命令。
+assignments:
+  get:
+    tags: [touchpoint-assignments]
+    summary: 分页查询绑定历史
+    x-status: reviewed
+    x-owner: API/后端
+    x-permission: touchpoint.assignment.read
+    x-data-scope: ASSET_SCOPE
+    x-idempotency: none
+    x-audit: false
+    responses: {}
+  post:
+    tags: [touchpoint-assignments]
+    summary: 建立同组织绑定
+    x-status: reviewed
+    x-owner: API/后端
+    x-permission: touchpoint.assignment.manage
+    x-data-scope: ASSET_SCOPE
+    x-idempotency: assignment_command
+    x-audit: true
+    responses: {}
+
+assignmentById:
+  get:
+    tags: [touchpoint-assignments]
+    summary: 查询绑定详情
+    x-status: reviewed
+    x-owner: API/后端
+    x-permission: touchpoint.assignment.read
+    x-data-scope: ASSET_SCOPE
+    x-idempotency: none
+    x-audit: false
+    responses: {}
+
+assignmentUnbind:
+  post:
+    tags: [touchpoint-assignments]
+    summary: 立即解绑
+    x-status: reviewed
+    x-owner: API/后端
+    x-permission: touchpoint.assignment.manage
+    x-data-scope: ASSET_SCOPE
+    x-idempotency: assignment_command
+    x-audit: true
+    responses: {}
+
+assignmentTransfer:
+  post:
+    tags: [touchpoint-assignments]
+    summary: 跨组织转交绑定
+    x-status: reviewed
+    x-owner: API/后端
+    x-permission: touchpoint.assignment.transfer
+    x-data-scope: SOURCE_AND_TARGET_ORG
+    x-idempotency: assignment_command
+    x-audit: true
+    responses: {}

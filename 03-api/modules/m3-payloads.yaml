@@ -3,21 +3,21 @@ payloads:
   get:
     tags: [touchpoint-payloads]
     summary: 分页查询载体内容
-    x-status: planned
-    x-owner: 待确认
+    x-status: reviewed
+    x-owner: API/后端
     x-permission: touchpoint.payload.read
-    x-data-scope: org_id_and_employee_id
-    x-idempotency: false
+    x-data-scope: ASSET_SCOPE
+    x-idempotency: none
     x-audit: false
     responses: {}
   post:
     tags: [touchpoint-payloads]
     summary: 创建载体内容
-    x-status: planned
-    x-owner: 待确认
+    x-status: reviewed
+    x-owner: API/后端
     x-permission: touchpoint.payload.manage
-    x-data-scope: asset_scope
-    x-idempotency: true
+    x-data-scope: ASSET_SCOPE
+    x-idempotency: domain_key_payload
     x-audit: true
     responses: {}
 
@@ -25,21 +25,21 @@ payloadById:
   get:
     tags: [touchpoint-payloads]
     summary: 查询载体内容详情
-    x-status: planned
-    x-owner: 待确认
+    x-status: reviewed
+    x-owner: API/后端
     x-permission: touchpoint.payload.read
-    x-data-scope: org_id_and_employee_id
-    x-idempotency: false
+    x-data-scope: ASSET_SCOPE
+    x-idempotency: none
     x-audit: false
     responses: {}
   patch:
     tags: [touchpoint-payloads]
     summary: 修改载体内容基本信息
-    x-status: planned
-    x-owner: 待确认
+    x-status: reviewed
+    x-owner: API/后端
     x-permission: touchpoint.payload.manage
-    x-data-scope: org_id_and_employee_id
-    x-idempotency: true
+    x-data-scope: ASSET_SCOPE
+    x-idempotency: domain_key_object_version
     x-audit: true
     responses: {}
 
@@ -47,11 +47,11 @@ payloadEnable:
   post:
     tags: [touchpoint-payloads]
     summary: 启用载体内容
-    x-status: planned
-    x-owner: 待确认
+    x-status: reviewed
+    x-owner: API/后端
     x-permission: touchpoint.payload.manage
-    x-data-scope: org_id_and_employee_id
-    x-idempotency: true
+    x-data-scope: ASSET_SCOPE
+    x-idempotency: domain_key_state_command
     x-audit: true
     responses: {}
 
@@ -59,11 +59,11 @@ payloadDisable:
   post:
     tags: [touchpoint-payloads]
     summary: 停用载体内容
-    x-status: planned
-    x-owner: 待确认
+    x-status: reviewed
+    x-owner: API/后端
     x-permission: touchpoint.payload.manage
-    x-data-scope: org_id_and_employee_id
-    x-idempotency: true
+    x-data-scope: ASSET_SCOPE
+    x-idempotency: domain_key_state_command
     x-audit: true
     responses: {}
 
@@ -71,10 +71,10 @@ payloadInvalidate:
   post:
     tags: [touchpoint-payloads]
     summary: 将载体内容标记为失效
-    x-status: planned
-    x-owner: 待确认
+    x-status: reviewed
+    x-owner: API/后端
     x-permission: touchpoint.payload.manage
-    x-data-scope: org_id_and_employee_id
-    x-idempotency: true
+    x-data-scope: ASSET_SCOPE
+    x-idempotency: domain_key_state_command
     x-audit: true
     responses: {}

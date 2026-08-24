@@ -20,6 +20,7 @@
 | `EXTERNAL_API_ERROR` | 502 | 外部 API 返回失败 |
 | `DATA_SOURCE_UNAVAILABLE` | 503 | 数据源暂时不可用 |
 | `EXPORT_NOT_ALLOWED` | 403 | 当前人员无导出权限 |
+| `EXPORT_LIMIT_EXCEEDED` | 413 | 同步导出超过 10 MiB 或 100,000 行限制 |
 | `NOT_IMPLEMENTED` | 501 | 已定义但尚未实现的工程占位能力 |
 | `INTERNAL_ERROR` | 500 | 未预期的系统错误 |
 
