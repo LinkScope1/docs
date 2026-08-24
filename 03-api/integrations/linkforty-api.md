@@ -32,7 +32,7 @@ API Credential：不适用
 
 - 创建 Link。
 - 查询 Link。
-- 查询点击事实。
+- 查询点击分析事实。
 - 网络访问方式和安全例外。
 - 请求超时。
 - 错误码。
@@ -48,6 +48,7 @@ API Credential：不适用
 | --- | --- | --- | --- |
 | 创建 Link | POST | `/api/links` | 银行侧携带稳定 `Idempotency-Key` 并按现有策略重试；V1.3.2 Core 不保证同 Key 去重，重复 Link 属于已知风险 |
 | 查询 Link | GET | `/api/links/{id}` | 只保存和返回 Link UUID 及已批准字段；不读取外部表 |
+| 查询点击分析 | GET | `/api/analytics/links/{id}?days={n}` | V1.3.2 只通过 API 读取 Core 已提供的点击分析；安装/App 聚合接口未确认时返回数据源不可用 |
 
 创建请求的重试规则固定为：4xx 不重试；429、5xx、连接超时按指数退避，最多 3 次；TLS、ACL、DNS 和证书错误不盲目重试。每次调用记录 `trace_id`、外部请求 ID、状态和耗时，不把凭据或完整敏感响应写入日志。
 
@@ -60,6 +61,7 @@ API Credential：不适用
 - 外部成功、失败、重试和补偿结果必须通过 `trace_id`、任务日志和 M1 的 `operation_logs` 追踪，不在 Payload 中保存外部同步状态。
 - 不允许业务模块直接拼装 HTTP 请求。
 - 不允许直接修改 LinkForty 表。
+- V1.3.2 不配置或使用 `bank_linkforty_ro`；数据库只读账号、SQL 授权和负向测试延期至 V1.4。
 
 ## 仍待确认的正式契约
 

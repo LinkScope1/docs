@@ -345,8 +345,8 @@ main
 
 | 工作包 | 负责模块 | 主要数据表 | 交接内容 |
 | --- | --- | --- | --- |
-| A | M1、M2、M4 | operation_logs、organization_units、employees、touchpoint_employee_assignments | 访问上下文、审计、组织员工主数据和绑定生命周期；向 B 提供员工/组织校验与审计上下文。 |
-| B | M3、M5 | touchpoint_assets、touchpoint_payloads、access_events | NFC 资产内容、LinkForty 集成和访问事件；向 A 提供资产状态、逻辑引用和事件反馈。 |
+| A | M1～M3 | operation_logs、organization_units、employees、touchpoint_assets、touchpoint_payloads | 访问上下文、审计、组织员工主数据、NFC 资产和 Payload；向 B 提供组织/员工/资产/Payload 校验、外部 Link 引用和审计上下文。 |
+| B | M4～M5 | touchpoint_employee_assignments、access_events | 绑定、解绑、调拨、事件幂等、资产关联和访问事件查询；向 A 的审计能力写入绑定及事件处理结果。 |
 
 - main 禁止直接提交；每个 PR 聚焦一个业务模块或一个公共变更；API、迁移、权限、幂等和公共代码必须双人审核。
 
@@ -356,9 +356,9 @@ main
 
 | 阶段 | 工作包 A | 工作包 B | 共同验收 |
 | --- | --- | --- | --- |
-| 第一阶段 | M1 审计基础、M2 主数据 | M3 资产与载体内容 | 身份、数据范围、资产和审计字段契约。 |
-| 第二阶段 | M4 绑定生命周期 | M5 事件幂等与关联 | 资产—绑定—事件关联链路。 |
-| 第三阶段 | 补齐范围、权限和审计检查 | 补齐外部失败、重试和补偿 | 跨模块权限、幂等、补偿和文档验收。 |
+| 第一阶段 | M1～M3 基础能力、主数据和触点资产 | 准备 M4～M5 接口和依赖 | 身份、范围、资产、Payload 和审计字段契约。 |
+| 第二阶段 | 提供稳定的组织、员工、资产和 Payload 基础 | M4～M5 绑定生命周期、事件幂等与关联 | 资产—绑定—事件关联链路。 |
+| 第三阶段 | 共同补齐权限、审计和边界检查 | 共同补齐外部失败、重试和补偿 | 跨模块权限、幂等、补偿和文档验收。 |
 
 - FastAPI、React、PostgreSQL、Redis、Celery、Alembic 和 CI 均可启动并通过基础检查。
 

@@ -1,6 +1,8 @@
 # M3：NFC实物资产。责任员工变化必须通过M4绑定流程。
 assets:
+  x-canonical-path: /touchpoint-assets
   get:
+    operationId: listTouchpointAssets
     tags: [touchpoint-assets]
     summary: 分页查询触点资产
     x-status: reviewed
@@ -11,6 +13,7 @@ assets:
     x-audit: false
     responses: {}
   post:
+    operationId: createTouchpointAsset
     tags: [touchpoint-assets]
     summary: 创建库存资产
     x-status: reviewed
@@ -22,7 +25,9 @@ assets:
     responses: {}
 
 assetById:
+  x-canonical-path: /touchpoint-assets/{id}
   get:
+    operationId: getTouchpointAsset
     tags: [touchpoint-assets]
     summary: 查询资产详情
     x-status: reviewed
@@ -33,6 +38,7 @@ assetById:
     x-audit: false
     responses: {}
   patch:
+    operationId: updateTouchpointAsset
     tags: [touchpoint-assets]
     summary: 修改资产基本信息
     x-status: reviewed
@@ -44,7 +50,9 @@ assetById:
     responses: {}
 
 assetEnable:
+  x-canonical-path: /touchpoint-assets/{id}/enable
   post:
+    operationId: enableTouchpointAsset
     tags: [touchpoint-assets]
     summary: 启用资产
     x-status: reviewed
@@ -56,7 +64,9 @@ assetEnable:
     responses: {}
 
 assetDisable:
+  x-canonical-path: /touchpoint-assets/{id}/disable
   post:
+    operationId: disableTouchpointAsset
     tags: [touchpoint-assets]
     summary: 停用资产
     x-status: reviewed
@@ -68,7 +78,9 @@ assetDisable:
     responses: {}
 
 assetScrap:
+  x-canonical-path: /touchpoint-assets/{id}/scrap
   post:
+    operationId: scrapTouchpointAsset
     tags: [touchpoint-assets]
     summary: 永久作废资产
     x-status: reviewed

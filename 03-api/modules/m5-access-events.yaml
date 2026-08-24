@@ -1,6 +1,8 @@
 # M5：访问事件接入与关联。Webhook 先验签和 event_id 幂等，再解析本地 asset_id。
 accessEvents:
+  x-canonical-path: /access-events
   get:
+    operationId: listAccessEvents
     tags: [access-events]
     summary: 分页查询访问事件
     x-status: reviewed
@@ -12,7 +14,9 @@ accessEvents:
     responses: {}
 
 accessEventById:
+  x-canonical-path: /access-events/{id}
   get:
+    operationId: getAccessEvent
     tags: [access-events]
     summary: 查询访问事件详情
     x-status: reviewed
@@ -24,7 +28,9 @@ accessEventById:
     responses: {}
 
 accessEventWebhook:
+  x-canonical-path: /webhooks/linkforty
   post:
+    operationId: receiveLinkFortyWebhook
     tags: [webhooks]
     summary: 接收 LinkForty 访问事件 Webhook
     x-status: reviewed

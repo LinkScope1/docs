@@ -145,6 +145,16 @@
 - [错误码清单](./error-codes.md) 是 M1–M5 唯一的错误码及 HTTP 映射来源；本文件不重复维护第二份清单。
 - 模块新增错误码时必须先更新错误码清单，并同步更新 OpenAPI 和测试，不得在 Router 中临时拼接错误结构。
 
+## 7.1 统计汇总契约
+
+`GET /api/v1/analytics/summary` 只返回 `clickCount`、`accessCount`、`installCount` 和 `inAppCount` 四项汇总计数，以及 `from`、`to` 和可选的 `orgCodePrefix`。
+
+- 访问使用本地 `access_events.received_at`；LinkForty 点击统计通过 API 获取，Core 负责排除机器人。安装和 App 事件仍沿用目标事件时间口径，但当前 Core API 未提供对应聚合读取接口，不能通过数据库直连补齐。
+- `orgCodePrefix` 只能在 `AccessContext` 已授权范围内进一步收窄；不能通过请求参数扩大数据范围。
+- 任一必要数据源不可用时返回 `503 DATA_SOURCE_UNAVAILABLE`，不返回部分成功的统计结果。
+- 统计不创建本地专属表，不返回趋势数组、未经确认的统计维度或银行业务办理量。
+- V1.3.2 只允许 API-only 外部读取；LinkForty 数据库只读账号、SQL 白名单和负向权限测试延期至 V1.4。
+
 ## 8. 权限和数据范围
 
 - 每个接口必须定义功能权限和组织、员工数据范围。

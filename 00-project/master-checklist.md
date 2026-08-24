@@ -9,10 +9,45 @@
 - LinkForty 负责人已确认正式签名、字段和重试契约（2026-08-21）；P0 Webhook 门禁和 M5-001 具备关闭条件。
 - Webhook Secret provisioning 方案已确认：配置服务一次性调用 Core 现有管理 API 获取 Secret；配置服务联调、网络访问审计和生产配置接入仍待实施与验收。
 - Casdoor 真实认证/权限外部联调和 NFC 真机/SDK/写卡读回核验延期至 V1.4；V1.3.2 仅保留 `AccessContext`、`MockAccessContextProvider`、`NfcDevice` 和 `MockNfcDevice` 的开发/测试边界，未配置真实认证的生产环境必须拒绝访问，因此 V1.3.2 不能作为生产版本发布。
-- V1.3.2 内部数据语义、幂等边界、M4 规则、导入/导出范围和统计口径已按冻结记录收敛；LinkForty API/只读权限、真实数据库/Redis 环境和发布证据仍需外部证据。Core 不处理 `Idempotency-Key` 的重复 Link 行为作为 V1.3.2 已知风险接受，不标记为幂等通过。
+- V1.3.2 内部数据语义、幂等边界、M4 规则、导入/导出范围和统计口径已按冻结记录收敛；LinkForty API、真实数据库/Redis 环境和发布证据仍需外部证据。LinkForty 数据库只读账号、授权和负向测试明确延期至 V1.4；Core 不处理 `Idempotency-Key` 的重复 Link 行为作为 V1.3.2 已知风险接受，不标记为幂等通过。
 - M4 绑定、解绑和调拨已补齐 Router → Service → Repository 的本地事务边界，继续使用既有 OpenAPI 路径和 7 张银行表；真实 M2 主数据、PostgreSQL 并发和发布证据仍未关闭。
-- 本次自动化验证已通过：银行后端 93 项通过；Ruff/mypy、前端 lint/typecheck/build、LinkForty Core 188 项测试和文档校验均通过。Docker 中的银行 PostgreSQL/Redis 与 LinkForty Core/Redis 健康检查已通过，但银行数据库当前 revision 为 `0002`、`bank_linkforty_ro` 角色不存在，且银行后台/Worker 未在该 Compose 环境运行；相关迁移、只读权限、队列隔离和生产配置证据不关闭。
-- LinkForty 本地真实 API 的重复请求验证发现：相同 `Idempotency-Key` 产生两个不同 Link，临时测试资源已清理；该结果作为 V1.3.2 已知缺陷记录，不作为幂等通过，也不创建 V1.4 修复任务。正式字段、TLS/ACL 和只读权限门禁仍待外部证据。
+- 本次自动化验证已通过：银行后端 94 项通过、1 项跳过；Ruff/mypy、前端 lint/typecheck/build、LinkForty Core 188 项测试和文档校验均通过。Docker 中的银行 PostgreSQL/Redis 与 LinkForty Core/Redis 健康检查已通过，但银行数据库当前 revision 为 `0002`，且银行后台/Worker 未在该 Compose 环境运行；相关迁移、队列隔离和生产配置证据不关闭。V1.3.2 不依赖 `bank_linkforty_ro`。
+- LinkForty 本地真实 API 的重复请求验证发现：相同 `Idempotency-Key` 产生两个不同 Link，临时测试资源已清理；该结果作为 V1.3.2 已知缺陷记录，不作为幂等通过，也不创建 V1.4 修复任务。正式字段、TLS/ACL 和 API 生产安全例外仍待外部证据。
+- 本次剩余阻塞实施已补齐 M2 组织/员工生命周期、同步导入预校验、同步白名单导出和 API-only analytics 边界；真实安装/App 聚合 API、隔离环境、性能报告、生产配置、备份恢复、回滚和审批仍是外部门禁。LinkForty 数据库只读脚本仅为 V1.4 准备。
+- 性能/发布默认阈值已冻结：列表/事件/统计/同步导出 P95 为 500ms/1s/2s/5s，错误率 <1%，队列积压 <100，观察 30 分钟；P99 仅记录。未完成这些证据不得关闭发布任务。
+- 当前 9 个阻塞任务 `P1-ENV-004`、`X-ANL-004`、`X-WORK-003`、`T-PERF-001`、`R-P3-007`、`R-P5-001`、`R-P5-004`、`R-P5-008`、`R-P5-010` 均保留 `阻塞待确认`。详细负责人、依赖、证据文件、执行入口和关闭条件已写入[详细开发任务清单](./development-task-checklist.md)；本阶段只补齐治理入口，不以 Mock、代码骨架、API 草稿或文档替代外部证据。隔离环境、性能、生产配置、发布门禁和观察窗口进入对应集成/发布阶段后执行，完成前 V1.3.2 不得生产发布。
+
+## Epic/Issue/任务索引
+
+本索引是任务治理入口，不复制单项任务状态，也不构成阻塞收敛矩阵。任务状态、负责人、依赖、产出物和验收条件仍以[详细开发任务清单](./development-task-checklist.md)为准。
+
+- Issue #7：承载 V1.3.2 当前任务，包括 API、M1～M5、横向能力、前端、测试、环境和发布门禁；当前仍为内部开发/测试基线，不因索引建立而关闭外部阻塞。
+- Issue #9：承载 Casdoor 真实认证与权限延期任务 `P0-CAS-001～006`、`DEC-CAS-001～006`，目标版本 V1.4。
+- Issue #10：承载 NFC 真机、硬件和 SDK 延期任务 `P0-NFC-001～002`、`DEC-NFC-001～002`，目标版本 V1.4。
+
+| Epic ID | Issue | 任务 ID/范围 | 主负责人 | 前置依赖 | 阶段验收文档 | 版本边界 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `EPIC-CHARTER-001` | #7 | `P0-BASE-001` | 架构师 | 关联任务依赖列 | `project-charter.md` | V1.3.2 |
+| `EPIC-P0-001` | #7 | `R-P3-001` | 产品/架构 | 关联任务依赖列 | `master-checklist.md` | V1.3.2 |
+| `EPIC-P1-001` | #7 | `R-P3-001` | 产品/架构 | 关联任务依赖列 | `master-checklist.md` | V1.3.2 |
+| `EPIC-API-001` | #7 | `DEC-IDEMP-001`、`DEC-ANL-001`、`F-COM-004` | API/后端 | 关联任务依赖列 | `../03-api/openapi.yaml`、`../08-testing/acceptance-matrix.md` | V1.3.2 |
+| `EPIC-API-002` | #7 | `T-SEC-002` | API/安全 | 关联任务依赖列 | `../05-security/permission-matrix.md` | V1.3.2 |
+| `EPIC-DATA-001` | #7 | `P0-DB-002`、`DEC-DATA-001`、`DEC-DATA-002` | 架构/DBA | 关联任务依赖列 | `../04-database/data-dictionary.md` | V1.3.2 |
+| `EPIC-SEC-001` | #7；Casdoor 子集→#9 | `P0-CAS-005`、`DEC-CAS-005` | 安全/平台 | 关联任务依赖列 | `../05-security/permission-matrix.md` | V1.3.2；Casdoor V1.4 |
+| `EPIC-SCHEMA-001` | #7 | `T-UNIT-001` | 后端/测试 | 关联任务依赖列 | `../08-testing/test-strategy.md` | V1.3.2 |
+| `EPIC-REF-001` | #7 | `T-API-001` | 后端/测试 | 关联任务依赖列 | `../08-testing/acceptance-matrix.md` | V1.3.2 |
+| `EPIC-A-M2-001` | #7 | `X-IMP-003`、`T-UNIT-002` | 后端/M2 | 关联任务依赖列 | `../01-product/business-rules.md` | V1.3.2 |
+| `EPIC-A-M3-001` | #7 | `X-IMP-003`、`T-UNIT-002`、`R-P3-004` | 后端/M3 | 关联任务依赖列 | `../03-api/openapi.yaml` | V1.3.2；NFC 真机 V1.4 |
+| `EPIC-B-M4-001` | #7 | `T-UNIT-002` | 后端/M4 | 关联任务依赖列 | `../01-product/state-machines.md` | V1.3.2 |
+| `EPIC-B-M5-001` | #7 | `T-UNIT-002`、`R-P3-004` | 后端/M5 | 关联任务依赖列 | `../03-api/openapi.yaml`、`../08-testing/acceptance-matrix.md` | V1.3.2 |
+| `EPIC-IMP-001` | #7 | `DEC-IMP-001` | 产品/后端 | 关联任务依赖列 | `../03-api/openapi.yaml` | V1.3.2；异步执行 V1.4 |
+| `EPIC-X-IMP-001` | #7 | `R-P3-004` | 后端/运维 | 关联任务依赖列 | `../09-deployment/release-process.md` | V1.3.2；异步执行 V1.4 |
+| `EPIC-EXP-001` | #7 | `DEC-EXP-001` | 产品/安全 | 关联任务依赖列 | `../03-api/openapi.yaml` | V1.3.2 |
+| `EPIC-X-EXP-001` | #7 | `R-P3-004` | 后端/运维 | 关联任务依赖列 | `../09-deployment/release-process.md` | V1.3.2；异步导出 V1.4 |
+| `EPIC-FRONTEND-001` | #7 | `F-COM-006`、`F-M1-001`、`F-M1-002`、`F-M2-001`、`F-M2-002`、`F-M3-001`、`F-M3-002`、`F-M4-001`、`F-M5-001`、`F-EXP-001`、`F-E2E-001`、`F-PERF-001`、`T-FE-001`、`T-FE-002` | 前端 | 关联任务依赖列 | `../08-testing/acceptance-matrix.md` | V1.3.2；真实 Casdoor/NFC V1.4 |
+| `EPIC-RELEASE-001` | #7 | `DEC-PERF-001`、`DEC-REL-001` | 运维/发布 | 关联任务依赖列 | `../09-deployment/release-process.md`、`../09-deployment/rollback.md` | V1.3.2 |
+| `EPIC-M2-001` | #7 | `DEC-M4-001` | 产品/M2 | 关联任务依赖列 | `../01-product/business-rules.md` | V1.3.2 |
+| `EPIC-M4-001` | #7 | `DEC-M4-004` | 产品/M4 | 关联任务依赖列 | `../01-product/state-machines.md` | V1.3.2；预约绑定 V1.4 |
 
 ## P0：开发前必须完成
 
@@ -25,11 +60,12 @@
 - [x] 获取并验证真实 Webhook 样例（本地真实投递、验证和负责人正式确认已完成）
 - [x] 确认 NFC/NDEF Mock 方案（真实设备、SDK、写卡和读回核验延期至 V1.4）
 - [ ] 确认 PostgreSQL、Redis 和环境访问权限（本地容器健康；迁移 revision、银行后台/Worker 和生产访问证据待补）
-- [ ] 确认数据库角色权限（本地单账号配置可用于测试；生产权限分离及 LinkForty 只读账号证据待补）
+- [ ] 确认银行数据库迁移/运行角色权限（本地单账号配置可用于测试；LinkForty 数据库只读账号延期至 V1.4）
 - [ ] 冻结 V1.3.2 物理模型、V3.1 模块方案、权限矩阵、API 规范、7 张表数据字典和状态机（见 [V1.3.2-FREEZE-001](./v1.3.2-freeze-001.md)；外部证据门禁未闭合）
 - [x] 配置 Git 分支保护、PR 模板和 CI 基础检查
-- [ ] 为每个 Issue 关联[详细开发任务清单](./development-task-checklist.md)中的任务 ID，并确认任务状态不是“阻塞待确认”或“延期”
-- [ ] 创建 Issue，明确目标、范围、验收、负责人、依赖、风险和回滚方案
+- [x] 在现有 Issue #7、#9、#10 中关联[详细开发任务清单](./development-task-checklist.md)中的任务 ID；保留已明确的阻塞和延期状态，不把它们误标为完成
+- [x] 使用现有 Issue #7、#9、#10 维护目标、范围、验收、负责人、依赖、风险和回滚方案；不为子任务新建 Issue
+- [x] 建立 Epic/Issue/任务治理索引并接入自动校验
 - [ ] 完成 API、数据库、权限、外部集成、幂等、测试和文档影响分析
 - [ ] 从最新 `main` 创建带任务号的短期分支
 
@@ -46,10 +82,10 @@
 
 ## P2：开发中持续完成
 
-- [ ] 工作包 A：M1/M2/M4 审计、组织员工和绑定生命周期闭环
-- [ ] 工作包 B：M3/M5 资产内容、LinkForty 集成和访问事件闭环
+- [ ] 工作包 A：M1～M3 基础能力、主数据和触点资产闭环
+- [ ] 工作包 B：M4～M5 绑定生命周期和访问事件运营闭环
 - [ ] 按[详细开发任务清单](./development-task-checklist.md)逐项推进模块和横向能力任务，不以本清单替代单项验收标准
-- [ ] 非编号统计与报表能力完成 M5 和 LinkForty 只读数据联调
+- [ ] 非编号统计与报表能力完成 M5 和 LinkForty API-only 数据联调；Core 未提供的指标不得以数据库直连补齐
 - [ ] 每个正式模块和横向能力同步更新 API、数据、测试和验收资料
 - [ ] 每个 PR 完成代码审核和 CI
 - [ ] 每个阶段完成演示和阶段验收
@@ -94,4 +130,4 @@
 | LinkForty API 契约 | LinkForty 负责人 | 待指定 | 本地创建/查询和健康检查可用；同 Key 重复请求产生两个 Link，作为 V1.3.2 已知风险；正式字段、TLS/ACL 和只读证据待确认 |
 | Webhook 签名和事件样例 | LinkForty 负责人 | 待指定 | 本地真实样例已验证；负责人正式确认已完成 |
 | NFC 设备和 NDEF 方案 | 硬件/业务 | V1.4 | 延期至 V1.4；真实外部证据待补，V1.3.2 使用 Mock |
-| 数据库部署和只读账号 | 数据库/运维 | 待指定 | PostgreSQL 15.19/Redis 7.4.11 健康；Alembic 当前 `0002`、`bank_linkforty_ro` 不存在，迁移权限和只读负向证据待确认 |
+| 数据库部署和只读账号 | 数据库/运维 | 待指定 | PostgreSQL 15.19/Redis 7.4.11 健康；Alembic 当前 `0002`，银行迁移/运行权限和生产证据待确认；LinkForty 数据库只读账号延期至 V1.4，V1.3.2 统计只调用 API |
