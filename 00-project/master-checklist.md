@@ -37,8 +37,8 @@
 | `EPIC-SCHEMA-001` | #7 | `T-UNIT-001` | 后端/测试 | 关联任务依赖列 | `../08-testing/test-strategy.md` | V1.3.2 |
 | `EPIC-REF-001` | #7 | `T-API-001` | 后端/测试 | 关联任务依赖列 | `../08-testing/acceptance-matrix.md` | V1.3.2 |
 | `EPIC-A-M2-001` | #7 | `X-IMP-003`、`T-UNIT-002` | 后端/M2 | 关联任务依赖列 | `../01-product/business-rules.md` | V1.3.2 |
-| `EPIC-A-M4-001` | #7 | `T-UNIT-002` | 后端/M4 | 关联任务依赖列 | `../01-product/state-machines.md` | V1.3.2 |
-| `EPIC-B-M3-001` | #7 | `X-IMP-003`、`T-UNIT-002`、`R-P3-004` | 后端/M3 | 关联任务依赖列 | `../03-api/openapi.yaml` | V1.3.2；NFC 真机 V1.4 |
+| `EPIC-A-M3-001` | #7 | `X-IMP-003`、`T-UNIT-002`、`R-P3-004` | 后端/M3 | 关联任务依赖列 | `../03-api/openapi.yaml` | V1.3.2；NFC 真机 V1.4 |
+| `EPIC-B-M4-001` | #7 | `T-UNIT-002` | 后端/M4 | 关联任务依赖列 | `../01-product/state-machines.md` | V1.3.2 |
 | `EPIC-B-M5-001` | #7 | `T-UNIT-002`、`R-P3-004` | 后端/M5 | 关联任务依赖列 | `../03-api/openapi.yaml`、`../08-testing/acceptance-matrix.md` | V1.3.2 |
 | `EPIC-IMP-001` | #7 | `DEC-IMP-001` | 产品/后端 | 关联任务依赖列 | `../03-api/openapi.yaml` | V1.3.2；异步执行 V1.4 |
 | `EPIC-X-IMP-001` | #7 | `R-P3-004` | 后端/运维 | 关联任务依赖列 | `../09-deployment/release-process.md` | V1.3.2；异步执行 V1.4 |
@@ -82,8 +82,8 @@
 
 ## P2：开发中持续完成
 
-- [ ] 工作包 A：M1/M2/M4 审计、组织员工和绑定生命周期闭环
-- [ ] 工作包 B：M3/M5 资产内容、LinkForty 集成和访问事件闭环
+- [ ] 工作包 A：M1～M3 基础能力、主数据和触点资产闭环
+- [ ] 工作包 B：M4～M5 绑定生命周期和访问事件运营闭环
 - [ ] 按[详细开发任务清单](./development-task-checklist.md)逐项推进模块和横向能力任务，不以本清单替代单项验收标准
 - [ ] 非编号统计与报表能力完成 M5 和 LinkForty API-only 数据联调；Core 未提供的指标不得以数据库直连补齐
 - [ ] 每个正式模块和横向能力同步更新 API、数据、测试和验收资料
