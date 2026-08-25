@@ -51,11 +51,26 @@ paths:
       x-audit: false
       x-status: reviewed
       security: [{ bearerAuth: [] }]
-      parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - in: query
+          name: status
+          schema: { type: integer, enum: [0, 1] }
+        - in: query
+          name: orgCode
+          schema:
+            type: string
+            pattern: '^1([0-9]{3})*$'
+            maxLength: 64
+        - in: query
+          name: orgName
+          schema: { type: string, maxLength: 128 }
       responses:
         '200': { $ref: '#/components/responses/Success' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+
     post:
       tags: [organizations]
       operationId: createOrganization
@@ -88,15 +103,16 @@ paths:
       x-status: reviewed
       security: [{ bearerAuth: [] }]
       responses:
+        '200': { $ref: '#/components/responses/Success' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
-        '200': { $ref: '#/components/responses/Success' }
         '404': { $ref: '#/components/responses/NotFound' }
+
     patch:
       tags: [organizations]
       operationId: updateOrganization
       x-owner: API/后端
-      summary: Update organization fields except orgCode
+      summary: Update organization fields except orgCode and status
       x-permission: organization.manage
       x-data-scope: ORG_SUBTREE
       x-idempotency: domain_key_object_version
@@ -105,8 +121,8 @@ paths:
       security: [{ bearerAuth: [] }]
       requestBody: { $ref: '#/components/requestBodies/OrganizationPatch' }
       responses:
-        '401': { $ref: '#/components/responses/Unauthorized' }
         '200': { $ref: '#/components/responses/Success' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
@@ -125,17 +141,19 @@ paths:
       x-status: reviewed
       security: [{ bearerAuth: [] }]
       responses:
+        '200': { $ref: '#/components/responses/Success' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
-        '200': { $ref: '#/components/responses/Success' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
+
   /organizations/{id}/disable:
     parameters: [{ $ref: '#/components/parameters/Id' }]
     post:
       tags: [organizations]
       operationId: disableOrganization
       x-owner: API/后端
-      summary: Disable an organization
+      summary: Disable an organization without enabled descendants
       x-permission: organization.manage
       x-data-scope: ORG_SUBTREE
       x-idempotency: domain_key_state_command
@@ -143,10 +161,12 @@ paths:
       x-status: reviewed
       security: [{ bearerAuth: [] }]
       responses:
+        '200': { $ref: '#/components/responses/Success' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
-        '200': { $ref: '#/components/responses/Success' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
+
 
   /employees:
     get:
@@ -908,26 +928,38 @@ components:
       additionalProperties: false
       required: [orgCode, orgName]
       properties:
-        orgCode: { type: string, maxLength: 64, pattern: '^1([0-9]{3})*$' }
+        orgCode: { type: string, maxLength: 64, pattern: '^1([0-9]{3})*$'}
         orgName: { type: string, minLength: 1, maxLength: 128 }
         sortNo: { type: integer, default: 100 }
         locationCode: { type: [string, 'null'], maxLength: 64 }
         doorNo: { type: [string, 'null'], maxLength: 32 }
         contactName: { type: [string, 'null'], maxLength: 100 }
-        contactPhone: { type: [string, 'null'], maxLength: 32, writeOnly: true }
         description: { type: [string, 'null'], maxLength: 500 }
     OrganizationPatchRequest:
       type: object
       additionalProperties: false
       minProperties: 1
       properties:
-        orgName: { type: string, minLength: 1, maxLength: 128 }
-        sortNo: { type: integer }
-        locationCode: { type: [string, 'null'], maxLength: 64 }
-        doorNo: { type: [string, 'null'], maxLength: 32 }
-        contactName: { type: [string, 'null'], maxLength: 100 }
-        contactPhone: { type: [string, 'null'], maxLength: 32, writeOnly: true }
-        description: { type: [string, 'null'], maxLength: 500 }
+        orgName:
+          type: string
+          minLength: 1
+          maxLength: 128
+        sortNo:
+          type: integer
+          minimum: 0
+          maximum: 999999
+        locationCode:
+          type: [string, 'null']
+          maxLength: 64
+        doorNo:
+          type: [string, 'null']
+          maxLength: 32
+        contactName:
+          type: [string, 'null']
+          maxLength: 100
+        description:
+          type: [string, 'null']
+          maxLength: 500
     EmployeeCreateRequest:
       type: object
       additionalProperties: false
@@ -1181,10 +1213,10 @@ components:
             - { $ref: '#/components/schemas/AnalyticsSummaryData' }
     ErrorDetail:
       type: object
-      required: [field, reason]
+      required: [field, type]
       properties:
         field: { type: string }
-        reason: { type: string }
+        type: { type: string }
     Error:
       type: object
       required: [code, message]
