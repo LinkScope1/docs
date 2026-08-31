@@ -533,10 +533,37 @@ paths:
       x-audit: false
       x-status: reviewed
       security: [{ bearerAuth: [] }]
-      parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+        - in: query
+          name: assetId
+          required: false
+          schema: { $ref: '#/components/schemas/Id' }
+        - in: query
+          name: employeeId
+          required: false
+          schema: { $ref: '#/components/schemas/Id' }
+        - in: query
+          name: orgId
+          required: false
+          schema: { $ref: '#/components/schemas/Id' }
+        - in: query
+          name: status
+          required: false
+          schema: { type: integer, enum: [1, 2] }
+        - in: query
+          name: from
+          required: false
+          schema: { type: string, format: date-time }
+        - in: query
+          name: to
+          required: false
+          schema: { type: string, format: date-time }
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/BadRequest' }
         '200': { $ref: '#/components/responses/Success' }
     post:
       tags: [assignments]
@@ -571,6 +598,8 @@ paths:
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/BadRequest' }
         '200': { $ref: '#/components/responses/Success' }
   /touchpoint-assignments/{id}/unbind:
     parameters: [{ $ref: '#/components/parameters/Id' }]
@@ -622,10 +651,37 @@ paths:
       x-audit: false
       x-status: reviewed
       security: [{ bearerAuth: [] }]
-      parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+        - in: query
+          name: assetId
+          required: false
+          schema: { $ref: '#/components/schemas/Id' }
+        - in: query
+          name: orgId
+          required: false
+          schema: { $ref: '#/components/schemas/Id' }
+        - in: query
+          name: employeeId
+          required: false
+          schema: { $ref: '#/components/schemas/Id' }
+        - in: query
+          name: resolutionStatus
+          required: false
+          schema: { type: integer, enum: [0, 1, 2, 3] }
+        - in: query
+          name: from
+          required: false
+          schema: { type: string, format: date-time }
+        - in: query
+          name: to
+          required: false
+          schema: { type: string, format: date-time }
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/BadRequest' }
         '200': { $ref: '#/components/responses/Success' }
   /access-events/{id}:
     parameters: [{ $ref: '#/components/parameters/Id' }]
@@ -643,6 +699,8 @@ paths:
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/BadRequest' }
         '200': { $ref: '#/components/responses/Success' }
 
   /webhooks/linkforty:
@@ -678,6 +736,7 @@ paths:
         '202': { $ref: '#/components/responses/Accepted' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/BadRequest' }
         '503': { $ref: '#/components/responses/DataSourceUnavailable' }
 
   /analytics/summary:
@@ -893,7 +952,7 @@ components:
     Id:
       type: string
       pattern: '^[0-9]+$'
-      description: BIGINT identifiers are transported as strings.
+      description: Positive BIGINT identifiers are transported as decimal strings.
     NullableId:
       type: [string, 'null']
       pattern: '^[0-9]+$'
@@ -1231,7 +1290,11 @@ components:
       content:
         application/json: { schema: { $ref: '#/components/schemas/SuccessEnvelope' } }
     Accepted:
-      description: Accepted or duplicate event acknowledged; no generic response replay is provided in V1.3.2.
+      description: Accepted or duplicate event acknowledged. A successful replay includes the Idempotency-Replayed response header.
+      headers:
+        Idempotency-Replayed:
+          description: Present with value true when an existing event_id was replayed successfully.
+          schema: { type: string, enum: ["true"] }
       content:
         application/json: { schema: { $ref: '#/components/schemas/SuccessEnvelope' } }
     BadRequest:
