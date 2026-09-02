@@ -12,6 +12,16 @@
 - 缺少某一行不代表删除、停用或解绑。解绑或替换意图必须由显式 `operation` 表达。
 - 预校验结果只用于提示预计新增、更新、跳过和逐行错误；异步执行、任务状态、结果持久化和批量业务写入属于后续版本。
 
+文件预校验规则：
+
+- 导入文件只支持 CSV。文件名存在时必须以大小写不敏感的 `.csv` 结尾；文件名缺失或为空时继续按 CSV 内容校验。
+- Content-Type 为空时继续按 CSV 内容校验；明确提供时允许 `text/csv`、`application/csv`、`text/plain` 和 `application/vnd.ms-excel`，可带 MIME 参数。其他类型返回 `415 IMPORT_FILE_TYPE_INVALID`。
+- 文件大小不得超过 10 MiB，数据行不得超过 100,000 行；超过限制返回 `413 IMPORT_FILE_TOO_LARGE`。正好达到限制时允许继续校验。
+- 文件必须使用 UTF-8 或 UTF-8 BOM 编码；非法编码返回 `400 IMPORT_ENCODING_INVALID`。CSV 语法错误或数据行列数异常返回 `400 IMPORT_CSV_INVALID`。
+- 表头必须符合对应模板元数据定义。缺失列、未知列、重复列或顺序错误返回 `400 IMPORT_COLUMNS_INVALID`；空白必填值按空值处理。
+- 错误响应只返回必要的行号、字段名和错误类型，不回显原始 CSV 内容、Payload 值、手机号或凭证。
+- V1.3.2 仍只提供 `POST /api/v1/imports/validate`，不提供 `POST /api/v1/imports/execute`。
+
 ## 2. 载体内容模板 `payload`
 
 用途：预校验载体实际写入的内容，并通过载体业务编码或 NFC 物理 UID 定位资产。
@@ -106,4 +116,3 @@ TP-DEMO-001,https://example.invalid/demo,1,2
 - `employee_code` 是员工稳定业务键，不等同于姓名、手机号或 Casdoor 内部标识。
 - 示例中的资产编码、UID、员工编码和内容均为脱敏固定值，不代表真实业务数据。
 - CSV 内容、Token、JWT、Webhook Secret、数据库密码和未脱敏个人信息不得写入日志、错误消息、文档示例或测试输出。
-
