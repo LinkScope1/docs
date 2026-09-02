@@ -766,7 +766,7 @@ paths:
       operationId: getAnalyticsSummary
       x-owner: API/后端/统计
       summary: Read click, access, install and App event metrics
-      description: V1.3.2 reads LinkForty data through API-only integration. The current Core API exposes click analytics; unavailable install or App aggregates fail with DATA_SOURCE_UNAVAILABLE rather than using a database readonly connection.
+      description: V1.3.2 reads LinkForty data through API-only integration. The summary is defined over the half-open interval [from,to). The current Core API exposes click analytics only as a rolling days window, so a non-empty LinkForty scope cannot satisfy this exact interval and fails with DATA_SOURCE_UNAVAILABLE; unavailable install or App aggregates fail the same way rather than using a database readonly connection.
       x-permission: analytics.read
       x-data-scope: ORG_SUBTREE
       x-idempotency: none
@@ -792,6 +792,7 @@ paths:
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/RequestSchemaInvalid' }
         '200': { $ref: '#/components/responses/AnalyticsSuccess' }
         '503': { $ref: '#/components/responses/DataSourceUnavailable' }
 
@@ -1249,11 +1250,13 @@ components:
         installCount: { type: integer, minimum: 0 }
         inAppCount: { type: integer, minimum: 0 }
       description: >-
-        Clicks use click_events.clicked_at and exclude bots; access uses
-        access_events.received_at; installs use install_events.installed_at;
-        in-app events use in_app_events.event_timestamp. All counts are
-        filtered by AccessContext and unavailable required sources return
-        DATA_SOURCE_UNAVAILABLE instead of partial data.
+        LinkForty clicks use the Core click event clicked_at and exclude bots;
+        access uses access_events.received_at; installs use
+        install_events.installed_at; in-app events use
+        in_app_events.event_timestamp. All counts are filtered by
+        AccessContext. The bank backend does not read the LinkForty database;
+        unavailable required sources return DATA_SOURCE_UNAVAILABLE instead
+        of partial data.
     SuccessEnvelope:
       type: object
       required: [requestId, data]
