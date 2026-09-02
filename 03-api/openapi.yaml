@@ -801,6 +801,12 @@ paths:
       operationId: validateImport
       x-owner: API/后端/导入
       summary: Validate an import file without writing business tables
+      description: >-
+        Synchronous, read-only CSV pre-validation. Only assignment rows carry
+        the required explicit operation column, whose accepted values are bind,
+        unbind and transfer. Rows omitted from the CSV are ignored and never
+        imply deletion, disabling or unbinding. V1.3.2 does not expose an
+        import execution endpoint.
       x-permission: import.validate
       x-data-scope: ORG_SUBTREE
       x-idempotency: none

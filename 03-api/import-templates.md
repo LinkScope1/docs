@@ -9,7 +9,7 @@
 - CSV 字段使用 camelCase；数据库和业务术语在本文说明中使用 snake_case。
 - 文件使用 UTF-8 编码，UTF-8 BOM 也兼容。空白值按空值处理。
 - 未知列、重复列、缺少必要列和不支持的模板类型会被拒绝；逐行错误包含行号、字段和错误类型，但不回显原始 CSV 值。
-- 缺少某一行不代表删除、停用或解绑。解绑或替换意图必须由显式 `operation` 表达。
+- 缺少某一行不代表删除、停用或解绑。绑定模板中的解绑或转交意图必须由显式 `operation` 表达。
 - 预校验结果只用于提示预计新增、更新、跳过和逐行错误；异步执行、任务状态、结果持久化和批量业务写入属于后续版本。
 
 文件预校验规则：
@@ -20,7 +20,15 @@
 - 文件必须使用 UTF-8 或 UTF-8 BOM 编码；非法编码返回 `400 IMPORT_ENCODING_INVALID`。CSV 语法错误或数据行列数异常返回 `400 IMPORT_CSV_INVALID`。
 - 表头必须符合对应模板元数据定义。缺失列、未知列、重复列或顺序错误返回 `400 IMPORT_COLUMNS_INVALID`；空白必填值按空值处理。
 - 错误响应只返回必要的行号、字段名和错误类型，不回显原始 CSV 内容、Payload 值、手机号或凭证。
-- V1.3.2 仍只提供 `POST /api/v1/imports/validate`，不提供 `POST /api/v1/imports/execute`。
+- V1.3.2 仍只提供 `POST /api/v1/imports/validate`，不提供 `POST /api/v1/imports/execute`；预校验不执行任何业务状态变化。
+
+### 显式行操作和缺失行安全规则
+
+- 只有 `assignment` 模板包含必填的 `operation` 列；`payload` 和 `asset_payload_relation` 不接受操作列。
+- `assignment.operation` 仅支持 `bind`、`unbind`、`transfer`。`delete`、`disable`、`replace`、空值和其他值均返回该行的 `unsupported` 或 `required` 错误。
+- `bind` 表达显式绑定意图，`unbind` 表达显式解绑意图，`transfer` 表达显式转交意图；转交仍受 M4 的权限和数据范围规则约束。
+- CSV 未出现的既有资产、内容或绑定不会参与差异计算，不会被推导为删除、停用、解绑或其他状态变化。需要改变绑定关系时，必须在对应 CSV 行明确填写 `unbind` 或 `transfer`。
+- 导入预校验只对文件中实际存在的行返回 `create`、`update`、`skip` 或逐行错误；V1.3.2 不写入业务表。
 
 ### 稳定键和精确匹配
 
@@ -38,7 +46,7 @@
 | `payload` | 资产标识匹配到资产 | `update` |
 | `payload` | 资产标识均未匹配且必填完整 | `create` |
 | `assignment` | 资产和员工均匹配 | `bind`/`transfer` 为 `update`，`unbind` 为 `skip` |
-| `assignment` | 完整但资产或员工不存在 | 按既有行规则预计 `create`；`unbind` 缺资产、`transfer`/`unbind` 缺员工仍报错 |
+| `assignment` | 完整但资产或员工不存在 | `bind` 按既有行规则预计 `create`；`unbind`/`transfer` 缺资产或员工均报错 |
 | `asset_payload_relation` | 资产和复合关系键均匹配 | `update` |
 | `asset_payload_relation` | 资产匹配但复合关系键不存在 | `create` |
 
@@ -91,11 +99,13 @@ assetCode,employeeCode,operation
 | `employeeCode` | 必填 | 员工稳定业务编码，精确匹配 `employee_code` |
 | `operation` | 必填 | 绑定操作类型 |
 
-`operation` 仅支持以下值：
+`operation` 仅支持以下值；缺少该列或填写空值都不表达任何默认操作：
 
 - `bind`：表达显式绑定意图。
 - `unbind`：表达显式解绑意图。
 - `transfer`：表达显式转交意图；跨组织转交仍需满足独立权限和数据范围规则。
+
+`delete`、`disable`、`replace` 以及其他未列出的值不受支持。CSV 缺少某个既有绑定行不会触发解绑；只有该行明确填写 `unbind` 或 `transfer` 才能表达绑定关系变化意图。
 
 绑定模板不使用员工姓名或载体名称模糊匹配。示例：
 
