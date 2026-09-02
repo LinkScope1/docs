@@ -4,7 +4,7 @@ Total output lines: 463
 # 银行触点载体管理系统开发任务清单
 
 > 版本：v1.3.2
-> 更新日期：2026-08-25
+> 更新日期：2026-09-02
 > 用途：将 V1.3.2 的产品、架构、API、数据库、安全、测试、部署和运维要求拆分为可直接创建 Issue 或看板卡片的最小任务。
 > 事实原则：目录、迁移、接口草稿、占位页面和 Mock 只能作为证据类型，不直接等同于业务闭环完成。
 
@@ -345,7 +345,7 @@ Total output lines: 180
 | ID | 阶段 | 优先级 | 工作包 | 模块 | 任务名称 | 当前状态 | 证据类型 | 主负责人 | 协作角色 | 前置依赖 | 产出物 | 验收标准 | MVP范围 | 关键路径 | 延期版本 | 风险/阻塞 | 人日 |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---:|
 | X-IMP-001 | P4 | P1 | 平台横向 | 导入 | 定义载体内容、载体员工绑定、载体内容关系三类模板列和版本。 | 已具备 | 代码/测试/文档 | 产品 | 后端/测试 | P0-API-002 | 统一模板元数据、模板说明和脱敏示例 | 三类模板均固定 Schema 版本 `"1"`，列顺序、必填/条件必填、稳定键和操作类型由统一元数据驱动；历史 CSV 兼容，预校验不写业务表。 | V1.3.2 | 否 | — | org_code 保持为组织稳定业务键，不新增 orgCode CSV 列；异步执行继续延期。 | 1 |
-| X-IMP-002 | P4 | P1 | 平台横向 | 导入 | 实现文件类型、大小、编码、列名和必填字段预校验。 | 待开发 | 待产生 | 后端 | 后端/测试 | X-IMP-001 | Import parser | 非法文件不进入业务写入；错误指出行号和列名。 | V1.3.2 | 否 | — | 大文件需限制内存占用。 | 1 |
+| X-IMP-002 | P4 | P1 | 平台横向 | 导入 | 实现文件类型、大小、编码、列名和必填字段预校验。 | 已具备 | 代码/测试/文档 | 后端 | 后端/测试 | X-IMP-001 | `src/app/modules/imports/service.py`、`tests/test_import_export_boundaries.py`、`03-api/import-templates.md`、`03-api/openapi.yaml` | 非法文件在数据库查询和业务写入前被拒绝；支持文件类型、10 MiB/100,000 行上限、UTF-8/BOM、CSV 列数/列名和必填字段校验；错误返回稳定错误码、行号和字段名且不回显敏感值。 | V1.3.2 | 否 | — | 任务相关测试、Ruff、导入模块 mypy、文档校验和全量 pytest 通过。 | 1 |
 | X-IMP-003 | P4 | P1 | 平台横向 | 导入 | 实现按 org_code、employee_code、asset_code、carrier_uid 的稳定匹配。 | 已具备 | 代码/测试/文档 | 后端 | 后端/测试 | X-IMP-001, EPIC-A-M2-001, EPIC-A-M3-001 | `src/app/modules/imports/repository.py`、`src/app/modules/imports/service.py`、`src/app/modules/imports/templates.py`、`tests/test_import_export_boundaries.py`、`03-api/import-templates.md` | 三类模板使用统一元数据选择稳定键；资产、员工和关系批量精确匹配，支持 carrierUid、复合关系键、首尾空白/大小写敏感、文件重复键、数据库歧义和范围外 `scope_denied`；预计新增/更新/跳过、行号错误和只读边界已覆盖，不使用名称/手机号模糊匹配。 | V1.3.2 | 否 | — | 任务相关测试、Ruff、导入模块 mypy、文档校验和 Alembic heads 通过；全量 mypy 仍有 `events.py` 既有错误，`alembic current` 受环境数据库权限阻断，均与本任务无关。 | 1.5 |
 | X-IMP-004 | P4 | P1 | 平台横向 | 导入 | 实现显式行操作类型，禁止用缺失行推导删除、停用或解绑。 | 已具备 | 代码/测试/文档 | 后端 | 后端/测试 | X-IMP-001 | `src/app/modules/imports/templates.py`、`src/app/modules/imports/service.py`、`tests/test_import_export_boundaries.py`、`03-api/import-templates.md` | 只有明确 `unbind`/`transfer` 操作才表达绑定关系变化；空值、`delete`、`disable`、`replace` 等非法操作逐行报错；缺失行不产生任何状态变化。 | V1.3.2 | 否 | — | 导入执行延期至 V1.4；错误操作会造成批量数据损失。 | 0.5 |
 | X-IMP-005 | P4 | P1 | 平台横向 | 导入 | 实现不写业务表的导入预校验、逐行错误和结果契约 | 已具备 | 代码/测试 | 后端 | 后端/测试 | X-IMP-002, X-IMP-003, X-IMP-004, P1-BE-013, P1-BE-014, DEC-IMP-001 | `/api/v1/imports/validate`、`src/app/modules/imports/service.py` | UTF-8 CSV、模板列、稳定键、逐行错误、预计新增/更新/跳过已实现；预校验不写业务表，异步执行仍延期 V1.4。 | V1.3.2 | 否 | — | 真实数据库范围和大文件压测仍待补。 | 1.5 |
@@ -353,7 +353,7 @@ Total output lines: 180
 | X-IMP-007 | P4 | P1 | 平台横向 | 导入 | 实现异步导入行编排和跨模块 Service 调用（V1.4） | 延期 | 待产生 | 后端 | 后端/测试 | X-IMP-006, B-M3-010, A-M4-012, DEC-IMP-002 | V1.4 import orchestrator | V1.4 执行只能调用 M3/M4 Service，不直接写表；V1.3.2 不执行大批量导入。 | V1.4，不纳入 V1.3.2 | 否 | V1.4 | 不得新增导入批次/明细表作为未确认前提。 | 1.5 |
 | X-IMP-008 | P4 | P1 | 平台横向 | 导入 | 冻结异步导入事务策略并延期执行实现至 V1.4 | 延期 | 待产生 | 产品 | 后端/测试 | DEC-IMP-002 | V1.4 范围决议 | V1.3.2 仅保留模板、解析、稳定匹配键、预校验和逐行结果；全量事务/逐行执行策略在 V1.4 决策后实现。 | V1.4，不纳入 V1.3.2 | 否 | V1.4 | 不得把事务策略写成当前已确认事实。 | 1 |
 | X-IMP-009 | P4 | P1 | 平台横向 | 导入 | 冻结异步导入幂等、任务状态和结果持久化范围并延期至 V1.4 | 延期 | 待产生 | 后端 | 后端/测试 | X-IMP-008, DEC-IDEMP-001, DEC-IMP-001 | V1.4 import execution contract | V1.3.2 不提供 /imports/execute 批量执行；V1.4 再决定通用幂等、任务状态和结果存储。 | V1.4，不纳入 V1.3.2 | 否 | V1.4 | 不得新建导入批次/明细表或以 Redis 作为最终来源。 | 1.5 |
-| X-IMP-010 | P4 | P1 | 平台横向 | 导入 | 覆盖 V1.3.2 导入模板、解析、稳定匹配、预校验和逐行错误测试 | 待开发 | 待产生测试 | 测试 | 后端/测试 | X-IMP-001, X-IMP-002, X-IMP-003, X-IMP-004, X-IMP-005 | Import tests | 覆盖非法文件、列名、编码、稳定键、重复键、越权预校验和逐行结果；V1.4 执行测试另建任务。 | V1.3.2 | 否 | — | 测试样例只使用脱敏数据。 | 2 |
+| X-IMP-010 | P4 | P1 | 平台横向 | 导入 | 覆盖 V1.3.2 导入模板、解析、稳定匹配、预校验和逐行错误测试 | 已具备 | 测试证据 | 测试 | 后端/测试 | X-IMP-001, X-IMP-002, X-IMP-003, X-IMP-004, X-IMP-005 | `tests/test_import_export_boundaries.py`、`tests/test_api_scaffold.py`、`tests/test_openapi_contract.py` | 覆盖三类模板、非法文件、列名/列数、编码、稳定键、重复/歧义匹配、预计操作、权限/范围、逐行错误、requestId、敏感值脱敏和只读写入边界；V1.4 执行测试另建任务。 | V1.3.2 | 否 | — | 定向测试、Ruff、导入模块 mypy、文档校验和全量 pytest 通过；测试样例只使用脱敏数据。 | 2 |
 | X-ANL-001 | P4 | P1 | 平台横向 | 统计 | 确认 analytics 查询 API、指标口径和数据权限，不新增本地统计表。 | 条件开发 | 契约/决策记录/CI | 产品 | 后端/测试 | P0-API-002, P0-LF-001 | Analytics contract、AnalyticsSummaryData | analytics 路径、四项计数、字段时间口径、组织范围、机器人排除和 503 语义已冻结；LinkForty 只通过 API 读取，未提供的安装/App 指标必须 503。 | V1.3.2 | 否 | — | 统计契约已具备；Core API 当前仅支持点击分析，不能宣称四项真实统计全部可用。 | 1 |
 | X-ANL-002 | P4 | P1 | 平台横向 | 统计 | 实现点击统计，使用 `clicked_at` 并默认排除机器人。 | 条件开发 | 代码/测试/API 能力确认 | 后端 | 后端/测试 | X-ANL-001, P0-LF-001 | LinkForty API analytics adapter | 通过 `/api/analytics/links/{id}` 读取 Core 点击分析并排除机器人；API 仅支持滚动天数时，不得伪造任意时间区间精度。 | V1.3.2 条件能力 | 否 | — | 当前 Core API 的时间窗口语义仍需正式外部契约确认。 | 1.5 |
 | X-ANL-003 | P4 | P1 | 平台横向 | 统计 | 实现访问统计，使用 access_events.received_at。 | 待开发 | 待产生 | 后端 | 后端/测试 | X-ANL-001, B-M5-014 | Access analytics | 统计只读 access_events；不纳入办理量和金额。 | V1.3.2 | 否 | — | received_at 与事件时间口径需向用户说明。 | 1 |

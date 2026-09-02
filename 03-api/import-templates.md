@@ -18,6 +18,7 @@
 - Content-Type 为空时继续按 CSV 内容校验；明确提供时允许 `text/csv`、`application/csv`、`text/plain` 和 `application/vnd.ms-excel`，可带 MIME 参数。其他类型返回 `415 IMPORT_FILE_TYPE_INVALID`。
 - 文件大小不得超过 10 MiB，数据行不得超过 100,000 行；超过限制返回 `413 IMPORT_FILE_TOO_LARGE`。正好达到限制时允许继续校验。
 - 文件必须使用 UTF-8 或 UTF-8 BOM 编码；非法编码返回 `400 IMPORT_ENCODING_INVALID`。CSV 语法错误或数据行列数异常返回 `400 IMPORT_CSV_INVALID`。
+- 每个数据行的字段数必须与表头一致；多余或缺少字段均返回 `400 IMPORT_CSV_INVALID`，错误详情仅包含该行 `rowNumber`、`field=columns` 和 `type=invalid`，且不会进入数据库查询。
 - 表头必须符合对应模板元数据定义。缺失列、未知列、重复列或顺序错误返回 `400 IMPORT_COLUMNS_INVALID`；空白必填值按空值处理。
 - 错误响应只返回必要的行号、字段名和错误类型，不回显原始 CSV 内容、Payload 值、手机号或凭证。
 - V1.3.2 仍只提供 `POST /api/v1/imports/validate`，不提供 `POST /api/v1/imports/execute`；预校验不执行任何业务状态变化。

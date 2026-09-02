@@ -828,6 +828,9 @@ paths:
         '200': { $ref: '#/components/responses/Success' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '413': { $ref: '#/components/responses/ImportFileTooLarge' }
+        '415': { $ref: '#/components/responses/ImportFileTypeInvalid' }
+        '422': { $ref: '#/components/responses/RequestSchemaInvalid' }
 
   /exports/{resource}:
     get:
@@ -1411,6 +1414,18 @@ components:
         application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } }
     ExportLimitExceeded:
       description: Synchronous export exceeds the V1.3.2 limit
+      headers:
+        X-Request-ID: { $ref: '#/components/headers/RequestId' }
+      content:
+        application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } }
+    ImportFileTooLarge:
+      description: Import file exceeds the 10 MiB or 100,000 data-row limit
+      headers:
+        X-Request-ID: { $ref: '#/components/headers/RequestId' }
+      content:
+        application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } }
+    ImportFileTypeInvalid:
+      description: Import file name or Content-Type is not supported
       headers:
         X-Request-ID: { $ref: '#/components/headers/RequestId' }
       content:
