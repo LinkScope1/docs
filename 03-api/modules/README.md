@@ -2,7 +2,7 @@
 
 本目录按业务模块维护 OpenAPI Path Item 评审镜像，系统总入口仍为 [`../openapi.yaml`](../openapi.yaml)，且总入口是唯一机器源。模块文件不是第二套完整 OpenAPI 文档，不得重复定义全局响应、错误码、分页或安全方案。
 
-每个模块 Path Item 使用 `x-canonical-path` 标识总入口路径，操作使用与总入口一致的 `operationId`。CI 会校验模块镜像与总入口的路径、方法、权限、数据范围、幂等和审计元数据一致；模块文件的 `responses: {}` 仅表示评审镜像，不是可单独发布的 OpenAPI 文档。
+每个模块 Path Item 使用 `x-canonical-path` 标识总入口路径，操作使用与总入口一致的 `operationId`。CI 会校验模块镜像与总入口的路径、方法、权限、数据范围、幂等和审计元数据一致；模块文件可以使用空响应或不含 Schema 的状态/错误摘要作为评审镜像，但不是可单独发布的 OpenAPI 文档。
 
 ## 文件分工
 

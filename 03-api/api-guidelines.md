@@ -103,8 +103,8 @@
     "code": "REQUEST_SCHEMA_INVALID",
     "message": "请求参数校验失败",
     "details": [
-      {"field": "orgCode", "reason": "组织编码格式不正确"},
-      {"field": "orgName", "reason": "组织名称不能为空"}
+      {"field": "query.limit", "type": "int_parsing", "message": "输入应为有效整数"},
+      {"field": "orgName", "type": "missing", "message": "字段为必填项"}
     ]
   }
 }
