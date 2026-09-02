@@ -22,6 +22,28 @@
 - 错误响应只返回必要的行号、字段名和错误类型，不回显原始 CSV 内容、Payload 值、手机号或凭证。
 - V1.3.2 仍只提供 `POST /api/v1/imports/validate`，不提供 `POST /api/v1/imports/execute`。
 
+### 稳定键和精确匹配
+
+- 解析每个单元格时只去除首尾空白；业务键大小写敏感，不做大小写折叠、`LIKE` 或其他模糊匹配。
+- `payload` 的稳定键优先使用 `assetCode`，没有时使用 `carrierUid`；`assignment` 使用 `assetCode + employeeCode`；`asset_payload_relation` 使用 `assetCode + payloadType + SHA-256(payloadValue)`。关系模板的 `payloadSource` 不是稳定键的一部分。
+- 资产按 `asset_code` 或 `carrier_uid` 精确查询，员工按 `employee_code` 精确查询，关系按 `asset_id + payload_type + payload_value` 精确查询。关系稳定键和返回的 `stableKey` 只包含 `payloadValue` 的 SHA-256 摘要，不返回原始内容。
+- 同一文件中的稳定键只保留第一行；后续行返回 `duplicate_in_file`，错误包含该行 `rowNumber` 和稳定键字段。数据库精确键出现多个候选时返回 `ambiguous_match`，不会任选对象。
+- 精确查询是批量只读预校验。候选结果只携带对象 ID、稳定键、组织编码、必要关联 ID 和范围判定，不读取或用于匹配名称、手机号、描述或模糊内容；预校验不调用外部系统，也不执行 `add`、`flush` 或 `commit`。
+- 组织范围来自请求的 `AccessContext`：使用 `org_code`/`scope_roots` 的组织范围，并叠加员工本人范围和资产责任员工范围。文件不增加 `orgCode` 列。精确键存在但在范围外时逐行返回 `scope_denied`，不得将其预计为新增；真正不存在的完整行才可预计新增。
+
+预计操作规则如下：
+
+| 模板 | 精确匹配结果 | 预计操作 |
+|---|---|---|
+| `payload` | 资产标识匹配到资产 | `update` |
+| `payload` | 资产标识均未匹配且必填完整 | `create` |
+| `assignment` | 资产和员工均匹配 | `bind`/`transfer` 为 `update`，`unbind` 为 `skip` |
+| `assignment` | 完整但资产或员工不存在 | 按既有行规则预计 `create`；`unbind` 缺资产、`transfer`/`unbind` 缺员工仍报错 |
+| `asset_payload_relation` | 资产和复合关系键均匹配 | `update` |
+| `asset_payload_relation` | 资产匹配但复合关系键不存在 | `create` |
+
+资产同时提供 `assetCode` 和 `carrierUid` 时，两者必须精确解析到同一资产；一方不存在、两者指向不同资产或任一方发生歧义/越权时整行报错。错误结果保留接口现有 Envelope、`requestId`、`rowNumber`、`status`、`operation`、`stableKey` 和 `errors` 字段结构。
+
 ## 2. 载体内容模板 `payload`
 
 用途：预校验载体实际写入的内容，并通过载体业务编码或 NFC 物理 UID 定位资产。
@@ -40,7 +62,7 @@ payloadType,payloadValue,payloadSource,assetCode,carrierUid
 | `assetCode` | 条件必填 | 载体业务编码，精确匹配 `asset_code` |
 | `carrierUid` | 条件必填 | NFC 物理 UID，精确匹配 `carrier_uid` |
 
-每行至少提供 `assetCode` 或 `carrierUid` 一个。两者同时提供时，必须精确解析到同一个资产；如果一个已匹配而另一个匹配到其他资产或无法证明一致，整行报错，不能静默选择其中一个。两者均未匹配时，预校验可将该行标记为预计新增，但不会实际创建资产或内容。
+每行至少提供 `assetCode` 或 `carrierUid` 一个。两者同时提供时，必须精确解析到同一个资产；如果一个已匹配而另一个不存在、匹配到其他资产或无法证明一致，整行报错，不能静默选择其中一个。两者均未匹配时，预校验可将该行标记为预计新增，但不会实际创建资产或内容。
 
 `assetCode` 是银行业务编码，适合业务查询和导入；`carrierUid` 是 NFC 实体的物理 UID，适合盘点。两者不能互相替代。
 
@@ -103,7 +125,7 @@ assetCode,payloadValue,payloadType,payloadSource
 | `payloadType` | 载体内容类型编码 |
 | `payloadSource` | 内容来源编码 |
 
-当前模板层面的稳定关系描述为 `assetCode + payloadType + payloadValue`。不使用 `carrierUid` 代替 `assetCode`，也不使用载体或内容名称模糊匹配。示例：
+当前模板层面的稳定关系描述为 `assetCode + payloadType + SHA-256(payloadValue)`；实际数据库探针使用对应资产 ID 和原始 `payloadValue` 做精确等值查询。不使用 `carrierUid` 代替 `assetCode`，也不使用载体或内容名称模糊匹配。示例：
 
 ```csv
 assetCode,payloadValue,payloadType,payloadSource
