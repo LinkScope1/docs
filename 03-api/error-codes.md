@@ -33,3 +33,21 @@
 - `VALIDATION_ERROR` 用于字段类型正确但业务组合或规则不成立；FastAPI 请求字段缺失、类型或格式错误统一使用 `REQUEST_SCHEMA_INVALID`。
 - 幂等重放成功不是错误，不进入本清单；处理规则参见 [幂等规范](./idempotency.md)。
 - 模块新增错误码时必须同步更新 OpenAPI、实现和自动测试。
+
+## M5 内部/非 HTTP 错误码
+
+以下代码只用于访问事件投影、Celery 重试、审计和告警的内部状态或
+`resolutionReason`，不作为公共 HTTP `error.code`，也不新增对应的公共 API：
+
+| 错误码 | 内部用途 |
+| --- | --- |
+| `IDEMPOTENT_REPLAY` | 已存在的 `event_id` 被重复投递并按幂等成功处理 |
+| `BINDING_NOT_FOUND` | 按事件发生时间未找到可用历史绑定 |
+| `STATE_UPDATE_FAILED` | 访问事件状态更新失败 |
+| `EVENT_RETRY_ENQUEUE_FAILED` | 重试任务在数据库事务完成后入队失败 |
+| `AUDIT_WRITE_FAILED` | 操作审计或失败审计写入失败 |
+| `FINAL_FAILURE_ALREADY_RECORDED` | 终态失败已记录，避免重复写入失败事实 |
+
+这些内部代码仍须通过 `operation_logs`、任务结果或告警保留可追踪性；对外
+错误响应继续使用本文件上方定义的公共代码，例如 `REQUEST_SCHEMA_INVALID`、
+`STATE_CONFLICT`、`DATA_SOURCE_UNAVAILABLE` 或 `INTERNAL_ERROR`。

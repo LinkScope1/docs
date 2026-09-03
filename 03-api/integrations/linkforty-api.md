@@ -50,6 +50,9 @@ API Credential：不适用
 | 查询 Link | GET | `/api/links/{id}` | 只保存和返回 Link UUID 及已批准字段；不读取外部表 |
 | 查询点击分析 | GET | `/api/analytics/links/{id}?days={n}` | V1.3.2 只通过 API 读取 Core 已提供的点击分析；安装/App 聚合接口未确认时返回数据源不可用 |
 
+安装/App 事件聚合的逐项核验记录见
+[X-ANL-004：LinkForty 安装/App API 契约核验报告](./linkforty-analytics-contract-evidence.md)。当前报告结论为阻塞待确认；Core 的 SDK 写入接口和数据库字段不构成银行侧聚合读取契约。
+
 创建请求的重试规则固定为：4xx 不重试；429、5xx、连接超时按指数退避，最多 3 次；TLS、ACL、DNS 和证书错误不盲目重试。每次调用记录 `trace_id`、外部请求 ID、状态和耗时，不把凭据或完整敏感响应写入日志。
 
 当前 Core 路由虽存在上述路径，但不读取 `Idempotency-Key`；银行侧保留稳定 Key 转发、错误分类和重试测试，并记录真实重复创建缺陷。该缺陷不在 V1.3.2 修复，也不标记为幂等验收通过；正式字段、TLS/ACL 和只读边界仍需外部证据。

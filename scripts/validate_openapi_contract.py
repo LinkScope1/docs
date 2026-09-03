@@ -197,6 +197,25 @@ def check_modules(document: dict[str, Any], errors: list[str]) -> None:
     if mirror_count != 38:
         errors.append(f"modules: expected 38 mirrored operations, found {mirror_count}")
 
+    m5 = load_yaml(MODULE_DIR / "m5-access-events.yaml")
+    m5_expectations = {
+        ("accessEvents", "get"): ("/access-events", "access-events"),
+        ("accessEventById", "get"): ("/access-events/{id}", "access-events"),
+        ("accessEventWebhook", "post"): ("/webhooks/linkforty", "linkforty-webhooks"),
+    }
+    for (key, method), (canonical_path, tag) in m5_expectations.items():
+        operation = m5.get(key, {}).get(method, {})
+        if operation.get("tags") != [tag]:
+            errors.append(f"m5 mirror {key}:{method}: tag differs from canonical M5 tag")
+        main = document.get("paths", {}).get(canonical_path, {}).get(method, {})
+        if operation.get("tags") != main.get("tags"):
+            errors.append(f"m5 mirror {key}:{method}: tags differ from main OpenAPI")
+        path_item = m5.get(key, {})
+        if not operation.get("parameters") and not path_item.get("parameters") and key != "accessEvents":
+            errors.append(f"m5 mirror {key}:{method}: request parameters are required")
+        if not isinstance(operation.get("responses"), dict) or not operation["responses"]:
+            errors.append(f"m5 mirror {key}:{method}: response status summary is required")
+
 
 def check_document(document: dict[str, Any], errors: list[str]) -> None:
     if document.get("openapi") != "3.1.0":
@@ -286,6 +305,95 @@ def check_document(document: dict[str, Any], errors: list[str]) -> None:
     expected = {"from", "to", "orgCodePrefix", "clickCount", "accessCount", "installCount", "inAppCount"}
     if required != expected:
         errors.append("AnalyticsSummaryData: required fields do not match frozen four-counter contract")
+
+    check_m5_contract(document, errors)
+
+
+def check_m5_contract(document: dict[str, Any], errors: list[str]) -> None:
+    """Validate the frozen M5 HTTP and internal-boundary contract."""
+
+    paths = document.get("paths", {})
+    expected_paths = {"/access-events", "/access-events/{id}", "/webhooks/linkforty"}
+    public_retry_paths = [
+        path for path in paths if re.search(r"/(?:event-)?retries(?:/|$)", path)
+    ]
+    if public_retry_paths:
+        errors.append(f"M5: public retry routes are not allowed: {sorted(public_retry_paths)}")
+
+    list_operation = paths.get("/access-events", {}).get("get", {})
+    detail_operation = paths.get("/access-events/{id}", {}).get("get", {})
+    webhook_operation = paths.get("/webhooks/linkforty", {}).get("post", {})
+    operations_by_name = {
+        "listAccessEvents": (list_operation, {"200", "401", "403", "422", "500"}),
+        "getAccessEvent": (detail_operation, {"200", "401", "403", "404", "422", "500"}),
+        "receiveLinkFortyWebhook": (
+            webhook_operation,
+            {"202", "400", "401", "409", "422", "500", "503"},
+        ),
+    }
+    if set(path for path in paths if path in expected_paths) != expected_paths:
+        errors.append("M5: all three canonical paths must be present")
+
+    for operation_id, (operation, response_codes) in operations_by_name.items():
+        if operation.get("operationId") != operation_id:
+            errors.append(f"M5: operationId mismatch for {operation_id}")
+        if set(operation.get("responses", {})) != response_codes:
+            errors.append(
+                f"M5 {operation_id}: responses must be {sorted(response_codes)}, "
+                f"found {sorted(operation.get('responses', {}))}"
+            )
+        for code, response in operation.get("responses", {}).items():
+            resolved = resolve_local_ref(document, response)
+            if isinstance(resolved, dict) and code != "204":
+                headers = resolved.get("headers", {})
+                if "X-Request-ID" not in headers:
+                    errors.append(f"M5 {operation_id} {code}: X-Request-ID header is required")
+
+    if list_operation.get("tags") != ["access-events"] or detail_operation.get("tags") != ["access-events"]:
+        errors.append("M5 access-event queries must use the access-events tag")
+    if webhook_operation.get("tags") != ["linkforty-webhooks"]:
+        errors.append("M5 Webhook must use the linkforty-webhooks tag")
+    if list_operation.get("x-permission") != "access-event.read" or detail_operation.get("x-permission") != "access-event.read":
+        errors.append("M5 access-event queries must require access-event.read")
+    if list_operation.get("x-data-scope") != "ORG_SUBTREE" or detail_operation.get("x-data-scope") != "ORG_SUBTREE":
+        errors.append("M5 access-event queries must declare ORG_SUBTREE")
+    if list_operation.get("x-audit") is not False or detail_operation.get("x-audit") is not False:
+        errors.append("M5 access-event queries must be non-audited")
+    if webhook_operation.get("x-permission") != "system_webhook" or webhook_operation.get("x-data-scope") != "SYSTEM":
+        errors.append("M5 Webhook must declare the system_webhook/SYSTEM integration contract")
+    if webhook_operation.get("x-idempotency") != "event_id" or webhook_operation.get("x-audit") is not True:
+        errors.append("M5 Webhook must declare event_id idempotency and audit")
+
+    schemas = document.get("components", {}).get("schemas", {})
+    positive_pattern = r"^[0-9]*[1-9][0-9]*$"
+    for schema_name in ("Id", "NullableId"):
+        schema = schemas.get(schema_name, {})
+        if schema.get("pattern") != positive_pattern:
+            errors.append(f"M5 {schema_name}: positive decimal BIGINT pattern is required")
+    access_event = schemas.get("AccessEvent", {})
+    expected_access_event_fields = {
+        "id", "eventId", "clickId", "assetId", "bindingId", "orgId", "employeeId",
+        "resolutionStatus", "resolutionReason", "receivedAt", "resolvedAt",
+    }
+    if set(access_event.get("required", [])) != expected_access_event_fields:
+        errors.append("M5 AccessEvent: required output fields do not match the frozen contract")
+    if access_event.get("properties", {}).get("resolutionStatus", {}).get("enum") != [0, 1, 2, 3]:
+        errors.append("M5 AccessEvent: resolutionStatus enum must be 0,1,2,3")
+
+    envelope = schemas.get("LinkFortyWebhookEnvelope", {})
+    if set(envelope.get("required", [])) != {"event", "event_id", "data"}:
+        errors.append("M5 Webhook: event/event_id/data are required")
+    if envelope.get("properties", {}).get("event", {}).get("enum") != ["click_event"]:
+        errors.append("M5 Webhook: event must be click_event")
+    data_schema = envelope.get("properties", {}).get("data", {})
+    if set(data_schema.get("required", [])) != {"id", "linkId"}:
+        errors.append("M5 Webhook: data.id and data.linkId are required")
+    accepted = document.get("components", {}).get("responses", {}).get("Accepted", {})
+    if set(accepted.get("headers", {})) != {"X-Request-ID", "Idempotency-Replayed"}:
+        errors.append("M5 Webhook 202: request ID and replay headers are required")
+    accepted_data = schemas.get("WebhookAcceptedData", {})
+    if set(accepted_data.get("required", [])) != {"eventId", "accessEventId", "replayed"}:
+        errors.append("M5 Webhook 202: accepted data fields do not match the frozen contract")
 
 
 def main() -> int:

@@ -51,26 +51,11 @@ paths:
       x-audit: false
       x-status: reviewed
       security: [{ bearerAuth: [] }]
-      parameters:
-        - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/PageSize'
-        - in: query
-          name: status
-          schema: { type: integer, enum: [0, 1] }
-        - in: query
-          name: orgCode
-          schema:
-            type: string
-            pattern: '^1([0-9]{3})*$'
-            maxLength: 64
-        - in: query
-          name: orgName
-          schema: { type: string, maxLength: 128 }
+      parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
       responses:
         '200': { $ref: '#/components/responses/Success' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
-
     post:
       tags: [organizations]
       operationId: createOrganization
@@ -103,16 +88,15 @@ paths:
       x-status: reviewed
       security: [{ bearerAuth: [] }]
       responses:
-        '200': { $ref: '#/components/responses/Success' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '200': { $ref: '#/components/responses/Success' }
         '404': { $ref: '#/components/responses/NotFound' }
-
     patch:
       tags: [organizations]
       operationId: updateOrganization
       x-owner: API/后端
-      summary: Update organization fields except orgCode and status
+      summary: Update organization fields except orgCode
       x-permission: organization.manage
       x-data-scope: ORG_SUBTREE
       x-idempotency: domain_key_object_version
@@ -121,8 +105,8 @@ paths:
       security: [{ bearerAuth: [] }]
       requestBody: { $ref: '#/components/requestBodies/OrganizationPatch' }
       responses:
-        '200': { $ref: '#/components/responses/Success' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '200': { $ref: '#/components/responses/Success' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
@@ -141,19 +125,17 @@ paths:
       x-status: reviewed
       security: [{ bearerAuth: [] }]
       responses:
-        '200': { $ref: '#/components/responses/Success' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
+        '200': { $ref: '#/components/responses/Success' }
         '409': { $ref: '#/components/responses/Conflict' }
-
   /organizations/{id}/disable:
     parameters: [{ $ref: '#/components/parameters/Id' }]
     post:
       tags: [organizations]
       operationId: disableOrganization
       x-owner: API/后端
-      summary: Disable an organization without enabled descendants
+      summary: Disable an organization
       x-permission: organization.manage
       x-data-scope: ORG_SUBTREE
       x-idempotency: domain_key_state_command
@@ -161,12 +143,10 @@ paths:
       x-status: reviewed
       security: [{ bearerAuth: [] }]
       responses:
-        '200': { $ref: '#/components/responses/Success' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
+        '200': { $ref: '#/components/responses/Success' }
         '409': { $ref: '#/components/responses/Conflict' }
-
 
   /employees:
     get:
@@ -553,10 +533,37 @@ paths:
       x-audit: false
       x-status: reviewed
       security: [{ bearerAuth: [] }]
-      parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+        - in: query
+          name: assetId
+          required: false
+          schema: { $ref: '#/components/schemas/Id' }
+        - in: query
+          name: employeeId
+          required: false
+          schema: { $ref: '#/components/schemas/Id' }
+        - in: query
+          name: orgId
+          required: false
+          schema: { $ref: '#/components/schemas/Id' }
+        - in: query
+          name: status
+          required: false
+          schema: { type: integer, enum: [1, 2] }
+        - in: query
+          name: from
+          required: false
+          schema: { type: string, format: date-time }
+        - in: query
+          name: to
+          required: false
+          schema: { type: string, format: date-time }
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/BadRequest' }
         '200': { $ref: '#/components/responses/Success' }
     post:
       tags: [assignments]
@@ -591,6 +598,8 @@ paths:
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/BadRequest' }
         '200': { $ref: '#/components/responses/Success' }
   /touchpoint-assignments/{id}/unbind:
     parameters: [{ $ref: '#/components/parameters/Id' }]
@@ -636,16 +645,54 @@ paths:
       operationId: listAccessEvents
       x-owner: API/后端
       summary: List access events in the caller scope
+      description: >-
+        Read-only, non-audited access-event query. Filters can only narrow the
+        caller's effective ORG_SUBTREE scope. `from` is inclusive and `to` is
+        exclusive; both must include a timezone and `from` may equal `to`.
       x-permission: access-event.read
       x-data-scope: ORG_SUBTREE
       x-idempotency: none
       x-audit: false
       x-status: reviewed
       security: [{ bearerAuth: [] }]
-      parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+        - in: query
+          name: assetId
+          required: false
+          description: Positive BIGINT identifier encoded as a decimal string.
+          schema: { $ref: '#/components/schemas/Id' }
+        - in: query
+          name: orgId
+          required: false
+          description: Positive BIGINT identifier encoded as a decimal string; cannot expand scope.
+          schema: { $ref: '#/components/schemas/Id' }
+        - in: query
+          name: employeeId
+          required: false
+          description: Positive BIGINT identifier encoded as a decimal string; cannot expand scope.
+          schema: { $ref: '#/components/schemas/Id' }
+        - in: query
+          name: resolutionStatus
+          required: false
+          description: Association status, where 0=pending, 1=success, 2=retry, 3=failed.
+          schema: { type: integer, enum: [0, 1, 2, 3] }
+        - in: query
+          name: from
+          required: false
+          description: Inclusive RFC3339 start time with timezone; must not be later than `to`.
+          schema: { type: string, format: date-time }
+        - in: query
+          name: to
+          required: false
+          description: Exclusive RFC3339 end time with timezone; must not be earlier than `from`.
+          schema: { type: string, format: date-time }
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/RequestSchemaInvalid' }
+        '500': { $ref: '#/components/responses/InternalError' }
         '200': { $ref: '#/components/responses/Success' }
   /access-events/{id}:
     parameters: [{ $ref: '#/components/parameters/Id' }]
@@ -659,10 +706,14 @@ paths:
       x-idempotency: none
       x-audit: false
       x-status: reviewed
+      description: Read-only, non-audited detail query restricted to the caller's effective scope.
       security: [{ bearerAuth: [] }]
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/RequestSchemaInvalid' }
+        '500': { $ref: '#/components/responses/InternalError' }
         '200': { $ref: '#/components/responses/Success' }
 
   /webhooks/linkforty:
@@ -676,6 +727,11 @@ paths:
       x-idempotency: event_id
       x-audit: true
       x-status: reviewed
+      description: >-
+        Receive a LinkForty `click_event`. The server verifies the HMAC-SHA256
+        signature against the exact raw request bytes before parsing JSON. The
+        `system_webhook` permission is an integration identity and is not a
+        Casdoor user permission.
       parameters:
         - in: header
           name: X-LinkForty-Signature
@@ -691,6 +747,7 @@ paths:
           schema: { type: string, maxLength: 255 }
       requestBody:
         required: true
+        description: JSON object with the canonical event envelope. Raw bytes are used for HMAC verification; secrets and raw bodies are never part of this contract.
         content:
           application/json:
             schema: { $ref: '#/components/schemas/LinkFortyWebhookEnvelope' }
@@ -698,6 +755,9 @@ paths:
         '202': { $ref: '#/components/responses/Accepted' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/RequestSchemaInvalid' }
+        '500': { $ref: '#/components/responses/InternalError' }
         '503': { $ref: '#/components/responses/DataSourceUnavailable' }
 
   /analytics/summary:
@@ -706,7 +766,7 @@ paths:
       operationId: getAnalyticsSummary
       x-owner: API/后端/统计
       summary: Read click, access, install and App event metrics
-      description: V1.3.2 reads LinkForty data through API-only integration. The current Core API exposes click analytics; unavailable install or App aggregates fail with DATA_SOURCE_UNAVAILABLE rather than using a database readonly connection.
+      description: V1.3.2 reads LinkForty data through API-only integration. The summary is defined over the half-open interval [from,to). The current Core API exposes click analytics only as a rolling days window, so a non-empty LinkForty scope cannot satisfy this exact interval and fails with DATA_SOURCE_UNAVAILABLE; unavailable install or App aggregates fail the same way rather than using a database readonly connection.
       x-permission: analytics.read
       x-data-scope: ORG_SUBTREE
       x-idempotency: none
@@ -732,6 +792,7 @@ paths:
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/RequestSchemaInvalid' }
         '200': { $ref: '#/components/responses/AnalyticsSuccess' }
         '503': { $ref: '#/components/responses/DataSourceUnavailable' }
 
@@ -741,6 +802,12 @@ paths:
       operationId: validateImport
       x-owner: API/后端/导入
       summary: Validate an import file without writing business tables
+      description: >-
+        Synchronous, read-only CSV pre-validation. Only assignment rows carry
+        the required explicit operation column, whose accepted values are bind,
+        unbind and transfer. Rows omitted from the CSV are ignored and never
+        imply deletion, disabling or unbinding. V1.3.2 does not expose an
+        import execution endpoint.
       x-permission: import.validate
       x-data-scope: ORG_SUBTREE
       x-idempotency: none
@@ -762,6 +829,9 @@ paths:
         '200': { $ref: '#/components/responses/Success' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '413': { $ref: '#/components/responses/ImportFileTooLarge' }
+        '415': { $ref: '#/components/responses/ImportFileTypeInvalid' }
+        '422': { $ref: '#/components/responses/RequestSchemaInvalid' }
 
   /exports/{resource}:
     get:
@@ -834,7 +904,7 @@ components:
       in: path
       name: id
       required: true
-      schema: { type: string, pattern: '^[0-9]+$' }
+      schema: { type: string, pattern: '^[0-9]*[1-9][0-9]*$' }
     Page:
       in: query
       name: page
@@ -912,11 +982,12 @@ components:
   schemas:
     Id:
       type: string
-      pattern: '^[0-9]+$'
-      description: BIGINT identifiers are transported as strings.
+      pattern: '^[0-9]*[1-9][0-9]*$'
+      description: Positive BIGINT identifiers are transported as decimal strings.
     NullableId:
       type: [string, 'null']
-      pattern: '^[0-9]+$'
+      pattern: '^[0-9]*[1-9][0-9]*$'
+      description: Nullable positive BIGINT identifier encoded as a decimal string.
     Status:
       type: integer
       minimum: 0
@@ -928,38 +999,26 @@ components:
       additionalProperties: false
       required: [orgCode, orgName]
       properties:
-        orgCode: { type: string, maxLength: 64, pattern: '^1([0-9]{3})*$'}
+        orgCode: { type: string, maxLength: 64, pattern: '^1([0-9]{3})*$' }
         orgName: { type: string, minLength: 1, maxLength: 128 }
         sortNo: { type: integer, default: 100 }
         locationCode: { type: [string, 'null'], maxLength: 64 }
         doorNo: { type: [string, 'null'], maxLength: 32 }
         contactName: { type: [string, 'null'], maxLength: 100 }
+        contactPhone: { type: [string, 'null'], maxLength: 32, writeOnly: true }
         description: { type: [string, 'null'], maxLength: 500 }
     OrganizationPatchRequest:
       type: object
       additionalProperties: false
       minProperties: 1
       properties:
-        orgName:
-          type: string
-          minLength: 1
-          maxLength: 128
-        sortNo:
-          type: integer
-          minimum: 0
-          maximum: 999999
-        locationCode:
-          type: [string, 'null']
-          maxLength: 64
-        doorNo:
-          type: [string, 'null']
-          maxLength: 32
-        contactName:
-          type: [string, 'null']
-          maxLength: 100
-        description:
-          type: [string, 'null']
-          maxLength: 500
+        orgName: { type: string, minLength: 1, maxLength: 128 }
+        sortNo: { type: integer }
+        locationCode: { type: [string, 'null'], maxLength: 64 }
+        doorNo: { type: [string, 'null'], maxLength: 32 }
+        contactName: { type: [string, 'null'], maxLength: 100 }
+        contactPhone: { type: [string, 'null'], maxLength: 32, writeOnly: true }
+        description: { type: [string, 'null'], maxLength: 500 }
     EmployeeCreateRequest:
       type: object
       additionalProperties: false
@@ -1130,10 +1189,12 @@ components:
     AccessEvent:
       type: object
       additionalProperties: false
-      required: [id, eventId, clickId, assetId, resolutionStatus, receivedAt]
+      required:
+        [id, eventId, clickId, assetId, bindingId, orgId, employeeId,
+         resolutionStatus, resolutionReason, receivedAt, resolvedAt]
       properties:
         id: { $ref: '#/components/schemas/Id' }
-        eventId: { type: string }
+        eventId: { type: string, minLength: 1, maxLength: 255 }
         clickId: { type: string, format: uuid }
         assetId: { $ref: '#/components/schemas/Id' }
         bindingId: { $ref: '#/components/schemas/NullableId' }
@@ -1189,11 +1250,13 @@ components:
         installCount: { type: integer, minimum: 0 }
         inAppCount: { type: integer, minimum: 0 }
       description: >-
-        Clicks use click_events.clicked_at and exclude bots; access uses
-        access_events.received_at; installs use install_events.installed_at;
-        in-app events use in_app_events.event_timestamp. All counts are
-        filtered by AccessContext and unavailable required sources return
-        DATA_SOURCE_UNAVAILABLE instead of partial data.
+        LinkForty clicks use the Core click event clicked_at and exclude bots;
+        access uses access_events.received_at; installs use
+        install_events.installed_at; in-app events use
+        in_app_events.event_timestamp. All counts are filtered by
+        AccessContext. The bank backend does not read the LinkForty database;
+        unavailable required sources return DATA_SOURCE_UNAVAILABLE instead
+        of partial data.
     SuccessEnvelope:
       type: object
       required: [requestId, data]
@@ -1211,14 +1274,18 @@ components:
             - { $ref: '#/components/schemas/AccessEvent' }
             - { $ref: '#/components/schemas/AuditLog' }
             - { $ref: '#/components/schemas/AnalyticsSummaryData' }
+            - { $ref: '#/components/schemas/WebhookAcceptedData' }
     ErrorDetail:
       type: object
+      additionalProperties: false
       required: [field, type]
       properties:
         field: { type: string }
         type: { type: string }
+        message: { type: string }
     Error:
       type: object
+      additionalProperties: false
       required: [code, message]
       properties:
         code: { type: string }
@@ -1228,16 +1295,22 @@ components:
           items: { $ref: '#/components/schemas/ErrorDetail' }
     ErrorEnvelope:
       type: object
+      additionalProperties: false
       required: [requestId, error]
       properties:
         requestId: { type: string }
         error: { $ref: '#/components/schemas/Error' }
     LinkFortyWebhookEnvelope:
       type: object
+      additionalProperties: true
       required: [event, event_id, data]
+      description: >-
+        Canonical LinkForty envelope. `eventId` may be accepted as a legacy
+        input alias by the runtime, but `event_id` is the formal contract.
+        The request body must be an object and `data.id`/`data.linkId` are UUIDs.
       properties:
         event: { type: string, enum: [click_event], maxLength: 64 }
-        event_id: { type: string, maxLength: 255 }
+        event_id: { type: string, minLength: 1, maxLength: 255 }
         timestamp: { type: string, format: date-time }
         data:
           type: object
@@ -1246,9 +1319,19 @@ components:
             id: { type: string, format: uuid }
             linkId: { type: string, format: uuid }
           additionalProperties: true
+    WebhookAcceptedData:
+      type: object
+      additionalProperties: false
+      required: [eventId, accessEventId, replayed]
+      properties:
+        eventId: { type: string, minLength: 1, maxLength: 255 }
+        accessEventId: { $ref: '#/components/schemas/Id' }
+        replayed: { type: boolean }
   responses:
     AnalyticsSuccess:
       description: Analytics summary with four aggregate counters
+      headers:
+        X-Request-ID: { $ref: '#/components/headers/RequestId' }
       content:
         application/json:
           schema:
@@ -1259,38 +1342,98 @@ components:
               requestId: { type: string }
               data: { $ref: '#/components/schemas/AnalyticsSummaryData' }
     Success:
-      description: Successful response
+      description: Successful response. The JSON body includes `requestId` and the response includes the matching `X-Request-ID` header.
+      headers:
+        X-Request-ID: { $ref: '#/components/headers/RequestId' }
       content:
         application/json: { schema: { $ref: '#/components/schemas/SuccessEnvelope' } }
     Accepted:
-      description: Accepted or duplicate event acknowledged; no generic response replay is provided in V1.3.2.
+      description: Accepted or duplicate event acknowledged. A successful replay includes the Idempotency-Replayed response header.
+      headers:
+        X-Request-ID: { $ref: '#/components/headers/RequestId' }
+        Idempotency-Replayed:
+          description: Present with value true when an existing event_id was replayed successfully.
+          schema: { type: string, enum: ["true"] }
       content:
         application/json: { schema: { $ref: '#/components/schemas/SuccessEnvelope' } }
     BadRequest:
-      description: Business validation failure
+      description: >-
+        Business request failure. For M5 Webhook this includes
+        WEBHOOK_EVENT_ID_MISSING and malformed JSON/envelope
+        REQUEST_SCHEMA_INVALID responses.
+      headers:
+        X-Request-ID: { $ref: '#/components/headers/RequestId' }
+      content:
+        application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } }
+    RequestSchemaInvalid:
+      description: Request structure, field type, format or required-field validation failure (REQUEST_SCHEMA_INVALID).
+      headers:
+        X-Request-ID: { $ref: '#/components/headers/RequestId' }
       content:
         application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } }
     Unauthorized:
-      description: Authentication or signature failure
+      description: >-
+        Authentication or signature failure. For M5 Webhook an invalid HMAC
+        uses WEBHOOK_SIGNATURE_INVALID.
+      headers:
+        X-Request-ID: { $ref: '#/components/headers/RequestId' }
       content:
         application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } }
     Forbidden:
-      description: Permission or data scope denied
+      description: >-
+        Permission or data scope denied, using PERMISSION_DENIED or
+        DATA_SCOPE_DENIED as the public error code.
+      headers:
+        X-Request-ID: { $ref: '#/components/headers/RequestId' }
       content:
         application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } }
     NotFound:
-      description: Resource not found
+      description: Resource not found; the public error code is RESOURCE_NOT_FOUND.
+      headers:
+        X-Request-ID: { $ref: '#/components/headers/RequestId' }
       content:
         application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } }
     Conflict:
-      description: Unique, state or assignment conflict
+      description: >-
+        Unique, state or assignment conflict. M5 Webhook state conflicts use
+        STATE_CONFLICT.
+      headers:
+        X-Request-ID: { $ref: '#/components/headers/RequestId' }
       content:
         application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } }
     DataSourceUnavailable:
-      description: External data source unavailable
+      description: >-
+        External data source or required Webhook signing configuration is
+        unavailable; the public error code is DATA_SOURCE_UNAVAILABLE.
+      headers:
+        X-Request-ID: { $ref: '#/components/headers/RequestId' }
+      content:
+        application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } }
+    InternalError:
+      description: Unexpected internal error; the response contains no stack trace or sensitive details.
+      headers:
+        X-Request-ID: { $ref: '#/components/headers/RequestId' }
       content:
         application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } }
     ExportLimitExceeded:
       description: Synchronous export exceeds the V1.3.2 limit
+      headers:
+        X-Request-ID: { $ref: '#/components/headers/RequestId' }
       content:
         application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } }
+    ImportFileTooLarge:
+      description: Import file exceeds the 10 MiB or 100,000 data-row limit
+      headers:
+        X-Request-ID: { $ref: '#/components/headers/RequestId' }
+      content:
+        application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } }
+    ImportFileTypeInvalid:
+      description: Import file name or Content-Type is not supported
+      headers:
+        X-Request-ID: { $ref: '#/components/headers/RequestId' }
+      content:
+        application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } }
+  headers:
+    RequestId:
+      description: Correlation ID; exactly matches the response body's `requestId`.
+      schema: { type: string, minLength: 1, maxLength: 128 }
