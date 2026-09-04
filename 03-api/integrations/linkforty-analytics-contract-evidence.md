@@ -47,6 +47,101 @@
 
 安全探测只对 SDK 路径发送了 GET 请求，返回 `404 Route GET ... not found`；由于正式路由是 POST，未发送 POST，避免创建真实安装或 App 事件。该探测不能单独证明聚合能力不存在，聚合缺口以 Core 路由、README 和 SDK 规格扫描为依据。
 
+## 2.1 非正式源码推导契约（仅供研发参考）
+
+本节根据 LinkForty Core 提交 `3c3a87715fa31771b68e6f945b9c0e8371ef85e3`、包版本
+`1.21.0` 于 2026-09-03 推导。它只记录当前源码可观察到的实现行为，不是 LinkForty
+对外正式契约，不得用于关闭 X-ANL-004、更新银行侧 OpenAPI、接入安装/App 聚合或替代
+负责人确认。
+
+### 2.1.1 可观察路由
+
+| 路由 | 源码推导的请求 | 源码推导的响应/行为 | 是否可作为聚合 API |
+| --- | --- | --- | --- |
+| `GET /api/analytics/overview` | Query：`userId?: string`、`days?: number`；`days` 默认 30 | 返回 `totalClicks`、`uniqueClicks`、`clicksByDate`、`clicksByCountry`、`clicksByDevice`、`clicksByPlatform`、`topLinks`；查询使用服务端 `NOW() - INTERVAL '<days> days'`，并排除 `is_bot = false` | 仅点击聚合；不是安装/App 聚合，不能表达银行要求的精确 `[from,to)` |
+| `GET /api/analytics/links/:linkId` | Path：`linkId: string`；Query：`userId?: string`、`days?: number`；`days` 默认 30 | 返回指定 Link 的点击总数、唯一点击数、按日期/国家/设备/平台维度的点击数据；不存在 Link 时抛出错误 | 仅单 Link 点击聚合；不是安装/App 聚合 |
+| `POST /api/sdk/v1/install` | JSON Body：`userAgent` 必填；`ipAddress`、`timezone`、`language`、`screenWidth`、`screenHeight`、`platform`、`platformVersion`、`deviceId`、`attributionWindowHours`、`sdkName`、`sdkVersion`、`appToken` 可选 | 成功返回 `installId`、`attributed`、`confidenceScore`、`matchedFactors`、`deepLinkData`；这是安装事件写入和归因处理 | 否；写入/归因接口，不是安装计数读取接口 |
+| `POST /api/sdk/v1/event` | JSON Body：`installId` UUID 和 `eventName` 必填；`eventData`、`timestamp`、`attributedLinkId`、`attributedClickId`、`linkOpenedAt`、`sessionId`、`sdkName`、`sdkVersion` 可选 | 先校验安装记录，再写入 App 事件；成功返回 `eventId`、`acknowledged`；安装不存在时返回 404 | 否；App 事件写入接口，不是 App 事件计数读取接口 |
+| `GET /api/sdk/v1/attribution/:fingerprint` | Path：`fingerprint: string` | 返回单个指纹最近一条安装归因及关联点击/Link 数据；无记录时返回 404 | 否；单指纹归因读取，不是按时间、Link、组织或员工范围聚合 |
+| 安装聚合读取 | 未发现 | `src/routes/analytics.ts`、`src/routes/sdk.ts` 和路由注册中未发现对应正式读取端点 | **不可用** |
+| App 事件聚合读取 | 未发现 | `src/routes/analytics.ts`、`src/routes/sdk.ts` 和路由注册中未发现对应正式读取端点 | **不可用** |
+
+### 2.1.2 可观察的内部字段和写入时间行为
+
+以下内容只能说明 Core 内部实现，不能转换为银行侧可调用字段：
+
+| 内部对象 | 源码可观察字段/行为 | 不能据此确认的内容 |
+| --- | --- | --- |
+| `install_events` | `id`、`link_id`、`click_id`、`fingerprint_hash`、`installed_at`、`first_open_at`、归因信息、设备/平台信息等；`installed_at` 默认由数据库 `NOW()` 生成 | 安装计数是否按行数、设备去重或其他口径；外部 API 字段名、范围和时间精度 |
+| `in_app_events` | `id`、`install_id`、`event_name`、`event_data`、`event_timestamp`、`created_at`；客户端提供 `timestamp` 时写入该值，否则使用 Core 当前时间 | App 事件是否按全部事件、事件名、会话、安装或其他维度计数；外部 API 字段名和去重规则 |
+| `POST /api/sdk/v1/install` | 通过 `recordInstallEvent()` 写入安装并执行归因；请求体的 `ipAddress` 仅作为非可信调试字段，归因使用连接/代理来源 IP | 安装聚合是否允许使用该字段；组织、员工、触点和 LinkForty workspace 的正式映射 |
+| `POST /api/sdk/v1/event` | 先按 `installId` 查询安装，再写入 `event_timestamp`；可选归因 Link 可能为空或与安装 Link 不同 | 银行侧 `inAppCount` 应统计哪些事件，以及外部范围如何解释可选归因 Link |
+
+### 2.1.3 源码推导的最小非正式结构
+
+为便于测试和与 LinkForty 负责人沟通，可将当前可观察内容暂时记录为以下非正式结构：
+
+```text
+ObservedInstallWriteRequest {
+  userAgent: string,
+  ipAddress?: string,
+  timezone?: string,
+  language?: string,
+  screenWidth?: number,
+  screenHeight?: number,
+  platform?: string,
+  platformVersion?: string,
+  deviceId?: string,
+  attributionWindowHours?: number,
+  sdkName?: string,
+  sdkVersion?: string,
+  appToken?: string
+}
+
+ObservedInstallWriteResponse {
+  installId: string,
+  attributed: boolean,
+  confidenceScore: number,
+  matchedFactors: string[],
+  deepLinkData: object | null,
+  clientReportedIp?: string
+}
+
+ObservedAppEventWriteRequest {
+  installId: string,             // UUID
+  eventName: string,
+  eventData?: object,
+  timestamp?: string,            // ISO datetime accepted by Zod
+  attributedLinkId?: string,     // UUID
+  attributedClickId?: string,   // UUID
+  linkOpenedAt?: string,         // ISO datetime
+  sessionId?: string,            // UUID
+  sdkName?: string,
+  sdkVersion?: string
+}
+
+ObservedAppEventWriteResponse {
+  eventId: string,
+  acknowledged: boolean
+}
+```
+
+上述结构的名称特意使用 `Observed`，不得直接命名为银行侧正式的
+`InstallAggregateResponse` 或 `InAppAggregateResponse`。当前源码没有任何可推导的
+`from`、`to`、`orgCodePrefix`、员工范围、分页、限流、聚合计数或正式错误响应结构。
+
+### 2.1.4 源码推导契约的使用限制
+
+- 可用于研发人员识别现有路由、字段和缺口，以及设计后续联调问题清单。
+- 可用于证明 SDK 写入接口不能替代安装/App 聚合读取接口。
+- 不可用于银行后台生产接入，不可用于生成正式银行侧聚合 Client。
+- 不可用于推导 `installed_at`、`event_timestamp` 的正式外部时间字段映射。
+- 不可用于推导组织、员工、触点或 LinkForty workspace 数据范围。
+- 不可用于推导认证、TLS/ACL、限流、超时、重试、缓存一致性或版本兼容策略。
+- 不得将 SDK 写入接口、内部表字段或单指纹归因接口改写成 `installCount`/`inAppCount` 数据源。
+- 银行后台继续使用 API-only、fail-closed 行为；正式聚合 API 未确认时继续返回
+  `503 DATA_SOURCE_UNAVAILABLE`，不连接 Core 数据库，不使用 `bank_linkforty_ro`，不伪造零值或部分成功。
+
 ## 3. 正式契约完整性核验
 
 以下表格区分“代码中可见的实现事实”和“可用于银行集成的正式契约”。安装和 App 聚合两列均必须由 LinkForty 负责人提供正式证据后才能变为“已确认”。
