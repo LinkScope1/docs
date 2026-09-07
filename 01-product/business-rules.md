@@ -57,10 +57,11 @@
 
 ## 统计与报表横向能力（不编号）
 
-- 统计与报表不拥有本地专属表，只读 M5 的 `access_events` 和 LinkForty 授权事件表。
+- 统计与报表不拥有本地专属表；V1.3.2 成功统计只读取 M5 的 `access_events` 和已支持的 LinkForty 点击数据。
 - 点击使用 `click_events.clicked_at`。
 - 访问使用 `access_events.received_at`。
-- 安装使用 `install_events.installed_at`。
-- App 事件使用 `in_app_events.event_timestamp`。
+- 安装统计使用 `install_events.installed_at` 的目标口径，但安装聚合成功能力不纳入 V1.3.2。
+- App 事件统计使用 `in_app_events.event_timestamp` 的目标口径，但 App 聚合成功能力不纳入 V1.3.2。
 - 点击统计默认排除机器人。
+- 安装/App 聚合字段在银行侧保留兼容结构；必要能力未支持时整体返回 `503 DATA_SOURCE_UNAVAILABLE`，不返回伪造零值或部分成功。
 - 银行业务办理量不纳入 MVP 正式验收。
