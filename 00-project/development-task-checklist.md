@@ -88,7 +88,7 @@ Total output lines: 463
 
 ### 1.6 本次阻塞收敛快照（2026-09-08）
 
-- 原 61 个阻塞项中，当前 8 个仍为 `阻塞待确认`，均保留具体负责人、前置条件、产出物和关闭标准，不以 Mock 或文档替代外部证据；LinkForty 数据库只读账号相关任务已明确延期至 V1.4。X-ANL-004 的安装/App 聚合能力已按版本范围决议移出 V1.3.2，不计入当前阻塞数。
+- 原 61 个阻塞项中，当前 7 个仍为 `阻塞待确认`，均保留具体负责人、前置条件、产出物和关闭标准，不以 Mock 或文档替代外部证据；`P1-ENV-004` 已完成真实 Docker 隔离验收，脱敏报告为 `/private/tmp/bank-touchpoint-test-evidence/verification-report.json`；LinkForty 数据库只读账号相关任务已明确延期至 V1.4。X-ANL-004 的安装/App 聚合能力已按版本范围决议移出 V1.3.2，不计入当前阻塞数。
 - Casdoor/NFC 真实根任务共 23 个继续为 `延期 / V1.4`；M4 本地绑定命令已实现，但 M2 主数据、测试环境、点击统计精确时间窗口、F-ANL-001 趋势/明细页面、导出和发布门禁仍未关闭；X-ANL-005 统计状态页已有代码与测试证据，X-ANL-006 统计边界仅部分具备，真实 PostgreSQL、外部 API 能力和并发证据仍未完成；安装/App 聚合统计在 V1.3.2 不纳入，后续版本重新评估。
 - LinkForty 同 Key 产生两个 Link 仍是 V1.3.2 已知缺陷；银行侧保留稳定 Key 和重试行为，不修改 Core、不新增通用幂等表、不创建 V1.4 修复任务。
 
@@ -211,7 +211,7 @@ Total output lines: 463
 | P1-ENV-001 | P1 | P1 | 平台横向 | 后端环境 | 安装 Python 3.11～3.13、uv 和锁定依赖。 | 部分具备 | 测试证据/环境记录 | 后端 | 后端/测试 | P0-DB-001 | 可复现 Python 环境 | 当前仓库 `.venv` 可执行后端测试、Ruff 和 mypy；`uv sync --locked` 和 `uv run` 仍需在标准 CI/环境中验证。 | V1.3.2 | 是 | — | 本地 uv 命令不可用，不能宣称环境完全可复现。 | 0.5 |
 | P1-ENV-002 | P1 | P1 | 平台横向 | 后端环境 | 创建脱敏 `.env.example` 并校验必填配置。 | 部分具备 | 代码骨架/安全检查 | 后端 | 后端/测试 | DEC-CAS-001, P0-DB-001 | `.env.example` 和配置校验 | `.env.example` 不含真实 Token、密码或 Secret；开发/测试配置可加载，production Mock 认证会拒绝；生产必填项启动校验仍待补。 | V1.3.2 | 是 | — | 禁止提交生产配置；真实数据库和外部配置仍未验证。 | 0.5 |
 | P1-ENV-003 | P1 | P1 | 平台横向 | 本地环境 | 验证 PostgreSQL、Redis、Celery API 和 Worker 的开发 Compose 启动。 | 部分具备 | 代码骨架 | 后端 | 后端/测试 | P0-REDIS-001, P0-DB-001 | 启动说明和检查脚本 | API、DB、Redis、Worker 均能健康启动。 | V1.3.2 | 是 | — | Docker 环境可能缺少本机权限。 | 1 |
-| P1-ENV-004 | P1 | P1 | 平台横向 | 测试环境 | 创建隔离测试数据库和测试 Schema。 | 阻塞待确认 | 决策记录/外部确认 | DBA | 后端/测试/运维 | P0-DB-001, P1-ENV-003 | 隔离环境报告、账号权限快照、Redis/Celery 隔离报告；执行入口：标准测试 Compose/预生产 Runbook、`alembic current`、`alembic upgrade head`、重复迁移、`pg_isready`、`redis-cli` | 测试数据库、Schema、端口、数据卷、迁移账号、应用账号和测试只读账号均独立；测试库无生产连接；Alembic 基线升级、重复执行、清理/重建/回滚通过；Redis Broker、Result Backend 和 Celery 队列隔离并有任务投递、消费、失败、重试证据后方可关闭。 | V1.3.2 | 是 | — | 进入集成测试阶段前仅保留执行入口；没有连接目标、权限、迁移和队列隔离证据不得关闭。 | 1 |
+| P1-ENV-004 | P1 | P1 | 平台横向 | 测试环境 | 创建隔离测试数据库和测试 Schema。 | 已完成 | 真实 Docker 验收/测试报告/权限快照 | DBA | 后端/测试/运维 | P0-DB-001, P1-ENV-003 | 隔离环境报告、账号权限快照、Redis/Celery 隔离报告；执行入口：标准测试 Compose/预生产 Runbook、`alembic current`、`alembic upgrade head`、重复迁移、`pg_isready`、`redis-cli` | 测试数据库、Schema、端口、数据卷、迁移账号、应用账号和测试只读账号均独立；测试库无生产连接；Alembic 基线升级、重复执行、清理/重建/回滚通过；Redis Broker、Result Backend 和 Celery 队列隔离并有任务投递、消费、失败、重试证据后方可关闭。 | V1.3.2 | 是 | — | 真实 Docker 验收已通过；994 个全量测试、23 个定向测试和 35 项环境检查均成功。脱敏报告：`/private/tmp/bank-touchpoint-test-evidence/verification-report.json`；测试资源已清理。 | 1 |
 | P1-ENV-005 | P1 | P1 | 平台横向 | 测试数据 | 准备根组织、下级组织、启用/停用员工、资产、绑定和事件测试数据。 | 待开发 | 待产生测试 | 测试 | 后端/测试 | P1-ENV-004 | Seed 和测试 fixture | 测试数据覆盖全局、机构、本人、观察者和无责任员工。 | V1.3.2 | 是 | — | 测试数据包含个人信息时必须使用假数据。 | 1 |
 | P1-ENV-006 | P1 | P1 | 平台横向 | 前端环境 | 验证 Node 18、npm ci、Vite、Vitest 和 Playwright 的可复现安装。 | 部分具备 | 测试证据 | 前端 | 后端/测试 | P0-GOV-001 | 前端环境说明 | `npm ci` 和所有 CI 命令在干净环境成功。 | V1.3.2 | 是 | — | 浏览器依赖需在 CI 安装。 | 0.5 |
 | P1-ENV-007 | P1 | P1 | 平台横向 | API 类型 | 将 OpenAPI 生成类型纳入前端 CI，并禁止手工修改生成文件。 | 部分具备 | 测试证据 | 前端 | 后端/测试 | P0-API-002 | 类型生成脚本/CI 步骤 | OpenAPI 变化能导致类型重新生成并被检查。 | V1.3.2 | 是 | — | OpenAPI draft 变化频繁。 | 0.5 |
