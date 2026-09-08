@@ -11,8 +11,8 @@
 - Casdoor 真实认证/权限外部联调和 NFC 真机/SDK/写卡读回核验延期至 V1.4；V1.3.2 仅保留 `AccessContext`、`MockAccessContextProvider`、`NfcDevice` 和 `MockNfcDevice` 的开发/测试边界，未配置真实认证的生产环境必须拒绝访问，因此 V1.3.2 不能作为生产版本发布。
 - V1.3.2 内部数据语义、幂等边界、M4 规则、导入/导出范围和统计口径已按冻结记录收敛；LinkForty API、真实数据库/Redis 环境和发布证据仍需外部证据。LinkForty 数据库只读账号、授权和负向测试明确延期至 V1.4；Core 不处理 `Idempotency-Key` 的重复 Link 行为作为 V1.3.2 已知风险接受，不标记为幂等通过。
 - M4 绑定、解绑和调拨已补齐 Router → Service → Repository 的本地事务边界，继续使用既有 OpenAPI 路径和 7 张银行表；真实 M2 主数据、PostgreSQL 并发和发布证据仍未关闭。
-- 本次真实 Docker 集成验收已通过：银行后端全量 `994 passed`，定向 Worker/数据库测试 `23 passed`，Ruff/mypy、Alembic 重复升级与回滚、7 张银行表、角色权限、Redis DB0/DB1/DB2、Celery `inspect ping`、测试队列 Worker、API/Worker 脱敏配置和三类任务场景均通过。脱敏报告保存在仓库外受控目录 `/private/tmp/bank-touchpoint-test-evidence/verification-report.json`，测试资源已清理；未连接生产或 LinkForty 数据库。V1.3.2 不依赖 `bank_linkforty_ro`。
-- 代码复核后的任务清单统计：共 297 条；待开发 44、部分具备 154、已具备 20、已确认 19、条件开发 19、延期 28、阻塞待确认 7、已完成 5、验证中 1。状态变更仅反映可定位代码/测试证据，不代表外部环境或生产门禁已关闭。
+- 本次真实 Docker 集成验收已通过：银行后端全量 `1004 passed`，定向 Worker/数据库测试 `23 passed`，P1-ENV-005 Seed 首次/重复执行与 `--verify` 通过；Ruff/mypy、Alembic 重复升级与回滚、7 张银行表、角色权限、Redis DB0/DB1/DB2、Celery `inspect ping`、测试队列 Worker、API/Worker 脱敏配置和三类任务场景均通过。脱敏环境报告保存在仓库外受控目录 `/private/tmp/bank-touchpoint-test-evidence/verification-report.json`，Seed 脱敏报告为 `/private/tmp/bank-touchpoint-test-evidence/seed-verification.json`，测试资源已清理；未连接生产或 LinkForty 数据库。V1.3.2 不依赖 `bank_linkforty_ro`。
+- 代码复核后的任务清单统计：共 297 条；待开发 43、部分具备 154、已具备 20、已确认 19、条件开发 19、延期 28、阻塞待确认 7、已完成 6、验证中 1。状态变更仅反映可定位代码/测试证据，不代表外部环境或生产门禁已关闭。
 - LinkForty 本地真实 API 的重复请求验证发现：相同 `Idempotency-Key` 产生两个不同 Link，临时测试资源已清理；该结果作为 V1.3.2 已知缺陷记录，不作为幂等通过，也不创建 V1.4 修复任务。正式字段、TLS/ACL 和 API 生产安全例外仍待外部证据。
 - 当前代码已提供 M2 组织/员工生命周期、M3 资产/Payload、M4 绑定、M5 Webhook/事件、同步导入预校验、同步白名单导出和 API-only analytics 的局部实现；这些能力仍按逐项闭环、权限、数据库和外部验证结果计量，不因代码存在而整体关闭。安装/App 聚合统计已明确移出 V1.3.2，保留兼容字段和整体 `503 DATA_SOURCE_UNAVAILABLE` 失败边界，后续版本重新评估。前端 M1～M5 仍为 `ModuleStatusPage` 工程骨架，统计页是当前唯一接入银行 API 的业务页。性能报告、生产配置、备份恢复、回滚和审批仍是外部门禁。LinkForty 数据库只读脚本仅为 V1.4 准备。
 - 性能/发布默认阈值已冻结：列表/事件/统计/同步导出 P95 为 500ms/1s/2s/5s，错误率 <1%，队列积压 <100，观察 30 分钟；P99 仅记录。未完成这些证据不得关闭发布任务。
