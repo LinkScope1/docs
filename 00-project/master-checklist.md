@@ -2,7 +2,7 @@
 
 本清单只维护开发前、开发中和发布前的高层门禁，不复制单项任务的状态和验收内容。可执行的 Issue/看板任务、依赖、负责人、产出物和验收标准以[详细开发任务清单](./development-task-checklist.md)为准。
 
-## 当前进度快照（2026-09-07）
+## 当前进度快照（2026-09-08）
 
 - LinkForty Core `1.21.0` 已通过本地 Docker 环境完成一次真实短链点击和 `click_event` 投递；本地接收端已完成原始 body、Header、HMAC、字段、幂等、负向和重试验证。
 - 脱敏验证报告保存在仓库外受控目录 `/private/tmp/linkforty-webhook-evidence/verification-report.json`，不纳入 Git，且不含 Secret 或完整 payload。
@@ -11,11 +11,14 @@
 - Casdoor 真实认证/权限外部联调和 NFC 真机/SDK/写卡读回核验延期至 V1.4；V1.3.2 仅保留 `AccessContext`、`MockAccessContextProvider`、`NfcDevice` 和 `MockNfcDevice` 的开发/测试边界，未配置真实认证的生产环境必须拒绝访问，因此 V1.3.2 不能作为生产版本发布。
 - V1.3.2 内部数据语义、幂等边界、M4 规则、导入/导出范围和统计口径已按冻结记录收敛；LinkForty API、真实数据库/Redis 环境和发布证据仍需外部证据。LinkForty 数据库只读账号、授权和负向测试明确延期至 V1.4；Core 不处理 `Idempotency-Key` 的重复 Link 行为作为 V1.3.2 已知风险接受，不标记为幂等通过。
 - M4 绑定、解绑和调拨已补齐 Router → Service → Repository 的本地事务边界，继续使用既有 OpenAPI 路径和 7 张银行表；真实 M2 主数据、PostgreSQL 并发和发布证据仍未关闭。
-- 本次自动化验证已通过：银行后端 94 项通过、1 项跳过；Ruff/mypy、前端 lint/typecheck/build、LinkForty Core 188 项测试和文档校验均通过。Docker 中的银行 PostgreSQL/Redis 与 LinkForty Core/Redis 健康检查已通过，但银行数据库当前 revision 为 `0002`，且银行后台/Worker 未在该 Compose 环境运行；相关迁移、队列隔离和生产配置证据不关闭。V1.3.2 不依赖 `bank_linkforty_ro`。
+- 本次自动化验证已通过：银行后端 `934 passed, 57 skipped`；Ruff/mypy、前端 lint/typecheck、19 项 Vitest、build、LinkForty Core 188 项测试和文档校验（93 个 Markdown 文件）均通过。后端 57 个跳过项属于 PostgreSQL、Redis、Celery、迁移、并发或 Worker 环境保护项；前端 Playwright 因配置会启动 Vite，本次未执行。银行代码当前 Alembic head 为 `0004_payload_target_url`，未执行数据库迁移或连接生产/Core 数据库；相关迁移、队列隔离和生产配置证据不关闭。V1.3.2 不依赖 `bank_linkforty_ro`。
+- 代码复核后的任务清单统计：共 297 条；待开发 44、部分具备 154、已具备 20、已确认 19、条件开发 19、延期 28、阻塞待确认 8、已完成 4、验证中 1。状态变更仅反映可定位代码/测试证据，不代表外部环境或生产门禁已关闭。
 - LinkForty 本地真实 API 的重复请求验证发现：相同 `Idempotency-Key` 产生两个不同 Link，临时测试资源已清理；该结果作为 V1.3.2 已知缺陷记录，不作为幂等通过，也不创建 V1.4 修复任务。正式字段、TLS/ACL 和 API 生产安全例外仍待外部证据。
-- 本次剩余阻塞实施已补齐 M2 组织/员工生命周期、同步导入预校验、同步白名单导出、API-only analytics 边界和 X-ANL-005 前端统计状态页；安装/App 聚合统计已明确移出 V1.3.2，保留兼容字段和整体 `503 DATA_SOURCE_UNAVAILABLE` 失败边界，后续版本重新评估。X-ANL-006 统计专项测试已在 Docker PostgreSQL 测试库 `15432` 上真实通过，定向测试 65 项通过，全量后端 898 项通过、56 项跳过；CAP-ANL-001 已通过。F-ANL-001 趋势/明细页面不属于本任务。隔离环境、性能报告、生产配置、备份恢复、回滚和审批仍是外部门禁。LinkForty 数据库只读脚本仅为 V1.4 准备。
+- 当前代码已提供 M2 组织/员工生命周期、M3 资产/Payload、M4 绑定、M5 Webhook/事件、同步导入预校验、同步白名单导出和 API-only analytics 的局部实现；这些能力仍按逐项闭环、权限、数据库和外部验证结果计量，不因代码存在而整体关闭。安装/App 聚合统计已明确移出 V1.3.2，保留兼容字段和整体 `503 DATA_SOURCE_UNAVAILABLE` 失败边界，后续版本重新评估。前端 M1～M5 仍为 `ModuleStatusPage` 工程骨架，统计页是当前唯一接入银行 API 的业务页。隔离环境、性能报告、生产配置、备份恢复、回滚和审批仍是外部门禁。LinkForty 数据库只读脚本仅为 V1.4 准备。
 - 性能/发布默认阈值已冻结：列表/事件/统计/同步导出 P95 为 500ms/1s/2s/5s，错误率 <1%，队列积压 <100，观察 30 分钟；P99 仅记录。未完成这些证据不得关闭发布任务。
-- 当前 8 个阻塞任务 `P1-ENV-004`、`X-WORK-003`、`T-PERF-001`、`R-P3-007`、`R-P5-001`、`R-P5-004`、`R-P5-008`、`R-P5-010` 均保留 `阻塞待确认`；`X-ANL-004` 已按范围决议延期至 V1.4，不再计入当前阻塞数。详细负责人、依赖、证据文件、执行入口和关闭条件已写入[详细开发任务清单](./development-task-checklist.md)；本阶段只补齐治理入口，不以 Mock、代码骨架、API 草稿或文档替代外部证据。隔离环境、性能、生产配置、发布门禁和观察窗口进入对应集成/发布阶段后执行，完成前 V1.3.2 不得生产发布。
+- 代码复核结果：运行时 FastAPI 共 44 个 operation（含 `/health`），`/api/v1` 下 43 个；冻结 OpenAPI 为 41 个业务 operation。运行时额外存在 `POST /imports/assignments/execute` 和资产嵌套 Payload 路径，文档存在但运行时未匹配 `POST /touchpoint-payloads`。该差异记录为契约风险，不在本次修改 API 或代码。
+- Core 与 `card-switch-demo` 为独立外部平台/演示项目，不计入银行后台 M1～M5 完成度。Core 的无认证、可选 `userId`、默认 CORS `*`、Webhook Secret 读取风险以及 analytics 滚动窗口限制继续作为外部安全和发布风险。
+- 当前 8 个阻塞任务 `P1-ENV-004`、`X-WORK-003`、`T-PERF-001`、`R-P3-007`、`R-P5-001`、`R-P5-004`、`R-P5-008`、`R-P5-010` 均保留 `阻塞待确认`；`X-ANL-004` 已按范围决议延期至 V1.4，不再计入当前阻塞数。详细负责人、依赖、证据文件、执行入口和关闭条件已写入[详细开发任务清单](./development-task-checklist.md)；完成前 V1.3.2 不得生产发布。
 
 ## Epic/Issue/任务索引
 
@@ -52,7 +55,7 @@
 ## P0：开发前必须完成
 
 - [x] 确认银行后台与 LinkForty Core 边界
-- [x] 确认 Python 后端和前端真实代码目录：`bank-touchpoint-backend/`、`bank-touchpoint-frontend/`；当前仅为工程骨架
+- [x] 确认 Python 后端和前端真实代码目录：`bank-touchpoint-backend/`、`bank-touchpoint-frontend/`；后端已有局部 M1～M5 代码落点，前端 M1～M5 当前仍为工程骨架
 - [x] 确认 MVP 范围和不纳入项
 - [x] 确认 M1～M5 负责人以及工作包 A、B 的主负责人
 - [ ] 完成 Casdoor 真实环境 PoC，并确认 `employee_code` Claim（延期至 V1.4；V1.3.2 保留开发/测试 Mock）
@@ -125,9 +128,9 @@
 
 | 事项 | 负责人 | 截止时间 | 状态 |
 |---|---|---|---|
-| 银行后台 Python/React 工程目录及实现状态 | 待指定 | 2026-08-19 | 已确认目录；业务闭环待开发 |
+| 银行后台 Python/React 工程目录及实现状态 | 待指定 | 2026-08-19 | 已确认目录；后端局部代码已落地，前端 M1～M5 仍为骨架，完整业务闭环待开发 |
 | Casdoor issuer/audience/JWKS/employee_code Claim | 平台/安全 | V1.4 | 延期至 V1.4；真实外部证据待补 |
 | LinkForty API 契约 | LinkForty 负责人 | 待指定 | 本地创建/查询和健康检查可用；同 Key 重复请求产生两个 Link，作为 V1.3.2 已知风险；安装/App 聚合统计本版本不纳入，正式字段、TLS/ACL 和只读证据按对应版本边界处理 |
 | Webhook 签名和事件样例 | LinkForty 负责人 | 待指定 | 本地真实样例已验证；负责人正式确认已完成 |
 | NFC 设备和 NDEF 方案 | 硬件/业务 | V1.4 | 延期至 V1.4；真实外部证据待补，V1.3.2 使用 Mock |
-| 数据库部署和只读账号 | 数据库/运维 | 待指定 | PostgreSQL 15.19/Redis 7.4.11 健康；Alembic 当前 `0002`，银行迁移/运行权限和生产证据待确认；LinkForty 数据库只读账号延期至 V1.4，V1.3.2 统计只调用 API |
+| 数据库部署和只读账号 | 数据库/运维 | 待指定 | 代码 head 为 Alembic `0004_payload_target_url`；本次未连接 PostgreSQL/Redis/Celery，Worker、迁移、运行权限和生产证据待确认；LinkForty 数据库只读账号延期至 V1.4，V1.3.2 统计只调用 API |
