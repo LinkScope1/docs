@@ -147,9 +147,9 @@
 
 ## 7.1 统计汇总契约
 
-`GET /api/v1/analytics/summary` 只返回 `clickCount`、`accessCount`、`installCount` 和 `inAppCount` 四项汇总计数，以及 `from`、`to` 和可选的 `orgCodePrefix`。时间范围为左闭右开 `[from,to)`：`from` 必须早于 `to`，且二者必须带时区。
+`GET /api/v1/analytics/summary` 的成功响应结构保留 `clickCount`、`accessCount`、`installCount` 和 `inAppCount` 四项汇总计数，以及 `from`、`to` 和可选的 `orgCodePrefix`。V1.3.2 只提供点击和访问统计成功能力；安装/App 聚合字段为兼容保留字段，相关能力未支持时不返回成功 `data`。时间范围为左闭右开 `[from,to)`：`from` 必须早于 `to`，且二者必须带时区。
 
-- 访问使用本地 `access_events.received_at`；LinkForty 点击统计通过 API 获取，Core 负责排除机器人。当前 Core 的点击 API 只有滚动 `days` 窗口，不能准确表达 `[from,to)`，因此存在有效 LinkForty Payload 时必须返回 `503 DATA_SOURCE_UNAVAILABLE`。安装和 App 事件仍沿用目标事件时间口径，但当前 Core API 未提供对应聚合读取接口，不能通过数据库直连补齐。
+- 访问使用本地 `access_events.received_at`；LinkForty 点击统计通过 API 获取，Core 负责排除机器人。当前 Core 的点击 API 只有滚动 `days` 窗口，不能准确表达 `[from,to)`，因此存在有效 LinkForty Payload 时必须返回 `503 DATA_SOURCE_UNAVAILABLE`。安装/App 聚合读取不纳入 V1.3.2；保留字段对应的必要能力未支持时同样返回整体 `503 DATA_SOURCE_UNAVAILABLE`，不能通过数据库直连补齐。
 - `orgCodePrefix` 只能在 `AccessContext` 已授权范围内进一步收窄；不能通过请求参数扩大数据范围。
 - 任一必要数据源不可用时返回 `503 DATA_SOURCE_UNAVAILABLE`，不返回部分成功的统计结果。
 - 统计不创建本地专属表，不返回趋势数组、未经确认的统计维度或银行业务办理量。

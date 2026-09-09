@@ -4,14 +4,21 @@
 
 | 项目 | 结果 |
 | --- | --- |
-| 核验日期 | 2026-09-02 |
-| 当前状态 | **阻塞待确认** |
-| 是否关闭 X-ANL-004 | **否** |
+| 核验日期 | 2026-09-07 |
+| 当前状态 | **延期至 V1.4（V1.3.2 不纳入）** |
+| 是否关闭 X-ANL-004 | **否（延期不等于完成）** |
 | 核验范围 | LinkForty Core 安装事件和 App 事件的正式聚合读取 API、时间口径、范围映射、API-only 边界和失败语义 |
 
-当前没有足够证据关闭 X-ANL-004。Core 当前可观察到安装/App 数据模型和 SDK 写入接口，但没有发现正式的安装聚合或 App 事件聚合读取接口，也没有发现可验证的精确 `[from,to)` 契约、银行组织/员工范围映射、生产网络安全证明或 LinkForty 负责人确认。
+经版本范围决议，安装/App 聚合成功能力不纳入 V1.3.2，X-ANL-004 不再作为当前版本开发阻塞项，也不标记为已完成。Core 当前可观察到安装/App 数据模型和 SDK 写入接口，但没有发现正式的安装聚合或 App 事件聚合读取接口；精确 `[from,to)` 契约、银行组织/员工范围映射、生产网络安全证明和 LinkForty 负责人确认保留为 V1.4 重新评估前置条件。
 
-因此，银行后台继续使用 API-only、fail-closed 方案：非空 LinkForty 范围下，安装/App 聚合能力未提供或未确认时返回 `503 DATA_SOURCE_UNAVAILABLE`，不查询 Core 数据库、不使用 `bank_linkforty_ro`、不伪造 `0`，也不返回部分成功。
+因此，银行后台继续使用 API-only、fail-closed 方案：保留 `installCount`/`inAppCount` 字段以维持现有响应结构，但 V1.3.2 不提供其成功数据；需要这些字段且能力未支持时返回 `503 DATA_SOURCE_UNAVAILABLE`，不返回 `data`，不查询 Core 数据库、不使用 `bank_linkforty_ro`、不伪造 `0`，也不返回点击/访问部分成功。
+
+## 0. V1.3.2 范围决议
+
+- 安装聚合读取和 App 事件聚合读取从 V1.3.2 成功能力中移出，后续版本重新评估；本次不修改 LinkForty Core，不新增聚合路由，不新增银行侧聚合 Client/Service。
+- 银行后台 `GET /api/v1/analytics/summary` 保留 `installCount`、`inAppCount` 字段和既有错误契约，未支持的必要能力触发整体 `503 DATA_SOURCE_UNAVAILABLE`，不产生部分成功响应。
+- 本版本不新增安装/App 成功、空结果、精确边界或时区统计验收；仅保留能力不可用、无 `data`、无伪造零值和无部分成功的失败边界测试。
+- 本决议将 X-ANL-004 标记为延期而非完成；正式 API 契约、范围映射和联调材料仅在 V1.4 重新纳入时作为关闭门槛。
 
 ## 1. 证据索引
 
@@ -42,8 +49,8 @@
 | 点击分析 | `GET /api/analytics/overview?userId=&days=`；`GET /api/analytics/links/:linkId?userId=&days=` | 返回 `totalClicks`、`uniqueClicks`、趋势和维度字段；时间窗口由服务端按滚动天数计算，并排除 `is_bot = false` 之外的记录。 | 由 X-ANL-002 跟踪；不能替代安装/App 聚合，也不能证明精确 `[from,to)`。 |
 | 安装接入 | `POST /api/sdk/v1/install` | 请求包括 `userAgent` 以及可选设备、平台、SDK、归因窗口和 `appToken` 字段；响应包括 `installId`、归因结果、置信度和 Deep Link 数据。 | 写入/归因接口，不是安装计数读取接口；不能作为 `installCount` 数据源。 |
 | App 事件接入 | `POST /api/sdk/v1/event` | 请求包括 `installId`、`eventName`、可选 `eventData`、`timestamp`、归因和 SDK 字段；响应包括 `eventId`、`acknowledged`。 | 写入接口，不是 App 事件计数读取接口；不能作为 `inAppCount` 数据源。 |
-| 安装聚合读取 | 未发现 | 没有可核验的正式方法、路径、参数、响应或错误契约。 | **阻塞**。 |
-| App 聚合读取 | 未发现 | 没有可核验的正式方法、路径、参数、响应或错误契约。 | **阻塞**。 |
+| 安装聚合读取 | 未发现 | 没有可核验的正式方法、路径、参数、响应或错误契约。 | V1.3.2 不纳入；V1.4 重新评估。 |
+| App 聚合读取 | 未发现 | 没有可核验的正式方法、路径、参数、响应或错误契约。 | V1.3.2 不纳入；V1.4 重新评估。 |
 
 安全探测只对 SDK 路径发送了 GET 请求，返回 `404 Route GET ... not found`；由于正式路由是 POST，未发送 POST，避免创建真实安装或 App 事件。该探测不能单独证明聚合能力不存在，聚合缺口以 Core 路由、README 和 SDK 规格扫描为依据。
 
@@ -51,8 +58,7 @@
 
 本节根据 LinkForty Core 提交 `3c3a87715fa31771b68e6f945b9c0e8371ef85e3`、包版本
 `1.21.0` 于 2026-09-03 推导。它只记录当前源码可观察到的实现行为，不是 LinkForty
-对外正式契约，不得用于关闭 X-ANL-004、更新银行侧 OpenAPI、接入安装/App 聚合或替代
-负责人确认。
+对外正式契约，不得用于关闭 X-ANL-004、启用安装/App 聚合成功响应或替代负责人确认。
 
 ### 2.1.1 可观察路由
 
@@ -139,12 +145,12 @@ ObservedAppEventWriteResponse {
 - 不可用于推导组织、员工、触点或 LinkForty workspace 数据范围。
 - 不可用于推导认证、TLS/ACL、限流、超时、重试、缓存一致性或版本兼容策略。
 - 不得将 SDK 写入接口、内部表字段或单指纹归因接口改写成 `installCount`/`inAppCount` 数据源。
-- 银行后台继续使用 API-only、fail-closed 行为；正式聚合 API 未确认时继续返回
+- 银行后台继续使用 API-only、fail-closed 行为；V1.3.2 明确不支持安装/App 聚合成功数据，必要能力未支持时返回
   `503 DATA_SOURCE_UNAVAILABLE`，不连接 Core 数据库，不使用 `bank_linkforty_ro`，不伪造零值或部分成功。
 
-## 3. 正式契约完整性核验
+## 3. 正式契约完整性核验（V1.4 重新评估前置）
 
-以下表格区分“代码中可见的实现事实”和“可用于银行集成的正式契约”。安装和 App 聚合两列均必须由 LinkForty 负责人提供正式证据后才能变为“已确认”。
+以下表格区分“代码中可见的实现事实”和“可用于银行集成的正式契约”。安装和 App 聚合两列均为 V1.4 重新纳入时的前置核验项，不构成 V1.3.2 的关闭门槛；在重新纳入前不得在银行侧提供成功数据。
 
 | 契约维度 | 安装聚合 | App 事件聚合 | 当前判定/待补证据 |
 | --- | --- | --- | --- |
@@ -173,8 +179,8 @@ ObservedAppEventWriteResponse {
 - `from`、`to` 使用带时区时间，并按半开区间 `[from,to)` 校验。
 - `accessCount` 只读取银行本地 `access_events.received_at`。
 - LinkForty Link ID 先按组织、员工、资产和 `orgCodePrefix` 收窄，`orgCodePrefix` 不得扩大调用范围。
-- 非空外部范围下，点击 API 不能表达精确时间区间、安装聚合缺失或 App 聚合缺失，均走能力不可用路径。
-- 任一外部指标失败时返回 `503 DATA_SOURCE_UNAVAILABLE`，不返回四计数器部分结果，也不把未知能力伪装成零值。
+- 非空外部范围下，点击 API 不能表达精确时间区间，或 V1.3.2 安装/App 聚合能力不支持，均走能力不可用路径。
+- 任一必要外部指标失败时返回 `503 DATA_SOURCE_UNAVAILABLE`，不返回 `data`，不返回四计数器部分结果，也不把未知能力伪装成零值。
 - 没有本地统计表、LinkForty 数据库连接、`bank_linkforty_ro` 运行时使用或 Core 表的 DML/DDL/查询路径。
 
 空的已授权 Link 范围返回零计数属于“本地范围内没有可调用 Link”的确定结果；它不代表上游安装/App 能力未知时可以伪造零值。
@@ -208,9 +214,9 @@ pytest -q tests/test_integrations.py tests/test_linkforty_client.py \
 - 未发送 SDK 安装或 App 事件 POST 请求，未创建真实业务数据。
 - 未建立 LinkForty 数据库连接，未执行 `bank_linkforty_ro` 权限脚本或跨库 SQL。
 
-## 6. 解除阻塞和关闭门槛
+## 6. V1.4 重新评估条件（不作为 V1.3.2 关闭门槛）
 
-LinkForty 负责人需要提供以下完整材料，缺一不可：
+只有在后续版本重新纳入安装/App 聚合成功能力时，LinkForty 负责人及相关负责人需要提供以下完整材料，缺一不可：
 
 1. 安装聚合 API 的正式方法、路径、版本、请求、响应和错误契约。
 2. App 事件聚合 API 的正式方法、路径、版本、请求、响应和错误契约。
@@ -222,4 +228,4 @@ LinkForty 负责人需要提供以下完整材料，缺一不可：
 8. 银行后台 API-only、无数据库直连、无伪造零值、无部分成功的测试和静态检查结果。
 9. LinkForty 负责人、银行后端负责人和安全/运维负责人的确认记录。
 
-材料齐全后，才允许在银行后台 Client/ReadOnly Adapter 中接入正式聚合接口，并同步更新 [LinkForty API 集成契约](./linkforty-api.md) 和 X-ANL-004 任务状态。当前不修改任务清单状态，不新增本地统计表或 Alembic 迁移。
+材料齐全后，才允许在银行后台 Client/ReadOnly Adapter 中接入正式聚合接口，并同步更新 [LinkForty API 集成契约](./linkforty-api.md) 和 X-ANL-004 任务状态。V1.3.2 不执行上述接入，不新增本地统计表或 Alembic 迁移。

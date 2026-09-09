@@ -21,6 +21,10 @@ Casdoor 是权限编码唯一来源。以下编码是 V1.3.2 本地冻结契约�
 | `access-event.read` | GET | `/api/v1/access-events`、`/api/v1/access-events/{id}` | `ORG_SUBTREE`/`EMPLOYEE_SELF` | 否 |
 | `analytics.read` | GET | `/api/v1/analytics/summary` | `ORG_SUBTREE` | 否 |
 | `import.validate` | POST | `/api/v1/imports/validate` | `ORG_SUBTREE`，按模板资源再收窄 | 是 |
+| `import.validate` | GET | `/api/v1/imports/templates/employees` | `ORG_SUBTREE` | 否 |
+| `employee.manage` | POST | `/api/v1/imports/employees/execute` | `ORG_SUBTREE` | 是 |
+| `import.validate` | GET | `/api/v1/imports/templates/organizations` | `ORG_SUBTREE` | 否 |
+| `organization.manage` | POST | `/api/v1/imports/organizations/execute` | `ORG_SUBTREE` | 是 |
 | `export.read` | GET | `/api/v1/exports/{resource}` | `ORG_SUBTREE`，按资源再收窄为 `ASSET_SCOPE` | 是 |
 | `audit.read` | GET | `/api/v1/audit-logs`、`/api/v1/audit-logs/{id}` | `ORG_SUBTREE` | 否 |
 

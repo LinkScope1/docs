@@ -765,8 +765,16 @@ paths:
       tags: [analytics]
       operationId: getAnalyticsSummary
       x-owner: API/后端/统计
-      summary: Read click, access, install and App event metrics
-      description: V1.3.2 reads LinkForty data through API-only integration. The summary is defined over the half-open interval [from,to). The current Core API exposes click analytics only as a rolling days window, so a non-empty LinkForty scope cannot satisfy this exact interval and fails with DATA_SOURCE_UNAVAILABLE; unavailable install or App aggregates fail the same way rather than using a database readonly connection.
+      summary: Read click and access metrics with compatibility-preserved install/App fields
+      description: >-
+        V1.3.2 reads LinkForty data through API-only integration. The summary is
+        defined over the half-open interval [from,to). The current Core API
+        exposes click analytics only as a rolling days window, so a non-empty
+        LinkForty scope cannot satisfy this exact interval and fails with
+        DATA_SOURCE_UNAVAILABLE. Install/App aggregate success capability is
+        excluded from V1.3.2; the response fields remain for compatibility, but
+        unsupported required sources fail the whole request with
+        DATA_SOURCE_UNAVAILABLE, without data or partial click/access results.
       x-permission: analytics.read
       x-data-scope: ORG_SUBTREE
       x-idempotency: none
@@ -926,6 +934,8 @@ paths:
       responses:
         '200':
           description: UTF-8 BOM CSV template
+          headers:
+            X-Request-ID: { $ref: '#/components/headers/RequestId' }
           content:
             text/csv: { schema: { type: string, format: binary } }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -959,6 +969,8 @@ paths:
       responses:
         '200':
           description: Import execution summary; individual rows can fail.
+          headers:
+            X-Request-ID: { $ref: '#/components/headers/RequestId' }
           content:
             application/json:
               schema: { $ref: '#/components/schemas/OrganizationImportExecutionSuccess' }
@@ -1388,12 +1400,14 @@ components:
         inAppCount: { type: integer, minimum: 0 }
       description: >-
         LinkForty clicks use the Core click event clicked_at and exclude bots;
-        access uses access_events.received_at; installs use
-        install_events.installed_at; in-app events use
-        in_app_events.event_timestamp. All counts are filtered by
-        AccessContext. The bank backend does not read the LinkForty database;
-        unavailable required sources return DATA_SOURCE_UNAVAILABLE instead
-        of partial data.
+        access uses access_events.received_at. The installCount and inAppCount
+        fields are retained for response compatibility, but their aggregate
+        success capability is not included in V1.3.2. The underlying target
+        event times are install_events.installed_at and
+        in_app_events.event_timestamp for a future version. All counts are
+        filtered by AccessContext. The bank backend does not read the LinkForty
+        database; an unsupported required source returns
+        DATA_SOURCE_UNAVAILABLE with no data and no partial response.
     EmployeeImportRowResult:
       type: object
       additionalProperties: false
@@ -1626,8 +1640,10 @@ components:
         application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } }
     DataSourceUnavailable:
       description: >-
-        External data source or required Webhook signing configuration is
-        unavailable; the public error code is DATA_SOURCE_UNAVAILABLE.
+        An external data source, an intentionally unsupported V1.3.2 metric, or
+        required Webhook signing configuration is unavailable; the public error
+        code is DATA_SOURCE_UNAVAILABLE. The response contains no successful
+        data when a required source is unavailable.
       headers:
         X-Request-ID: { $ref: '#/components/headers/RequestId' }
       content:
