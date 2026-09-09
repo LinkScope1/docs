@@ -225,8 +225,8 @@ def check_document(document: dict[str, Any], errors: list[str]) -> None:
     if [server.get("url") for server in document.get("servers", [])] != ["/api/v1"]:
         errors.append("openapi.yaml: server must be exactly /api/v1")
     ops = operations(document)
-    if len(ops) != 41:
-        errors.append(f"openapi.yaml: expected 41 operations, found {len(ops)}")
+    if len(ops) != 45:
+        errors.append(f"openapi.yaml: expected 45 operations, found {len(ops)}")
     operation_ids: dict[str, tuple[str, str]] = {}
     for path, method, operation in ops:
         operation_id = operation.get("operationId")
@@ -409,7 +409,7 @@ def main() -> int:
         print("OpenAPI contract validation failed:")
         print("\n".join(f"- {error}" for error in errors))
         return 1
-    print("OpenAPI contract validation passed (41 operations, 38 module mirrors).")
+    print("OpenAPI contract validation passed (45 operations, 38 module mirrors).")
     return 0
 
 

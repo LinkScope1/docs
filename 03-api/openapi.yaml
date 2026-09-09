@@ -811,11 +811,12 @@ paths:
       x-owner: API/后端/导入
       summary: Validate an import file without writing business tables
       description: >-
-        Synchronous, read-only CSV pre-validation. Only assignment rows carry
-        the required explicit operation column, whose accepted values are bind,
-        unbind and transfer. Rows omitted from the CSV are ignored and never
-        imply deletion, disabling or unbinding. V1.3.2 does not expose an
-        import execution endpoint.
+       Synchronous, read-only CSV pre-validation. Only assignment rows carry
+       the required explicit operation column, whose accepted values are bind,
+       unbind and transfer. Rows omitted from the CSV are ignored and never
+       imply deletion, disabling or unbinding. Employee and organization
+       templates are also supported for pre-validation; the import execution
+       endpoints are exposed separately for small master-data batches.
       x-permission: import.validate
       x-data-scope: ORG_SUBTREE
       x-idempotency: none
@@ -831,11 +832,150 @@ paths:
               required: [file, templateType]
               properties:
                 file: { type: string, format: binary }
-                templateType: { type: string, enum: [payload, assignment, asset_payload_relation] }
+                templateType: { type: string, enum: [payload, assignment, asset_payload_relation, employee, organization] }
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '200': { $ref: '#/components/responses/Success' }
         '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '413': { $ref: '#/components/responses/ImportFileTooLarge' }
+        '415': { $ref: '#/components/responses/ImportFileTypeInvalid' }
+        '422': { $ref: '#/components/responses/RequestSchemaInvalid' }
+
+  /imports/templates/employees:
+    get:
+      tags: [imports]
+      operationId: downloadEmployeeImportTemplate
+      x-owner: API/后端/导入
+      summary: Download the employee master-data CSV template
+      description: >-
+        Downloads a UTF-8 BOM CSV named 员工导入模板.csv with the fixed header
+        员工编号,姓名,所属组织编码,手机号,状态,备注.
+        员工编号, 姓名 and 所属组织编码 are required. 手机号,
+        status and description are optional; status accepts enabled or
+        disabled, and is disabled by default when creating a new employee.
+        The template writes its phone sample in the Excel text-literal form
+        ="13800001234"; the importer safely restores that form to a phone
+        number. The two sample rows must be replaced or deleted before upload.
+      x-permission: import.validate
+      x-data-scope: ORG_SUBTREE
+      x-idempotency: none
+      x-audit: false
+      x-status: reviewed
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: UTF-8 BOM CSV template
+          headers:
+            X-Request-ID: { schema: { type: string } }
+          content:
+            text/csv: { schema: { type: string, format: binary } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /imports/employees/execute:
+    post:
+      tags: [imports]
+      operationId: executeEmployeeImport
+      x-owner: API/后端/导入
+      summary: Execute a small employee master-data CSV import
+      description: >-
+        Synchronously creates or updates at most 1,000 employee rows. Rows are
+        committed independently: a failed row does not roll back successful
+        rows. An existing employee must remain in the same organization;
+        organization changes must use the employee transfer API. The response
+        includes a Base64 UTF-8 BOM failure-report CSV only when failures exist.
+      x-permission: employee.manage
+      x-data-scope: ORG_SUBTREE
+      x-idempotency: none
+      x-audit: true
+      x-status: reviewed
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        '200':
+          description: Import execution summary; individual rows can fail.
+          headers:
+            X-Request-ID: { $ref: '#/components/headers/RequestId' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EmployeeImportExecutionSuccess' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '413': { $ref: '#/components/responses/ImportFileTooLarge' }
+        '415': { $ref: '#/components/responses/ImportFileTypeInvalid' }
+        '422': { $ref: '#/components/responses/RequestSchemaInvalid' }
+
+  /imports/templates/organizations:
+    get:
+      tags: [imports]
+      operationId: downloadOrganizationImportTemplate
+      x-owner: API/后端/导入
+      summary: Download the organization master-data CSV template
+      description: >-
+        Downloads a UTF-8 BOM CSV named 组织导入模板.csv. The fixed Chinese
+        headers are 组织编码、组织名称、排序号、网点编码、门店号、联系人、联系电话、状态、备注.
+        The two sample rows must be replaced or deleted before upload.
+      x-permission: import.validate
+      x-data-scope: ORG_SUBTREE
+      x-idempotency: none
+      x-audit: false
+      x-status: reviewed
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: UTF-8 BOM CSV template
+          headers:
+            X-Request-ID: { $ref: '#/components/headers/RequestId' }
+          content:
+            text/csv: { schema: { type: string, format: binary } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /imports/organizations/execute:
+    post:
+      tags: [imports]
+      operationId: executeOrganizationImport
+      x-owner: API/后端/导入
+      summary: Execute a small organization master-data CSV import
+      description: >-
+        Synchronously creates or updates at most 1,000 organization rows matched
+        by organization code. Optional blank fields do not clear an existing
+        organization. Each row commits independently.
+      x-permission: organization.manage
+      x-data-scope: ORG_SUBTREE
+      x-idempotency: none
+      x-audit: true
+      x-status: reviewed
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        '200':
+          description: Import execution summary; individual rows can fail.
+          headers:
+            X-Request-ID: { $ref: '#/components/headers/RequestId' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrganizationImportExecutionSuccess' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '413': { $ref: '#/components/responses/ImportFileTooLarge' }
         '415': { $ref: '#/components/responses/ImportFileTypeInvalid' }
@@ -1138,12 +1278,13 @@ components:
     Employee:
       type: object
       additionalProperties: false
-      required: [id, employeeCode, employeeName, orgId, status]
+      required: [id, employeeCode, employeeName, orgId, orgName, status]
       properties:
         id: { $ref: '#/components/schemas/Id' }
         employeeCode: { type: string }
         employeeName: { type: string }
         orgId: { $ref: '#/components/schemas/Id' }
+        orgName: { type: string }
         phoneMasked: { type: [string, 'null'] }
         status: { $ref: '#/components/schemas/Status' }
         description: { type: [string, 'null'] }
@@ -1267,6 +1408,92 @@ components:
         filtered by AccessContext. The bank backend does not read the LinkForty
         database; an unsupported required source returns
         DATA_SOURCE_UNAVAILABLE with no data and no partial response.
+    EmployeeImportRowResult:
+      type: object
+      additionalProperties: false
+      required: [rowNumber, status]
+      properties:
+        rowNumber: { type: integer, minimum: 2 }
+        operation: { type: [string, 'null'], enum: [create, update, 'null'] }
+        status: { type: string, enum: [success, failed] }
+        errorCode: { type: [string, 'null'] }
+        message: { type: [string, 'null'] }
+    ImportFailureReport:
+      type: object
+      additionalProperties: false
+      required: [filename, contentType, encoding, content]
+      properties:
+        filename: { type: string, const: 员工导入失败报告.csv }
+        contentType: { type: string, const: text/csv;charset=utf-8 }
+        encoding: { type: string, const: base64 }
+        content:
+          type: string
+          description: >-
+            Base64-encoded UTF-8 BOM CSV containing only failed rows. Columns
+            are 行号、员工编号、姓名、所属组织编码、手机号、状态（原文件）、备注、操作、错误代码、错误原因.
+    EmployeeImportExecutionData:
+      type: object
+      additionalProperties: false
+      required: [total, succeeded, failed, failureReport, rows]
+      properties:
+        total: { type: integer, minimum: 0 }
+        succeeded: { type: integer, minimum: 0 }
+        failed: { type: integer, minimum: 0 }
+        failureReport:
+          oneOf:
+            - { $ref: '#/components/schemas/ImportFailureReport' }
+            - { type: 'null' }
+        rows:
+          type: array
+          items: { $ref: '#/components/schemas/EmployeeImportRowResult' }
+    EmployeeImportExecutionSuccess:
+      type: object
+      additionalProperties: false
+      required: [requestId, data]
+      properties:
+        requestId: { type: string }
+        data: { $ref: '#/components/schemas/EmployeeImportExecutionData' }
+    OrganizationImportRowResult:
+      type: object
+      additionalProperties: false
+      required: [rowNumber, status]
+      properties:
+        rowNumber: { type: integer, minimum: 2 }
+        operation: { type: [string, 'null'], enum: [create, update, 'null'] }
+        status: { type: string, enum: [success, failed] }
+        errorCode: { type: [string, 'null'] }
+        message: { type: [string, 'null'] }
+    OrganizationImportFailureReport:
+      type: object
+      additionalProperties: false
+      required: [filename, contentType, encoding, content]
+      properties:
+        filename: { type: string, const: 组织导入失败报告.csv }
+        contentType: { type: string, const: text/csv;charset=utf-8 }
+        encoding: { type: string, const: base64 }
+        content: { type: string }
+    OrganizationImportExecutionData:
+      type: object
+      additionalProperties: false
+      required: [total, succeeded, failed, failureReport, rows]
+      properties:
+        total: { type: integer, minimum: 0 }
+        succeeded: { type: integer, minimum: 0 }
+        failed: { type: integer, minimum: 0 }
+        failureReport:
+          oneOf:
+            - { $ref: '#/components/schemas/OrganizationImportFailureReport' }
+            - { type: 'null' }
+        rows:
+          type: array
+          items: { $ref: '#/components/schemas/OrganizationImportRowResult' }
+    OrganizationImportExecutionSuccess:
+      type: object
+      additionalProperties: false
+      required: [requestId, data]
+      properties:
+        requestId: { type: string }
+        data: { $ref: '#/components/schemas/OrganizationImportExecutionData' }
     SuccessEnvelope:
       type: object
       required: [requestId, data]
