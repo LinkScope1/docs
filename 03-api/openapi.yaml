@@ -1407,10 +1407,9 @@ components:
           type: string
           minLength: 1
           maxLength: 2048
-          format: uri
         custom_code:
           type: [string, 'null']
-          minLength: 1
+          minLength: 8
           maxLength: 20
         payload_source:
           type: integer
@@ -1426,7 +1425,6 @@ components:
           type: string
           minLength: 1
           maxLength: 2048
-          format: uri
 
     PayloadReasonRequest:
       type: object
