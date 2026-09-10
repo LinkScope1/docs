@@ -8,7 +8,7 @@
 - 脱敏验证报告保存在仓库外受控目录 `/private/tmp/linkforty-webhook-evidence/verification-report.json`，不纳入 Git，且不含 Secret 或完整 payload。
 - LinkForty 负责人已确认正式签名、字段和重试契约（2026-08-21）；P0 Webhook 门禁和 M5-001 具备关闭条件。
 - Webhook Secret provisioning 方案已确认：配置服务一次性调用 Core 现有管理 API 获取 Secret；配置服务联调、网络访问审计和生产配置接入仍待实施与验收。
-- Casdoor 真实认证/权限外部联调和 NFC 真机/SDK/写卡读回核验延期至 V1.4；V1.3.2 仅保留 `AccessContext`、`MockAccessContextProvider`、`NfcDevice` 和 `MockNfcDevice` 的开发/测试边界，未配置真实认证的生产环境必须拒绝访问，因此 V1.3.2 不能作为生产版本发布。
+- Casdoor 真实认证/权限外部联调和 NFC 真机/SDK/写卡读回核验延期至 V1.4；本次仅落地 OIDC BFF、PKCE、JWT/JWKS、Redis Session、Cookie 和 Fake/Mock 的代码边界，未配置真实认证的生产环境必须拒绝访问，因此不能把本地实现视为真实 Casdoor 联调或生产发布证据。
 - V1.3.2 内部数据语义、幂等边界、M4 规则、导入/导出范围和统计口径已按冻结记录收敛；LinkForty API、真实数据库/Redis 环境和发布证据仍需外部证据。LinkForty 数据库只读账号、授权和负向测试明确延期至 V1.4；Core 不处理 `Idempotency-Key` 的重复 Link 行为作为 V1.3.2 已知风险接受，不标记为幂等通过。
 - M4 绑定、解绑和调拨已补齐 Router → Service → Repository 的本地事务边界，继续使用既有 OpenAPI 路径和 7 张银行表；真实 M2 主数据、PostgreSQL 并发和发布证据仍未关闭。
 - 本次真实 Docker 集成验收已通过：银行后端全量 `1004 passed`，定向 Worker/数据库测试 `23 passed`，P1-ENV-005 Seed 首次/重复执行与 `--verify` 通过；Ruff/mypy、Alembic 重复升级与回滚、7 张银行表、角色权限、Redis DB0/DB1/DB2、Celery `inspect ping`、测试队列 Worker、API/Worker 脱敏配置和三类任务场景均通过。脱敏环境报告保存在仓库外受控目录 `/private/tmp/bank-touchpoint-test-evidence/verification-report.json`，Seed 脱敏报告为 `/private/tmp/bank-touchpoint-test-evidence/seed-verification.json`，测试资源已清理；未连接生产或 LinkForty 数据库。V1.3.2 不依赖 `bank_linkforty_ro`。

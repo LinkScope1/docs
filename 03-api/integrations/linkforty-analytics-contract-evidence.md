@@ -199,7 +199,7 @@ pytest -q tests/test_integrations.py tests/test_linkforty_client.py \
 
 结果：`75 passed, 1 warning in 1.56s`。测试覆盖安装/App 能力缺失、精确区间不能由滚动点击 API 表达、无 HTTP 请求、503 无部分成功、范围校验、运行时禁止外部数据库/事件表引用和日志脱敏。
 
-同一变更集的静态验证结果：Ruff `All checks passed`；analytics/LinkForty 相关 mypy `Success: no issues found in 11 source files`；OpenAPI 校验 `41 operations, 38 module mirrors` 通过。
+同一统计专项的静态验证结果：Ruff `All checks passed`；analytics/LinkForty 相关 mypy `Success: no issues found in 11 source files`；当时冻结的统计专项 OpenAPI 校验 `41 operations, 38 module mirrors` 通过。当前主 OpenAPI 已因 BFF 认证接口扩展为 `48 operations, 41 module mirrors`，以主契约和当前校验脚本为准。
 
 ### 5.2 LinkForty Core
 

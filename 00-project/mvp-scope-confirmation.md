@@ -18,7 +18,7 @@
 
 | 范围 | 纳入内容 | 边界和验收口径 |
 |---|---|---|
-| M1 | Casdoor JWT 验证、`employee_code` 员工映射、权限和数据范围上下文、操作审计 | Casdoor 是身份、角色和功能权限权威；银行后台不创建本地 IAM 权限投影；关键操作通过 `operation_logs` 审计 |
+| M1 | Casdoor OIDC BFF、`employee_code` 员工映射、权限和数据范围上下文、操作审计 | Casdoor 是身份、角色和功能权限权威；银行后台不创建本地 IAM 权限投影；浏览器只持有 HttpOnly Session Cookie，关键操作通过 `operation_logs` 审计 |
 | M2 | 组织和员工管理 | 组织层级使用 `org_code` 前缀；员工使用唯一 `employee_code` 和直接所属 `org_id`；查询、写入和导出执行后端范围校验 |
 | M3 | NFC 触点资产和载体实际内容、LinkForty 外部调用编排 | 一期 `asset_type` 固定为 NFC；Payload 是卡内实际写入内容，不是目标资源；LinkForty 写入必须通过 API |
 | M4 | 触点载体与员工的立即生效绑定、解绑、转交和历史记录 | 绑定历史只追加；有效区间不得重叠；不保存组织或员工名称快照；预约绑定延期至 V1.4 |

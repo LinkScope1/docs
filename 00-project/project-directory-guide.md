@@ -260,7 +260,7 @@ src/app/integrations/
 
 | 集成 | 银行侧职责 | 禁止事项 |
 | --- | --- | --- |
-| Casdoor | 验证 JWT 签名、issuer、audience 和过期时间；读取 employee_code 定位启用员工。 | 不创建本地角色权限投影，不保存密码、Token 或身份密钥。 |
+| Casdoor | 由 FastAPI BFF 通过 OIDC 服务端兑换并验证 JWT/JWKS；读取 employee_code 定位启用员工。 | 不创建本地角色权限投影，不保存密码、Token 或身份密钥；浏览器只持有 Session Cookie。 |
 | LinkForty | M3 通过 API 执行必要外部调用；M5 通过 Webhook、受限读取或事件字段完成关联。 | 不复制 Core 源码，不直接执行外部表 DDL、DML、TRUNCATE 或迁移。 |
 | NFC | M3 依赖 interface 和 Mock 先行，后续再接入经确认的硬件 SDK。 | 本期不把真实硬件写卡能力描述为已实现。 |
 
@@ -362,7 +362,7 @@ main
 
 - FastAPI、React、PostgreSQL、Redis、Celery、Alembic 和 CI 均可启动并通过基础检查。
 
-- Casdoor JWT、employee_code Claim、LinkForty 网络访问边界、Webhook 验签要求和 NFC Mock 均有明确的验证范围；LinkForty 正式路径、字段、错误、幂等契约和真实 Webhook 样例仍待外部确认。
+- Casdoor OIDC/JWT、employee_code Claim、BFF Session、LinkForty 网络访问边界、Webhook 验签要求和 NFC Mock 均有明确的本地验证范围；Casdoor 正式 Claim/权限契约和真实认证联调仍待外部确认。
 
 - 7 张银行业务表可在空数据库完成迁移，权限、数据范围、事件幂等、外部失败补偿和审计测试已准备。
 

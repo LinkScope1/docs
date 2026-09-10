@@ -1,4 +1,46 @@
 # M1：后台访问与操作审计。以下为Path Item片段，由总OpenAPI逐项引用。
+
+authLogin:
+  x-canonical-path: /auth/login
+  get:
+    operationId: startAuthLogin
+    tags: [auth]
+    summary: 发起 Authorization Code + PKCE 登录
+    x-status: reviewed
+    x-owner: API/后端
+    x-permission: public
+    x-data-scope: SYSTEM
+    x-idempotency: none
+    x-audit: false
+    security: []
+
+authCallback:
+  x-canonical-path: /auth/callback
+  get:
+    operationId: completeAuthCallback
+    tags: [auth]
+    summary: 完成服务端 OIDC 回调
+    x-status: reviewed
+    x-owner: API/后端
+    x-permission: public
+    x-data-scope: SYSTEM
+    x-idempotency: none
+    x-audit: false
+    security: []
+
+authLogout:
+  x-canonical-path: /auth/logout
+  post:
+    operationId: logoutAuth
+    tags: [auth]
+    summary: 删除服务端 Session 并清理 Cookie
+    x-status: reviewed
+    x-owner: API/后端
+    x-permission: public
+    x-data-scope: SYSTEM
+    x-idempotency: none
+    x-audit: false
+    security: []
 authMe:
   x-canonical-path: /auth/me
   get:
@@ -11,6 +53,7 @@ authMe:
     x-data-scope: EMPLOYEE_SELF
     x-idempotency: none
     x-audit: false
+    security: [{ sessionCookie: [] }]
     responses: {}
 
 auditLogs:

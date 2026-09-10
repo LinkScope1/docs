@@ -10,7 +10,7 @@
 - Secret 仅作为银行后台验签的受保护运行时配置，不写入银行业务表、日志、审计、fixture、文档或前端状态。
 - 关键操作和导出必须审计。
 
-LinkForty 的网络隔离例外不改变银行后台用户 API 的 Casdoor JWT 要求，也不替代 LinkForty Webhook 的 HMAC 签名验证。Core 管理 API 当前不使用应用层认证，provisioning 只能从银行后台服务网段通过私有网络、来源 ACL、防火墙、私有 DNS、HTTPS/TLS 和网络审计执行。生产启用该例外前必须取得安全负责人审批；网络区域内其他被攻陷服务可能冒用银行后台调用 LinkForty Core。
+LinkForty 的网络隔离例外不改变银行后台用户 API 的 BFF Session Cookie 认证、服务端 Casdoor OIDC/JWT 验证要求，也不替代 LinkForty Webhook 的 HMAC 签名验证。Core 管理 API 当前不使用应用层认证，provisioning 只能从银行后台服务网段通过私有网络、来源 ACL、防火墙、私有 DNS、HTTPS/TLS 和网络审计执行。生产启用该例外前必须取得安全负责人审批；网络区域内其他被攻陷服务可能冒用银行后台调用 LinkForty Core。
 
 ## 可用性
 

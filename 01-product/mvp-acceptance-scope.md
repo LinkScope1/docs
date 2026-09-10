@@ -4,7 +4,7 @@
 
 正式业务模块为 M1～M5；统计与报表作为不编号横向能力验收。
 
-- Casdoor 登录、JWT 验证、`employee_code` Claim 和员工状态校验
+- Casdoor OIDC BFF 登录边界、JWT/JWKS 验证、`employee_code` Claim 和员工状态校验；真实平台联调延期至 V1.4
 - 组织编码前缀层级和员工维护
 - NFC 触点资产和载体内容
 - 资产与员工绑定、解绑、转交及无快照历史
