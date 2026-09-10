@@ -7,7 +7,7 @@
 
 ## 调用安全边界
 
-银行后台直接通过私有网络调用 LinkForty Core，不经过 API 网关或其他中间代理。
+银行后台通过 Nginx 的 `/linkapi/` 反向代理调用 LinkForty Core，不允许银行后台绕过该代理直连 Core。
 
 ```text
 认证方式：网络层访问控制
@@ -27,6 +27,26 @@ API Credential：不适用
 - LinkForty Core 管理 API 不暴露公网；
 - 记录 `trace_id`、`external_request_id`、耗时、连通性失败和调用结果；
 - 生产启用该例外前必须取得安全负责人审批。
+
+## Nginx 代理路径
+
+银行后台的 `LINKFORTY_BASE_URL` 是 Nginx 的代理前缀，例如
+`https://links.example.com/linkapi`，Client 在其后拼接 Core API 路径。Nginx 必须使用带
+末尾 `/` 的 Core `proxy_pass`，以移除 `/linkapi` 前缀：
+
+| 银行侧请求 | Core 实际请求 |
+| --- | --- |
+| `/linkapi/api/links` | `/api/links` |
+| `/linkapi/api/analytics/*` | `/api/analytics/*` |
+| `/linkapi/<short_code>` | `/<short_code>` |
+
+当前测试配置为宿主机 Nginx：`proxy_pass http://127.0.0.1:3200/;`。只有在 Nginx 与 Core
+加入同一 Docker 网络时，才可使用已确认的 Core Compose 服务名和容器端口：
+`proxy_pass http://linkforty:3000/;`。当前 Core 与银行测试 Compose 默认网络隔离，不能
+直接将 `linkforty:3000` 作为跨 Compose 地址。
+
+Nginx 只作为受控网络边界，不改变请求方法、请求体或 `Idempotency-Key`，并对 Core API
+关闭代理缓存。Core API 端口仍绑定私有地址，不得公网暴露。
 
 ## 需要覆盖
 
@@ -53,7 +73,7 @@ API Credential：不适用
 安装/App 事件聚合的逐项核验记录见
 [X-ANL-004：LinkForty 安装/App API 契约核验报告](./linkforty-analytics-contract-evidence.md)。V1.3.2 已明确不纳入安装/App 聚合成功能力，`installCount`/`inAppCount` 仅保留兼容字段；Core 的 SDK 写入接口和数据库字段不构成银行侧聚合读取契约，后续版本重新评估。
 
-创建请求的重试规则固定为：4xx 不重试；429、5xx、连接超时按指数退避，最多 3 次；TLS、ACL、DNS 和证书错误不盲目重试。每次调用记录 `trace_id`、外部请求 ID、状态和耗时，不把凭据或完整敏感响应写入日志。
+创建请求的重试规则固定为：4xx 不重试；429、5xx、连接超时按指数退避，最多 3 次；TLS、ACL、DNS 和证书错误不盲目重试。每次调用记录 `trace_id`、外部请求 ID、状态和耗时，不把凭据或完整敏感响应写入日志。Nginx 的 502/504 仍按网络或上游不可用分类处理。
 
 当前 Core 路由虽存在上述路径，但不读取 `Idempotency-Key`；银行侧保留稳定 Key 转发、错误分类和重试测试，并记录真实重复创建缺陷。该缺陷不在 V1.3.2 修复，也不标记为幂等验收通过；正式字段、TLS/ACL 和只读边界仍需外部证据。
 

@@ -13,6 +13,7 @@
 | M3-002 | 载体内容 | `touchpoint_payloads` | 内容类型、实际写入值、范围同步、LinkForty 逻辑引用、无本地同步状态字段 | 待测 |
 | M4-001 | 绑定 | `touchpoint_employee_assignments` | 重叠、当前唯一、历史无快照、转交 | 待测 |
 | M5-001 | Webhook | `access_events` | 签名、幂等、重复 click、关联重试 | 通过：本地真实联调和负责人正式确认已完成 |
+| INT-LINKFORTY-NGINX-001 | LinkForty 外部集成 | Nginx `/linkapi/`、Webhook location | `/linkapi/` 路径映射、Core health/API/短链、HTTP/1.1、Header、缓存、方法/Body/`Idempotency-Key` 保留；Webhook 原始 body 和签名 Header 保留 | 待执行：测试拓扑 |
 | CAP-ANL-001 | 统计与报表横向能力（不编号） | analytics | 点击/访问时间、机器人、范围、只读边界、审计；安装/App 不支持时整体 503 | 通过 |
 | IMP-001 | 文档导入预留 | `/imports/validate` | 模板、稳定匹配键、逐行错误 | 待测 |
 | IMP-002 | 文档导入预留 | `/imports/execute` | 更新并新增、幂等、显式解绑、审计 | 待测 |

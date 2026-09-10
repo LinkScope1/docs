@@ -11,8 +11,7 @@ Python + FastAPI
         +-- PostgreSQL bank_admin schema: 7 V1.3.2 tables
         +-- Redis + Celery
         +-- Casdoor
-        +-- LinkForty API（私有网络 + ACL + HTTPS/TLS；无应用层认证）
-        +-- LinkForty PostgreSQL read-only access
+        +-- Nginx `/linkapi/` -> LinkForty API（私有网络 + ACL + HTTPS/TLS；无应用层认证）
         |
         v
 LinkForty Core
@@ -23,10 +22,10 @@ TypeScript + Fastify
 
 - 银行后台服务写银行业务表。
 - LinkForty 写入必须走 LinkForty API。
-- 银行后台直接通过私有网络调用 LinkForty Core，不经过 API 网关或其他中间代理。
+- 银行后台通过 Nginx `/linkapi/` 反向代理调用 LinkForty Core，不允许绕过代理直连 Core。
 - LinkForty Core 管理 API 仅允许银行后台服务网段访问，不暴露公网；该链路不使用 API Key、JWT、OAuth 或 mTLS 客户端证书。
 - Webhook 配置由银行后台配置服务在创建或恢复配置时调用 Core 现有管理 API 一次性 provisioning；不按事件运行时调用 Core。
-- M5 和非编号统计与报表能力只能只读 `docs/04-database/db-permissions.md` 白名单中的 LinkForty 表和必要字段。
+- M5 和非编号统计与报表能力通过 LinkForty API 获取必要数据，不通过 Core 数据库直连实现功能；如后续启用只读边界，仍只能访问 `docs/04-database/db-permissions.md` 白名单中的表和字段。
 - 银行后台不得通过 LinkForty 数据库直读 `webhooks.secret`；受控 API provisioning 只向配置服务一次性交付验签运行时配置。
 - 前端只能调用银行后台 API，不直接调用 LinkForty Core。
 - 银行库不创建 `iam_*` 表；Casdoor 角色和功能权限不复制到本地。
