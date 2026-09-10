@@ -6,6 +6,7 @@
 | --- | ---: | --- |
 | `AUTH_INVALID_TOKEN` | 401 | Token 无效或过期 |
 | `AUTH_USER_DISABLED` | 403 | 用户已停用 |
+| `AUTH_ORIGIN_NOT_ALLOWED` | 403 | 携带 Session Cookie 的写请求来源不在允许的 Origin 列表 |
 | `PERMISSION_DENIED` | 403 | 无功能权限 |
 | `DATA_SCOPE_DENIED` | 403 | 超出组织或员工数据范围 |
 | `RESOURCE_NOT_FOUND` | 404 | 业务对象不存在 |

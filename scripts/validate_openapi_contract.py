@@ -145,6 +145,8 @@ def check_permission_mapping(document: dict[str, Any], errors: list[str]) -> Non
             for row in rows
             if method.upper() in row["methods"] and any(mapping_match(pattern, full_path) for pattern in row["paths"])
         ]
+        if permission == "public":
+            continue
         if permission == "system_webhook":
             if operation.get("x-data-scope") != "SYSTEM" or operation.get("x-audit") is not True:
                 errors.append(f"{method.upper()} {path}: system webhook scope/audit mismatch")
@@ -194,8 +196,8 @@ def check_modules(document: dict[str, Any], errors: list[str]) -> None:
                         errors.append(
                             f"{path.relative_to(ROOT)}:{key}:{method}: {field} differs from main OpenAPI"
                         )
-    if mirror_count != 38:
-        errors.append(f"modules: expected 38 mirrored operations, found {mirror_count}")
+    if mirror_count != 41:
+        errors.append(f"modules: expected 41 mirrored operations, found {mirror_count}")
 
     m5 = load_yaml(MODULE_DIR / "m5-access-events.yaml")
     m5_expectations = {
@@ -225,8 +227,8 @@ def check_document(document: dict[str, Any], errors: list[str]) -> None:
     if [server.get("url") for server in document.get("servers", [])] != ["/api/v1"]:
         errors.append("openapi.yaml: server must be exactly /api/v1")
     ops = operations(document)
-    if len(ops) != 45:
-        errors.append(f"openapi.yaml: expected 45 operations, found {len(ops)}")
+    if len(ops) != 48:
+        errors.append(f"openapi.yaml: expected 48 operations, found {len(ops)}")
     operation_ids: dict[str, tuple[str, str]] = {}
     for path, method, operation in ops:
         operation_id = operation.get("operationId")
@@ -253,13 +255,13 @@ def check_document(document: dict[str, Any], errors: list[str]) -> None:
             errors.append(f"{method.upper()} {path}: invalid x-idempotency")
         if operation.get("x-owner") in (None, ""):
             errors.append(f"{method.upper()} {path}: x-owner is required")
-        if operation.get("security") == [{"bearerAuth": []}]:
+        if operation.get("security") == [{"sessionCookie": []}]:
             for code in ("401", "403"):
                 if code not in operation.get("responses", {}):
                     errors.append(f"{method.upper()} {path}: missing {code} response")
         elif operation.get("x-permission") == "system_webhook" and "401" not in operation.get("responses", {}):
             errors.append(f"{method.upper()} {path}: webhook must define 401 response")
-        if method in {"post", "put", "patch", "delete"}:
+        if method in {"post", "put", "patch", "delete"} and operation.get("x-permission") != "public":
             if not any(code in operation.get("responses", {}) for code in ("400", "409", "503")):
                 errors.append(f"{method.upper()} {path}: write operation needs validation/conflict/external error")
         for parameter in operation.get("parameters", []):
@@ -409,7 +411,7 @@ def main() -> int:
         print("OpenAPI contract validation failed:")
         print("\n".join(f"- {error}" for error in errors))
         return 1
-    print("OpenAPI contract validation passed (45 operations, 38 module mirrors).")
+    print("OpenAPI contract validation passed (48 operations, 41 module mirrors).")
     return 0
 
 

@@ -5,7 +5,10 @@ info:
   description: >-
     V1.3.2 contract for bank NFC touchpoint assets, payloads, employee
     assignments, access events and operation audit. Casdoor remains the
-    identity, role and functional permission authority.
+    identity, role and functional permission authority. Browser authentication
+    uses the FastAPI BFF Authorization Code + PKCE flow and server-side Redis
+    Session Cookie. The OIDC endpoints and claims are configuration-driven;
+    this contract does not claim real Casdoor external integration is complete.
 servers:
   - url: /api/v1
 tags:
@@ -22,6 +25,90 @@ tags:
   - name: exports
   - name: audit-logs
 paths:
+  /auth/login:
+    get:
+      tags: [auth]
+      operationId: startAuthLogin
+      x-owner: API/后端
+      summary: Start Authorization Code + PKCE login
+      description: >-
+        Public BFF entry point. The server creates state, nonce and an S256 PKCE
+        challenge, stores the one-time state server-side and returns a 302 to
+        the configured Casdoor authorization endpoint. No token is placed in the URL.
+      x-permission: public
+      x-data-scope: SYSTEM
+      x-idempotency: none
+      x-audit: false
+      x-status: reviewed
+      security: []
+      responses:
+        '302':
+          description: Redirect to the configured Casdoor authorization endpoint.
+          headers:
+            Location: { schema: { type: string, format: uri } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /auth/callback:
+    get:
+      tags: [auth]
+      operationId: completeAuthCallback
+      x-owner: API/后端
+      summary: Complete the server-side OIDC callback
+      description: >-
+        Public callback. FastAPI consumes state once, exchanges code plus the
+        server-side PKCE verifier, verifies id_token using configured JWKS and
+        creates a Redis session. Success and failure redirect only to configured
+        fixed frontend paths; failure uses a stable error code.
+      x-permission: public
+      x-data-scope: SYSTEM
+      x-idempotency: none
+      x-audit: false
+      x-status: reviewed
+      security: []
+      parameters:
+        - in: query
+          name: code
+          required: false
+          schema: { type: string }
+        - in: query
+          name: state
+          required: false
+          schema: { type: string }
+        - in: query
+          name: error
+          required: false
+          schema: { type: string }
+      responses:
+        '302':
+          description: Redirect to a configured frontend success or stable error path.
+          headers:
+            Location: { schema: { type: string, format: uri-reference } }
+            Set-Cookie: { schema: { type: string } }
+
+  /auth/logout:
+    post:
+      tags: [auth]
+      operationId: logoutAuth
+      x-owner: API/后端
+      summary: Delete the server-side session
+      description: >-
+        Publicly callable BFF logout endpoint. It deletes the Redis session and
+        clears the bank_admin_session cookie; it does not call an unconfirmed
+        external Casdoor logout endpoint. A session-cookie request still requires
+        an allow-listed Origin.
+      x-permission: public
+      x-data-scope: SYSTEM
+      x-idempotency: none
+      x-audit: false
+      x-status: reviewed
+      security: []
+      responses:
+        '204':
+          description: Session deleted and cookie cleared.
+          headers:
+            Set-Cookie: { schema: { type: string } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
   /auth/me:
     get:
       tags: [auth]
@@ -33,10 +120,21 @@ paths:
       x-idempotency: none
       x-audit: false
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       responses:
         '403': { $ref: '#/components/responses/Forbidden' }
-        '200': { $ref: '#/components/responses/Success' }
+        '200':
+          description: Normalized employee, organization, role, permission and data scope.
+          headers:
+            X-Request-ID: { $ref: '#/components/headers/RequestId' }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [requestId, data]
+                properties:
+                  requestId: { type: string }
+                  data: { $ref: '#/components/schemas/AuthMeData' }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /organizations:
@@ -50,7 +148,7 @@ paths:
       x-idempotency: none
       x-audit: false
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
       responses:
         '200': { $ref: '#/components/responses/Success' }
@@ -66,7 +164,7 @@ paths:
       x-idempotency: domain_key_org_code
       x-audit: true
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       requestBody: { $ref: '#/components/requestBodies/OrganizationCreate' }
       responses:
         '201': { $ref: '#/components/responses/Success' }
@@ -86,7 +184,7 @@ paths:
       x-idempotency: none
       x-audit: false
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -102,7 +200,7 @@ paths:
       x-idempotency: domain_key_object_version
       x-audit: true
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       requestBody: { $ref: '#/components/requestBodies/OrganizationPatch' }
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -123,7 +221,7 @@ paths:
       x-idempotency: domain_key_state_command
       x-audit: true
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -141,7 +239,7 @@ paths:
       x-idempotency: domain_key_state_command
       x-audit: true
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -159,7 +257,7 @@ paths:
       x-idempotency: none
       x-audit: false
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -175,7 +273,7 @@ paths:
       x-idempotency: domain_key_employee_code
       x-audit: true
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       requestBody: { $ref: '#/components/requestBodies/EmployeeCreate' }
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -195,7 +293,7 @@ paths:
       x-idempotency: none
       x-audit: false
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -211,7 +309,7 @@ paths:
       x-idempotency: domain_key_object_version
       x-audit: true
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       requestBody: { $ref: '#/components/requestBodies/EmployeePatch' }
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -230,7 +328,7 @@ paths:
       x-idempotency: domain_key_state_command
       x-audit: true
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -248,7 +346,7 @@ paths:
       x-idempotency: domain_key_state_command
       x-audit: true
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -266,7 +364,7 @@ paths:
       x-idempotency: domain_key_transfer
       x-audit: true
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       requestBody: { $ref: '#/components/requestBodies/EmployeeTransfer' }
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -285,7 +383,7 @@ paths:
       x-idempotency: none
       x-audit: false
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -301,7 +399,7 @@ paths:
       x-idempotency: domain_key_asset_code
       x-audit: true
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       requestBody: { $ref: '#/components/requestBodies/TouchpointAssetCreate' }
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -321,7 +419,7 @@ paths:
       x-idempotency: none
       x-audit: false
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -336,7 +434,7 @@ paths:
       x-idempotency: domain_key_object_version
       x-audit: true
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       requestBody: { $ref: '#/components/requestBodies/TouchpointAssetPatch' }
       responses:
         '409': { $ref: '#/components/responses/Conflict' }
@@ -355,7 +453,7 @@ paths:
       x-idempotency: domain_key_state_command
       x-audit: true
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       responses:
         '409': { $ref: '#/components/responses/Conflict' }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -373,7 +471,7 @@ paths:
       x-idempotency: domain_key_state_command
       x-audit: true
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       responses:
         '409': { $ref: '#/components/responses/Conflict' }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -391,7 +489,7 @@ paths:
       x-idempotency: domain_key_state_command
       x-audit: true
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -409,7 +507,7 @@ paths:
       x-idempotency: none
       x-audit: false
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -425,7 +523,7 @@ paths:
       x-idempotency: domain_key_payload
       x-audit: true
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       requestBody: { $ref: '#/components/requestBodies/TouchpointPayloadCreate' }
       responses:
         '409': { $ref: '#/components/responses/Conflict' }
@@ -444,7 +542,7 @@ paths:
       x-idempotency: none
       x-audit: false
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -459,7 +557,7 @@ paths:
       x-idempotency: domain_key_object_version
       x-audit: true
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       requestBody: { $ref: '#/components/requestBodies/TouchpointPayloadPatch' }
       responses:
         '409': { $ref: '#/components/responses/Conflict' }
@@ -478,7 +576,7 @@ paths:
       x-idempotency: domain_key_state_command
       x-audit: true
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       responses:
         '409': { $ref: '#/components/responses/Conflict' }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -496,7 +594,7 @@ paths:
       x-idempotency: domain_key_state_command
       x-audit: true
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       responses:
         '409': { $ref: '#/components/responses/Conflict' }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -514,7 +612,7 @@ paths:
       x-idempotency: domain_key_state_command
       x-audit: true
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       responses:
         '409': { $ref: '#/components/responses/Conflict' }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -532,7 +630,7 @@ paths:
       x-idempotency: none
       x-audit: false
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       parameters:
         - { $ref: '#/components/parameters/Page' }
         - { $ref: '#/components/parameters/PageSize' }
@@ -575,7 +673,7 @@ paths:
       x-idempotency: domain_key_assignment
       x-audit: true
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       requestBody: { $ref: '#/components/requestBodies/AssignmentCreate' }
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -594,7 +692,7 @@ paths:
       x-idempotency: none
       x-audit: false
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -613,7 +711,7 @@ paths:
       x-idempotency: domain_key_assignment_unbind
       x-audit: true
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       requestBody: { $ref: '#/components/requestBodies/AssignmentUnbind' }
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -631,7 +729,7 @@ paths:
       x-idempotency: domain_key_assignment_transfer
       x-audit: true
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       requestBody: { $ref: '#/components/requestBodies/AssignmentTransfer' }
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -654,7 +752,7 @@ paths:
       x-idempotency: none
       x-audit: false
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       parameters:
         - { $ref: '#/components/parameters/Page' }
         - { $ref: '#/components/parameters/PageSize' }
@@ -707,7 +805,7 @@ paths:
       x-audit: false
       x-status: reviewed
       description: Read-only, non-audited detail query restricted to the caller's effective scope.
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -780,7 +878,7 @@ paths:
       x-idempotency: none
       x-audit: false
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       parameters:
         - in: query
           name: from
@@ -822,7 +920,7 @@ paths:
       x-idempotency: none
       x-audit: true
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       requestBody:
         required: true
         content:
@@ -862,7 +960,7 @@ paths:
       x-idempotency: none
       x-audit: false
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       responses:
         '200':
           description: UTF-8 BOM CSV template
@@ -890,7 +988,7 @@ paths:
       x-idempotency: none
       x-audit: true
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       requestBody:
         required: true
         content:
@@ -930,7 +1028,7 @@ paths:
       x-idempotency: none
       x-audit: false
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       responses:
         '200':
           description: UTF-8 BOM CSV template
@@ -956,7 +1054,7 @@ paths:
       x-idempotency: none
       x-audit: true
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       requestBody:
         required: true
         content:
@@ -992,7 +1090,7 @@ paths:
       x-idempotency: none
       x-audit: true
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       parameters:
         - in: path
           name: resource
@@ -1022,7 +1120,7 @@ paths:
       x-idempotency: none
       x-audit: false
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -1040,7 +1138,7 @@ paths:
       x-idempotency: none
       x-audit: false
       x-status: reviewed
-      security: [{ bearerAuth: [] }]
+      security: [{ sessionCookie: [] }]
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -1123,11 +1221,39 @@ components:
         application/json:
           schema: { $ref: '#/components/schemas/AssignmentTransferRequest' }
   securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: bank_admin_session
   schemas:
+    AuthMeData:
+      type: object
+      additionalProperties: false
+      required:
+        [employeeId, employeeCode, employeeName, orgId, orgCode, orgName,
+         roles, permissions, scope, scopeRoots]
+      description: >-
+        Normalized server-side session context. It never contains a subject,
+        access_token, id_token, refresh_token, password or secret.
+      properties:
+        employeeId: { $ref: '#/components/schemas/Id' }
+        employeeCode: { type: string, minLength: 1, maxLength: 64 }
+        employeeName: { type: string, minLength: 1, maxLength: 100 }
+        orgId: { $ref: '#/components/schemas/Id' }
+        orgCode: { type: string, minLength: 1, maxLength: 64 }
+        orgName: { type: string, minLength: 1, maxLength: 128 }
+        roles:
+          type: array
+          items: { type: string, minLength: 1 }
+        permissions:
+          type: array
+          items: { type: string, minLength: 1 }
+        scope:
+          type: string
+          enum: [GLOBAL, ORG_SUBTREE, ORG_SELF, EMPLOYEE_SELF, ASSET_SCOPE]
+        scopeRoots:
+          type: array
+          items: { type: string, minLength: 1 }
     Id:
       type: string
       pattern: '^[0-9]*[1-9][0-9]*$'

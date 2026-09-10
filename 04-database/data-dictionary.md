@@ -478,9 +478,9 @@ LinkForty 的 8 张现有表属于外部系统物理模型，本节仅用于说�
 
 V1.3.2 的跨系统数据流以 Casdoor 的身份声明、本地员工主数据、银行载体责任范围和 LinkForty 外部访问能力为边界。
 
-1. Casdoor 登录并签发 JWT；后端验证签名、issuer、audience 和过期时间。
+1. 浏览器进入银行后台 BFF；FastAPI 服务端通过 Authorization Code + PKCE 兑换并验证 JWT，浏览器只持有 HttpOnly Session Cookie。
 
-1. 后端从 Token 获取 employee_code，查询 employees，并拒绝停用或不存在的员工。
+1. 后端从规范化 Claims 获取 employee_code，查询 employees，并拒绝停用或不存在的员工。
 
 1. 查询、导出和导入根据员工所属 org_id 以及本人 employee_id 执行后端数据范围过滤。
 
@@ -531,7 +531,7 @@ V1.3.2 删除配置状态、目标资源类型、路由冲突和路由发布相�
 | Router | 协议适配 | 接收请求、解析认证上下文、返回统一响应；不直接写 SQL 或调用外部系统。 |
 | Service | 业务规则 | 组织编码校验、数据范围过滤、绑定时间冲突、导入预校验和审计编排。 |
 | Repository | 数据库访问 | SQLAlchemy 2.x 查询、事务、索引和约束；不承载 Casdoor 或 LinkForty 业务。 |
-| Integration Adapter | 外部调用 | Casdoor JWT/Claim、LinkForty API、Webhook/NFC 适配和重试。 |
+| Integration Adapter | 外部调用 | Casdoor OIDC/JWT Claim、LinkForty API、Webhook/NFC 适配和重试。 |
 | Worker / Celery | 异步任务 | 外部调用、事件重试、批量导入、补偿和结果审计；不得在银行业务表中补建 LinkForty 专属同步状态字段。 |
 | Alembic | 数据库演进 | V1.3.2 通过新迁移创建 7 张银行业务表；禁止直接删除已部署环境旧表。 |
 

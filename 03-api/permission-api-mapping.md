@@ -30,6 +30,8 @@ Casdoor 是权限编码唯一来源。以下编码是 V1.3.2 本地冻结契约�
 
 `system_webhook` 仅表示 LinkForty Webhook 的 HMAC 集成主体，不是 Casdoor 用户权限，也不进入角色矩阵。
 
+认证入口 `/api/v1/auth/login`、`/api/v1/auth/callback` 和 `/api/v1/auth/logout` 使用 `public` 契约标识，不属于 M1～M5 功能权限矩阵；`/api/v1/auth/me` 和所有业务接口使用服务端 `bank_admin_session` Cookie。业务请求不再通过浏览器携带 Bearer Token。
+
 ## Scope 定义
 
 - `GLOBAL`：全量银行数据。

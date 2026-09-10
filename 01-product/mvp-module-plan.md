@@ -48,7 +48,7 @@ V1.3.2 的正式范围为 7 张银行业务表、8 张 LinkForty 外部现有表
 | 边界对象 | V1.3.2 定位 | 银行后台约束 |
 | --- | --- | --- |
 | 银行业务数据库 | 7 张本地业务表 | 由银行后台负责数据所有权和演进 |
-| Casdoor | 身份、角色与功能权限权威 | 验证 JWT 并读取 employee_code，不建立本地权限投影 |
+| Casdoor | 身份、角色与功能权限权威 | 通过 OIDC 供 BFF 服务端兑换和验证 JWT，并读取 employee_code；不建立本地权限投影 |
 | LinkForty | 链接、点击和 Webhook 等底层能力 | 写入走 API；读取受限；不直接迁移或修改外部表 |
 | NFC | 一期触点载体类型 | 资产类型固定为 NFC，写入和核验通过适配能力完成 |
 
@@ -115,11 +115,11 @@ V1.3.2 的正式范围为 7 张银行业务表、8 张 LinkForty 外部现有表
 
 **数据所有权：**只拥有 operation_logs；该表只追加，不由其他模块直接修改。
 
-**输入：**Casdoor JWT、trace_id、员工和组织上下文、操作类型、对象标识、执行结果及必要的前后值。
+**输入：**BFF 规范化 `AccessContext`、trace_id、员工和组织上下文、操作类型、对象标识、执行结果及必要的前后值。
 
 **输出：**有效的员工访问上下文，以及可按 trace_id、操作员工、对象和时间追踪的审计记录。
 
-**负责事项：**校验 JWT 签名、issuer、audience 和过期时间；使用 employee_code 定位启用员工；记录登录、管理、绑定、导入、导出和外部同步等操作。
+**负责事项：**通过 BFF 边界校验 JWT 签名、issuer、audience、nonce 和过期时间；使用 employee_code 定位启用员工；记录登录、管理、绑定、导入、导出和外部同步等操作。
 
 **不负责事项：**不保存本地身份权限投影，不保存密码、Token、密钥或其他敏感凭证，不决定其他业务对象状态。
 
@@ -241,11 +241,11 @@ V1.3.2 的正式范围为 7 张银行业务表、8 张 LinkForty 外部现有表
 
 ## 10.1 身份与数据范围
 
-1. Casdoor 完成登录并签发 JWT。
+1. 浏览器访问银行后台 BFF；BFF 将用户重定向到 Casdoor Authorization Endpoint。
 
-1. 后台验证 JWT 签名、issuer、audience 和过期时间。
+1. Casdoor 回调 BFF；FastAPI 服务端兑换 code 并验证 JWT 签名、issuer、audience、nonce 和过期时间。
 
-1. 后台从 Token 获取 employee_code，并由 M2 查询 employees。
+1. BFF 从规范化 Claims 获取 employee_code，并由 M2 查询 employees；浏览器只收到 HttpOnly Session Cookie。
 
 1. 员工不存在或停用时拒绝访问。
 

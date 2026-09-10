@@ -83,4 +83,4 @@ API Credential：不适用
 
 Payload 保存 NFC 卡内实际写入内容，不代表最终目标资源或路由配置。
 
-本文件的网络隔离方案不替代银行后台面向浏览器 API 的 Casdoor JWT，也不替代 LinkForty Webhook 的 HMAC 签名验证。
+本文件的网络隔离方案不替代银行后台面向浏览器 API 的 BFF Session Cookie 认证，也不替代 FastAPI 服务端验证 Casdoor OIDC/JWT 或 LinkForty Webhook 的 HMAC 签名验证。

@@ -2,7 +2,11 @@
 
 | 需求编号 | 模块 | API/对象 | 测试用例 | 状态 |
 |---|---|---|---|---|
-| M1-001 | Casdoor 登录 | `/auth/me` | JWT、Claim 缺失、停用员工、越权 | 待测 |
+| M1-AUTH-001 | M1/BFF 登录 | `/auth/login`、`/auth/callback` | state、nonce、S256 PKCE、服务端 Token Exchange、固定回调路径；不连接真实 Casdoor | 条件开发：Fake 覆盖 |
+| M1-AUTH-002 | M1/Session | Redis state/Session | state 缺失、过期、重复使用、不匹配立即删除；Session TTL、过期、删除和 logout | 条件开发：Fake 覆盖 |
+| M1-AUTH-003 | M1/JWT | OIDC Client/JWKS | 签名、issuer、audience、subject、nonce、exp、60 秒偏差、unknown kid 刷新 | 条件开发：测试签名覆盖，平台契约待确认 |
+| M1-AUTH-004 | M1/安全 | Cookie/Origin | HttpOnly、Path、SameSite、生产 Secure、允许 Origin 和 `AUTH_ORIGIN_NOT_ALLOWED` | 条件开发 |
+| M1-001 | Casdoor 登录 | `/auth/me` | JWT、Claim 缺失、停用员工、越权 | 条件开发：真实 Casdoor 外部契约待确认 |
 | M2-001 | 组织维护 | `organization_units` | 编码唯一、前缀分段、停用阻断 | 待测 |
 | M2-002 | 员工维护 | `employees` | 员工编码唯一、组织范围、状态 | 待测 |
 | M3-001 | 触点资产 | `touchpoint_assets` | 资产编码、UID 唯一、状态、范围字段 | 待测 |
@@ -12,6 +16,12 @@
 | CAP-ANL-001 | 统计与报表横向能力（不编号） | analytics | 点击/访问时间、机器人、范围、只读边界、审计；安装/App 不支持时整体 503 | 通过 |
 | IMP-001 | 文档导入预留 | `/imports/validate` | 模板、稳定匹配键、逐行错误 | 待测 |
 | IMP-002 | 文档导入预留 | `/imports/execute` | 更新并新增、幂等、显式解绑、审计 | 待测 |
+
+## 认证外部证据门禁
+
+- 本矩阵的认证“条件开发”只表示代码边界、Fake/Mock 和负向测试具备，不表示真实 Casdoor 已连接。
+- 真实 issuer、audience、JWKS URI、Claim、角色/权限编码和员工停用同步仍对应延期的 `P0-CAS-001～006`、`DEC-CAS-001～006`，不得因本地测试通过而改为完成。
+- 默认单元测试不得执行 Casdoor 网络调用，不得使用真实 Secret；前端 E2E 只 Mock `/api/v1/auth/me` 和认证状态。
 
 ### CAP-ANL-001 验收证据（2026-09-07）
 
