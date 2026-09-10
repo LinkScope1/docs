@@ -13,10 +13,10 @@ FastAPI -> Casdoor Token Endpoint: 服务端 code exchange
 FastAPI -> JWKS: 校验 id_token
 FastAPI -> M2 employees: employee_code + 启用状态
 FastAPI -> Redis: normalized session（最多 1800s）
-FastAPI -> Browser: bank_admin_session（HttpOnly）
+FastAPI -> Browser: 302 到 AUTH_FRONTEND_BASE_URL + 固定路径；bank_admin_session（HttpOnly）
 ```
 
-`state`、`nonce`、`code_verifier` 只在服务端短期使用。state 使用 `bank-admin:auth:state:{state}`、TTL 300 秒，callback 无论成功或失败都必须一次性删除；Redis state 记录不包含 PKCE verifier，生产环境由服务端专用 `AUTH_STATE_SIGNING_KEY` 基于 state 派生 verifier，开发/测试 Fake 可在内存保存 verifier。Session 使用 `bank-admin:auth:session:{session_id}`。回调不接受前端跳转地址，成功和失败只重定向到服务端配置的固定路径。
+`state`、`nonce`、`code_verifier` 只在服务端短期使用。state 使用 `bank-admin:auth:state:{state}`、TTL 300 秒，callback 无论成功或失败都必须一次性删除；Redis state 记录不包含 PKCE verifier，生产环境由服务端专用 `AUTH_STATE_SIGNING_KEY` 基于 state 派生 verifier，开发/测试 Fake 可在内存保存 verifier。Session 使用 `bank-admin:auth:session:{session_id}`。回调不接受前端跳转地址，成功和失败只重定向到服务端配置的 `AUTH_FRONTEND_BASE_URL` 加固定相对路径；该基础地址必须与 `FRONTEND_ORIGINS` 中的允许 Origin 匹配。本机开发地址为前端 `http://localhost:5173`、后端 `http://localhost:8000`。
 
 ## Token 与 JWT 边界
 

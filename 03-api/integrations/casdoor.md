@@ -17,9 +17,9 @@ Casdoor 是身份、角色和功能权限权威；M1 负责认证上下文、Ses
 7. 从规范化 Claims 读取 `employee_code`、角色和权限；缺失、类型错误、角色到数据范围映射缺失或歧义时 fail closed。
 8. M2 Repository 按 `employee_code` 查询员工和组织；员工或组织不存在/停用时拒绝访问。
 9. Redis 以 `bank-admin:auth:session:{session_id}` 创建短期 Session。Session 只保存 subject、employee_code、角色、权限、issued_at、expires_at，TTL 默认 1800 秒且不超过上游 Token 剩余有效期。
-10. FastAPI 302 到固定配置的前端路径并设置 `bank_admin_session` Cookie。
+10. FastAPI 302 到 `AUTH_FRONTEND_BASE_URL` 加固定相对路径并设置 `bank_admin_session` Cookie；基础地址的 Origin 必须在 `FRONTEND_ORIGINS` 中。
 
-失败回调只重定向到固定配置路径并带稳定错误码，不回显 Casdoor 原始错误、Token 或内部堆栈。当前 callback 是目标设计和本地可测试边界，不是外部联调证据。
+失败回调只重定向到配置基础地址加固定路径并带稳定错误码，不回显 Casdoor 原始错误、Token 或内部堆栈。当前 callback 是目标设计和本地可测试边界，不是外部联调证据。
 
 ## Token、Session 和 Cookie
 
@@ -27,6 +27,7 @@ Casdoor 是身份、角色和功能权限权威；M1 负责认证上下文、Ses
 - `access_token`、`id_token`、`refresh_token`、密码、Secret 和 PKCE verifier 不写入数据库、Session、Cookie、日志或审计。生产环境的 PKCE verifier 由服务端专用密钥基于 state 派生，不序列化到 Redis；开发/测试 Fake 可仅在进程内短期保存，兑换完成或失败后删除。
 - `id_token` 只用于身份声明，不能作为业务 API access token。
 - Cookie 名称固定为 `bank_admin_session`，属性为 `HttpOnly`、`Path=/`、`SameSite=Lax`，生产环境必须 `Secure`。
+- BFF 回调目标由服务端 `AUTH_FRONTEND_BASE_URL`、`CASDOOR_FRONTEND_SUCCESS_PATH` 和 `CASDOOR_FRONTEND_ERROR_PATH` 组合；基础地址必须与 `FRONTEND_ORIGINS` 的某个 Origin 完全匹配，不信任请求参数中的跳转地址。本机开发分别使用前端 `http://localhost:5173` 和后端 `http://localhost:8000`。
 - 带 Session Cookie 的 POST/PUT/PATCH/DELETE 必须校验允许的 `Origin`；不满足时返回 `AUTH_ORIGIN_NOT_ALLOWED`（403）。
 - `/api/v1/auth/logout` 删除 Redis Session 并清理 Cookie，不调用未确认的外部注销接口。
 - 每次业务请求仍按 `employee_code` 查询本地员工/组织；员工停用立即生效，角色变化最多延迟到 Session 过期。

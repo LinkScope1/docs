@@ -57,8 +57,9 @@ paths:
       description: >-
         Public callback. FastAPI consumes state once, exchanges code plus the
         server-side PKCE verifier, verifies id_token using configured JWKS and
-        creates a Redis session. Success and failure redirect only to configured
-        fixed frontend paths; failure uses a stable error code.
+        creates a Redis session. Success and failure redirect only to the
+        configured frontend base URL plus fixed relative paths; the base URL
+        must be allow-listed by FRONTEND_ORIGINS. Failure uses a stable error code.
       x-permission: public
       x-data-scope: SYSTEM
       x-idempotency: none
@@ -80,7 +81,7 @@ paths:
           schema: { type: string }
       responses:
         '302':
-          description: Redirect to a configured frontend success or stable error path.
+          description: Redirect to the configured frontend base URL plus a success or stable error path.
           headers:
             Location: { schema: { type: string, format: uri-reference } }
             Set-Cookie: { schema: { type: string } }

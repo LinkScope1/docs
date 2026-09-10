@@ -2,7 +2,7 @@
 
 | 需求编号 | 模块 | API/对象 | 测试用例 | 状态 |
 |---|---|---|---|---|
-| M1-AUTH-001 | M1/BFF 登录 | `/auth/login`、`/auth/callback` | state、nonce、S256 PKCE、服务端 Token Exchange、固定回调路径；不连接真实 Casdoor | 条件开发：Fake 覆盖 |
+| M1-AUTH-001 | M1/BFF 登录 | `/auth/login`、`/auth/callback` | state、nonce、S256 PKCE、服务端 Token Exchange、`AUTH_FRONTEND_BASE_URL` 加固定回调路径；不连接真实 Casdoor | 条件开发：Fake 覆盖 |
 | M1-AUTH-002 | M1/Session | Redis state/Session | state 缺失、过期、重复使用、不匹配立即删除；Session TTL、过期、删除和 logout | 条件开发：Fake 覆盖 |
 | M1-AUTH-003 | M1/JWT | OIDC Client/JWKS | 签名、issuer、audience、subject、nonce、exp、60 秒偏差、unknown kid 刷新 | 条件开发：测试签名覆盖，平台契约待确认 |
 | M1-AUTH-004 | M1/安全 | Cookie/Origin | HttpOnly、Path、SameSite、生产 Secure、允许 Origin 和 `AUTH_ORIGIN_NOT_ALLOWED` | 条件开发 |

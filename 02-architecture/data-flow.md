@@ -11,7 +11,7 @@ FastAPI -> Casdoor: 服务端 Token Exchange（code + code_verifier）
 FastAPI -> Casdoor JWKS: 验证 id_token 签名、issuer、audience、subject、nonce、exp
 FastAPI -> bank_admin: 用 employee_code 查询启用 employees 和组织
 FastAPI -> Redis: 保存规范化 Session（TTL <= 1800s 且不超过上游 Token 剩余时间）
-FastAPI -> Browser: 302 + HttpOnly bank_admin_session Cookie
+FastAPI -> Browser: 302 到 AUTH_FRONTEND_BASE_URL + 固定路径，并设置 HttpOnly bank_admin_session Cookie
 Browser -> FastAPI: 业务请求携带 Cookie
 FastAPI -> Browser: GET /api/v1/auth/me 返回员工、组织、角色、权限和数据范围
 ```
@@ -20,7 +20,7 @@ FastAPI -> Browser: GET /api/v1/auth/me 返回员工、组织、角色、权限�
 
 银行库不保存 Casdoor 用户、角色或权限投影。Casdoor 是身份、角色和功能权限权威；M1 负责认证上下文、Session 和操作审计，M2 负责按 `employee_code` 查询本地员工及所属组织，业务模块只依赖 `AccessContext`、`require_permission` 和 `authorize`。员工或组织停用在下一次请求立即生效；角色变化最多延迟到 Session 过期。
 
-回调只允许重定向到服务端配置的固定前端路径，不接受请求参数跳转地址。真实 Casdoor issuer、audience、JWKS URI、角色/权限 Claim 和停用同步策略仍待平台确认；上述 `/auth/callback` 是目标设计与本地可测试边界，不代表真实 Casdoor 联调完成。
+回调只允许重定向到服务端配置的 `AUTH_FRONTEND_BASE_URL` 加固定相对路径；该基础地址的 Origin 必须同时出现在 `FRONTEND_ORIGINS` 中，不接受请求参数跳转地址。当前本机开发配置为 `http://localhost:5173`，FastAPI 默认运行在 `http://localhost:8000`。真实 Casdoor issuer、audience、JWKS URI、角色/权限 Claim 和停用同步策略仍待平台确认；上述 `/auth/callback` 是目标设计与本地可测试边界，不代表真实 Casdoor 联调完成。
 
 Session Cookie 名称固定为 `bank_admin_session`，设置 `HttpOnly`、`Path=/`、`SameSite=Lax`，生产环境设置 `Secure`。携带 Cookie 的 POST/PUT/PATCH/DELETE 必须匹配配置的 `FRONTEND_ORIGINS`，否则返回 `AUTH_ORIGIN_NOT_ALLOWED`（403）。登出删除 Redis Session 并清理 Cookie，不调用未确认的外部注销接口。
 
