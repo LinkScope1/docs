@@ -19,7 +19,7 @@ authCallback:
   get:
     operationId: completeAuthCallback
     tags: [auth]
-    summary: 完成服务端 OIDC 回调
+    summary: 完成服务端 OIDC 回调并跳转到固定前端地址
     x-status: reviewed
     x-owner: API/后端
     x-permission: public
