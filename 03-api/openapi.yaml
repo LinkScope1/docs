@@ -496,28 +496,32 @@ paths:
         '200': { $ref: '#/components/responses/Success' }
         '409': { $ref: '#/components/responses/Conflict' }
 
-  /touchpoint-payloads:
+  /touchpoint-assets/{assetId}/payloads:
+    parameters:
+      - in: path
+        name: assetId
+        required: true
+        schema: { $ref: '#/components/schemas/Id' }
     get:
       tags: [touchpoint-payloads]
-      operationId: listTouchpointPayloads
+      operationId: listTouchpointAssetPayloads
       x-owner: API/后端
-      summary: List carrier payloads
+      summary: List all payloads configured for an asset
       x-permission: touchpoint.payload.read
       x-data-scope: ASSET_SCOPE
       x-idempotency: none
       x-audit: false
       x-status: reviewed
       security: [{ sessionCookie: [] }]
-      parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '200': { $ref: '#/components/responses/Success' }
     post:
       tags: [touchpoint-payloads]
-      operationId: createTouchpointPayload
+      operationId: createTouchpointAssetPayload
       x-owner: API/后端
-      summary: Create a carrier payload
+      summary: Create a LinkForty short-link payload for an asset
       x-permission: touchpoint.payload.manage
       x-data-scope: ASSET_SCOPE
       x-idempotency: domain_key_payload
@@ -526,10 +530,50 @@ paths:
       security: [{ sessionCookie: [] }]
       requestBody: { $ref: '#/components/requestBodies/TouchpointPayloadCreate' }
       responses:
-        '409': { $ref: '#/components/responses/Conflict' }
+        '201': { $ref: '#/components/responses/Success' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
-        '201': { $ref: '#/components/responses/Success' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /touchpoint-payloads:
+    get:
+      tags: [touchpoint-payloads]
+      operationId: listTouchpointPayloads
+      x-owner: API/后端
+      summary: List payloads in the current data scope
+      x-permission: touchpoint.payload.read
+      x-data-scope: ASSET_SCOPE
+      x-idempotency: none
+      x-audit: false
+      x-status: reviewed
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+        - in: query
+          name: status
+          required: false
+          schema: { type: integer, enum: [0, 1, 2, 3] }
+        - in: query
+          name: assetId
+          required: false
+          schema: { $ref: '#/components/schemas/Id' }
+        - in: query
+          name: orgCodePrefix
+          required: false
+          schema: { type: string, maxLength: 64 }
+        - in: query
+          name: employeeId
+          required: false
+          schema: { $ref: '#/components/schemas/Id' }
+        - in: query
+          name: payloadSource
+          required: false
+          schema: { type: integer, enum: [1, 2, 3, 4] }
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /touchpoint-payloads/{id}:
     parameters: [{ $ref: '#/components/parameters/Id' }]
     get:
@@ -595,6 +639,7 @@ paths:
       x-audit: true
       x-status: reviewed
       security: [{ sessionCookie: [] }]
+      requestBody: { $ref: '#/components/requestBodies/TouchpointPayloadDisable' }
       responses:
         '409': { $ref: '#/components/responses/Conflict' }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -613,6 +658,7 @@ paths:
       x-audit: true
       x-status: reviewed
       security: [{ sessionCookie: [] }]
+      requestBody: { $ref: '#/components/requestBodies/TouchpointPayloadInvalidate' }
       responses:
         '409': { $ref: '#/components/responses/Conflict' }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -1205,6 +1251,17 @@ components:
       content:
         application/json:
           schema: { $ref: '#/components/schemas/TouchpointPayloadPatchRequest' }
+    TouchpointPayloadDisable:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/PayloadReasonRequest' }
+
+    TouchpointPayloadInvalidate:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/PayloadReasonRequest' }
     AssignmentCreate:
       required: true
       content:
@@ -1344,25 +1401,42 @@ components:
     TouchpointPayloadCreateRequest:
       type: object
       additionalProperties: false
-      required: [assetId, payloadType, payloadValue, payloadSource]
+      required: [target_url, payload_source]
       properties:
-        assetId: { $ref: '#/components/schemas/Id' }
-        payloadType: { type: integer, enum: [1, 2, 3, 99] }
-        payloadValue: { type: string, minLength: 1, maxLength: 2048 }
-        payloadSource: { type: integer, enum: [1, 2, 3, 4] }
-        providerType: { type: integer, enum: [1, 2, 3, 99], default: 1 }
-        linkfortyLinkId: { type: [string, 'null'], format: uuid }
-        metadata: { $ref: '#/components/schemas/Metadata' }
+        target_url:
+          type: string
+          minLength: 1
+          maxLength: 2048
+          format: uri
+        custom_code:
+          type: [string, 'null']
+          minLength: 1
+          maxLength: 20
+        payload_source:
+          type: integer
+          enum: [1, 2, 4]
+          description: "1=供应商预写；2=系统生成；4=人工录入。来源为 1 或 4 时 custom_code 必填。"
+
     TouchpointPayloadPatchRequest:
       type: object
       additionalProperties: false
-      minProperties: 1
+      required: [target_url]
       properties:
-        payloadValue: { type: string, minLength: 1, maxLength: 2048 }
-        payloadSource: { type: integer, enum: [1, 2, 3, 4] }
-        providerType: { type: integer, enum: [1, 2, 3, 99] }
-        linkfortyLinkId: { type: [string, 'null'], format: uuid }
-        metadata: { $ref: '#/components/schemas/Metadata' }
+        target_url:
+          type: string
+          minLength: 1
+          maxLength: 2048
+          format: uri
+
+    PayloadReasonRequest:
+      type: object
+      additionalProperties: false
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
     AssignmentCreateRequest:
       type: object
       additionalProperties: false

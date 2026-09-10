@@ -13,8 +13,8 @@ Casdoor 是权限编码唯一来源。以下编码是 V1.3.2 本地冻结契约�
 | `touchpoint.asset.read` | GET | `/api/v1/touchpoint-assets`、`/api/v1/touchpoint-assets/{id}` | `ASSET_SCOPE` | 否 |
 | `touchpoint.asset.manage` | POST/PATCH/POST command | `/api/v1/touchpoint-assets/**` | `ORG_SUBTREE`/`ASSET_SCOPE` | 是 |
 | `touchpoint.asset.scrap` | POST | `/api/v1/touchpoint-assets/{id}/scrap` | `ASSET_SCOPE` | 是 |
-| `touchpoint.payload.read` | GET | `/api/v1/touchpoint-payloads`、`/api/v1/touchpoint-payloads/{id}` | `ASSET_SCOPE` | 否 |
-| `touchpoint.payload.manage` | POST/PATCH/POST command | `/api/v1/touchpoint-payloads/**` | `ASSET_SCOPE` | 是 |
+| `touchpoint.payload.read` | GET | `/api/v1/touchpoint-payloads`、`/api/v1/touchpoint-payloads/{id}`、`/api/v1/touchpoint-assets/{assetId}/payloads` | `ASSET_SCOPE` | 否 |
+| `touchpoint.payload.manage` | POST/PATCH/POST command | `/api/v1/touchpoint-payloads/**`、`/api/v1/touchpoint-assets/{assetId}/payloads` | `ASSET_SCOPE` | 是 |
 | `touchpoint.assignment.read` | GET | `/api/v1/touchpoint-assignments`、`/api/v1/touchpoint-assignments/{id}` | `ASSET_SCOPE` | 否 |
 | `touchpoint.assignment.manage` | POST | `/api/v1/touchpoint-assignments`、`/api/v1/touchpoint-assignments/{id}/unbind` | `ASSET_SCOPE` | 是 |
 | `touchpoint.assignment.transfer` | POST | `/api/v1/touchpoint-assignments/transfer` | `SOURCE_AND_TARGET_ORG` | 是 |
