@@ -37,23 +37,30 @@ M1 -> operation_logs: 写入操作审计
 ## LinkForty 外部调用
 
 ```text
-M3 -> LinkForty API: 私有网络 + ACL + HTTPS/TLS 直连；无应用层认证
+M3 -> Nginx: /linkapi/...；私有网络 + ACL + HTTPS/TLS
+Nginx -> LinkForty Core: 去掉 /linkapi/ 后转发；无应用层认证
 M3 -> Worker: 提交需要重试或补偿的任务
-Worker -> LinkForty API: 执行重试和补偿
+Worker -> Nginx -> LinkForty Core: 执行重试和补偿
 M3/Worker -> M1: 提交调用结果、trace_id 和错误摘要
 M1 -> operation_logs: 记录成功、失败或部分成功
 ```
 
-银行后台到 LinkForty Core 不经过 API 网关或其他中间代理。`issuer`、`audience`、`subject` 和 API Credential 对该出站链路不适用；银行后台面向浏览器的业务 API 使用 BFF Session Cookie，Casdoor JWT 只在 FastAPI 服务端兑换和验证阶段短暂存在。
+`LINKFORTY_BASE_URL` 指向 Nginx 的 `/linkapi` 前缀，而不是 Core 的 `:3200` 地址。
+Nginx 的 `proxy_pass` 末尾 `/` 负责去掉代理前缀：`/linkapi/api/links` → Core
+`/api/links`，`/linkapi/api/analytics/*` → Core `/api/analytics/*`，
+`/linkapi/<short_code>` → Core `/<short_code>`。`issuer`、`audience`、`subject` 和
+API Credential 对该出站链路不适用；银行后台面向浏览器的业务 API 使用 BFF Session
+Cookie，Casdoor JWT 只在 FastAPI 服务端兑换和验证阶段短暂存在。
 
 `touchpoint_payloads` 只保存 `linkforty_link_id` 等必要逻辑引用，不保存 LinkForty 专属同步状态。
 
 ## 访问事件
 
 ```text
-LinkForty -> M5 Webhook: 发送签名事件
+LinkForty -> Nginx: POST /api/v1/webhooks/linkforty
+Nginx -> M5 Webhook: 保留原始 body 和 X-LinkForty-* Header
 M5 -> access_events: event_id 幂等写入
-M5 -> LinkForty 只读数据: 读取点击事实
+M5 -> Nginx -> LinkForty Core: 读取点击事实
 M5 -> M3/M4 数据: 关联资产、绑定、组织和员工
 M5 -> access_events: 写入关联结果和状态
 ```

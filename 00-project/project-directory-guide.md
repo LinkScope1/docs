@@ -108,6 +108,7 @@ bank-touchpoint-backend/
 ├── alembic/versions/                # 【现有 / 目标】银行侧 7 张表的独立 Revision
 ├── database/{seeds,checks}/          # 【现有 / 目标】种子、检查和辅助说明，不放正式 DDL
 ├── scripts/                          # 【现有 / 目标】开发、数据准备和联调辅助脚本
+├── nginx/                            # 【现有 / 目标】银行后台 Nginx 代理与 Webhook 转发配置
 ├── tests/                            # 【现有 / 目标】单元、API、集成、权限、幂等和迁移测试
 ├── docs/                             # 【现有 / 目标】后端启动、测试和联调说明
 └── .github/                          # 【目标】CI、PR 模板、CODEOWNERS 和分支检查
