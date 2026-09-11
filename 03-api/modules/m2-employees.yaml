@@ -11,6 +11,21 @@ employees:
     x-data-scope: ORG_SUBTREE
     x-idempotency: none
     x-audit: false
+    parameters:
+      - { $ref: '#/components/parameters/Page' }
+      - { $ref: '#/components/parameters/PageSize' }
+      - in: query
+        name: status
+        schema: { type: integer, enum: [0, 1] }
+      - in: query
+        name: employeeCode
+        schema: { type: string, maxLength: 64 }
+      - in: query
+        name: employeeName
+        schema: { type: string, maxLength: 100 }
+      - in: query
+        name: orgCodePrefix
+        schema: { type: string, minLength: 1, maxLength: 64, pattern: '^1([0-9]{3})*$' }
     responses: {}
   post:
     operationId: createEmployee

@@ -68,6 +68,30 @@ auditLogs:
     x-data-scope: ORG_SUBTREE
     x-idempotency: none
     x-audit: false
+    parameters:
+      - { $ref: '#/components/parameters/Page' }
+      - { $ref: '#/components/parameters/PageSize' }
+      - in: query
+        name: traceId
+        schema: { type: string, maxLength: 64 }
+      - in: query
+        name: employeeId
+        schema: { $ref: '#/components/schemas/Id' }
+      - in: query
+        name: objectType
+        schema: { type: integer, minimum: 1 }
+      - in: query
+        name: objectId
+        schema: { $ref: '#/components/schemas/Id' }
+      - in: query
+        name: operationResult
+        schema: { type: integer, enum: [1, 2, 3] }
+      - in: query
+        name: from
+        schema: { type: string, format: date-time }
+      - in: query
+        name: to
+        schema: { type: string, format: date-time }
     responses: {}
 
 auditLogById:

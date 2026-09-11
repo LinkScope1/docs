@@ -150,7 +150,26 @@ paths:
       x-audit: false
       x-status: reviewed
       security: [{ sessionCookie: [] }]
-      parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+        - in: query
+          name: status
+          required: false
+          schema: { type: integer, enum: [0, 1] }
+        - in: query
+          name: orgCode
+          required: false
+          schema: { type: string, maxLength: 64 }
+        - in: query
+          name: orgName
+          required: false
+          schema: { type: string, maxLength: 128 }
+        - in: query
+          name: orgCodePrefix
+          required: false
+          description: Optional scope narrowing prefix; it cannot expand AccessContext.
+          schema: { type: string, minLength: 1, maxLength: 64, pattern: '^1([0-9]{3})*$' }
       responses:
         '200': { $ref: '#/components/responses/Success' }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -259,7 +278,26 @@ paths:
       x-audit: false
       x-status: reviewed
       security: [{ sessionCookie: [] }]
-      parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+        - in: query
+          name: status
+          required: false
+          schema: { type: integer, enum: [0, 1] }
+        - in: query
+          name: employeeCode
+          required: false
+          schema: { type: string, maxLength: 64 }
+        - in: query
+          name: employeeName
+          required: false
+          schema: { type: string, maxLength: 100 }
+        - in: query
+          name: orgCodePrefix
+          required: false
+          description: Optional scope narrowing prefix; it cannot expand AccessContext.
+          schema: { type: string, minLength: 1, maxLength: 64, pattern: '^1([0-9]{3})*$' }
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -385,7 +423,25 @@ paths:
       x-audit: false
       x-status: reviewed
       security: [{ sessionCookie: [] }]
-      parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+        - in: query
+          name: assetStatus
+          required: false
+          schema: { type: integer, enum: [0, 1, 2, 9] }
+        - in: query
+          name: assetCode
+          required: false
+          schema: { type: string, maxLength: 64 }
+        - in: query
+          name: orgCodePrefix
+          required: false
+          schema: { type: string, minLength: 1, maxLength: 64, pattern: '^1([0-9]{3})*$' }
+        - in: query
+          name: employeeId
+          required: false
+          schema: { $ref: '#/components/schemas/Id' }
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -1122,7 +1178,37 @@ paths:
       x-audit: false
       x-status: reviewed
       security: [{ sessionCookie: [] }]
-      parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+        - in: query
+          name: traceId
+          required: false
+          schema: { type: string, maxLength: 64 }
+        - in: query
+          name: employeeId
+          required: false
+          schema: { $ref: '#/components/schemas/Id' }
+        - in: query
+          name: objectType
+          required: false
+          schema: { type: integer, minimum: 1 }
+        - in: query
+          name: objectId
+          required: false
+          schema: { $ref: '#/components/schemas/Id' }
+        - in: query
+          name: operationResult
+          required: false
+          schema: { type: integer, enum: [1, 2, 3] }
+        - in: query
+          name: from
+          required: false
+          schema: { type: string, format: date-time }
+        - in: query
+          name: to
+          required: false
+          schema: { type: string, format: date-time }
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -1483,7 +1569,7 @@ components:
     AuditLog:
       type: object
       additionalProperties: false
-      required: [id, traceId, operationType, objectType]
+      required: [id, traceId, orgId, employeeId, operationType, objectType, objectId, operationResult, operationSummary, errorCode, operationTime]
       properties:
         id: { $ref: '#/components/schemas/Id' }
         traceId: { type: string }
@@ -1492,7 +1578,16 @@ components:
         operationType: { type: integer }
         objectType: { type: integer }
         objectId: { $ref: '#/components/schemas/NullableId' }
-        resultCode: { type: [string, 'null'] }
+        operationResult: { type: integer, enum: [1, 2, 3] }
+        operationSummary: { type: [string, 'null'] }
+        errorCode: { type: [string, 'null'] }
+        operationTime: { type: string, format: date-time }
+        externalObjectId: { $ref: '#/components/schemas/NullableId' }
+        operationDetail: { type: object, additionalProperties: true }
+        beforeData: { type: [object, 'null'], additionalProperties: true }
+        afterData: { type: [object, 'null'], additionalProperties: true }
+        errorMessage: { type: [string, 'null'] }
+        userAgent: { type: [string, 'null'] }
         createdAt: { type: string, format: date-time }
     Page:
       type: object
