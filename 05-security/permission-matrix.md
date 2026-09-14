@@ -17,8 +17,8 @@ Casdoor 提供角色和功能权限；银行后台不创建本地 IAM 表。后�
 | 查询载体内容 | 允许 | 允许 | 允许 | 允许 | `ASSET_SCOPE` |
 | 管理载体内容 | 允许 | 允许 | 仅本机构/本人责任范围 | 禁止 | `touchpoint.payload.manage` |
 | 查询地址页面 | 允许 | 允许 | 仅本机构/本人责任范围 | 禁止 | `touchpoint.address-page.read` + `ORG_SUBTREE` |
-| 管理地址页面 | 允许 | 允许 | 仅本机构/本人责任范围 | 禁止 | `touchpoint.address-page.manage` + `ORG_SUBTREE`；根组织页面可供下级资产使用 |
-| 在载体内容中选择地址页面 | 允许 | 允许 | 资产可管理且地址页面责任组织可使用 | 禁止 | 同时校验 `touchpoint.payload.manage`、`touchpoint.asset.manage`、`touchpoint.address-page.read` |
+| 管理地址页面 | 允许 | 允许 | 仅本机构/本人责任范围 | 禁止 | `touchpoint.address-page.manage` + `ORG_SUBTREE`；根组织页面可供下级资产使用；目标传播仍需 Core API 权限和审计 |
+| 在载体内容中选择地址页面或切换目标 | 允许 | 允许 | 资产可管理且地址页面责任组织可使用 | 禁止 | 同时校验 `touchpoint.payload.manage`、`touchpoint.asset.manage`、`touchpoint.address-page.read`；还需有效 `linkforty_link_id` 才能实时切换 |
 | 查询绑定历史 | 允许 | 允许 | 允许 | 允许 | `ASSET_SCOPE` |
 | 绑定/解绑 | 允许 | 允许（同组织 `ORG_SUBTREE`） | 仅同组织 `ORG_SELF` | 禁止 | `touchpoint.assignment.manage` |
 | 跨组织转交 | 允许（需 `touchpoint.assignment.transfer`） | 允许（需 `touchpoint.assignment.transfer`） | 禁止 | 禁止 | `SOURCE_AND_TARGET_ORG` |

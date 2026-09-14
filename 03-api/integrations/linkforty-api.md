@@ -68,6 +68,7 @@ Nginx 只作为受控网络边界，不改变请求方法、请求体或 `Idempo
 | --- | --- | --- | --- |
 | 创建 Link | POST | `/api/links` | 银行侧携带稳定 `Idempotency-Key` 并按现有策略重试；V1.3.2 Core 不保证同 Key 去重，重复 Link 属于已知风险 |
 | 查询 Link | GET | `/api/links/{id}` | 只保存和返回 Link UUID 及已批准字段；不读取外部表 |
+| 更新 Link 目标 | PUT | `/api/links/{id}` | 仅更新同一 Link 的 `originalUrl`/`webFallbackUrl`；网页和小程序直接提交目标，APP 提交 `card-switch-demo` Bridge URL；不添加 Core 未声明支持的幂等请求头 |
 | 查询点击分析 | GET | `/api/analytics/links/{id}?days={n}` | V1.3.2 只通过 API 读取 Core 已提供的点击分析；安装/App 聚合接口未确认时返回数据源不可用 |
 
 安装/App 事件聚合的逐项核验记录见
@@ -75,7 +76,13 @@ Nginx 只作为受控网络边界，不改变请求方法、请求体或 `Idempo
 
 创建请求的重试规则固定为：4xx 不重试；429、5xx、连接超时按指数退避，最多 3 次；TLS、ACL、DNS 和证书错误不盲目重试。每次调用记录 `trace_id`、外部请求 ID、状态和耗时，不把凭据或完整敏感响应写入日志。Nginx 的 502/504 仍按网络或上游不可用分类处理。
 
-当前 Core 路由虽存在上述路径，但不读取 `Idempotency-Key`；银行侧保留稳定 Key 转发、错误分类和重试测试，并记录真实重复创建缺陷。该缺陷不在 V1.3.2 修复，也不标记为幂等验收通过；正式字段、TLS/ACL 和只读边界仍需外部证据。
+当前 Core 路由虽存在上述路径，但不读取 `Idempotency-Key`；银行侧保留稳定 Key 转发、错误分类和重试测试，并记录真实重复创建缺陷。目标更新使用同 Link ID + 同目标的逻辑幂等：重复请求先读取外部目标，目标相同则银行返回 `NO_CHANGE`，不重复调用 Core。该缺陷不在 V1.3.2 修复，也不标记为幂等验收通过；正式字段、TLS/ACL 和只读边界仍需外部证据。
+
+## M3 地址页面目标切换
+
+银行后台入口为 `POST /api/v1/touchpoint-payloads/{id}/switch-address-page`，页面编辑目标时由 M3 对所有关联 Payload 传播。网页（`content_type=3`）和小程序（`content_type=1`）直接使用目标；小程序的目标必须是公开 HTTPS Universal Link，业务库不要求通用 URL 格式，但 Core 校验失败必须原样归类为失败。APP（`content_type=2`）由银行侧使用 `metadata.app` 和 `TOUCHPOINT_APP_BRIDGE_BASE_URL` 生成 `app-open.html` URL；不得把 APP Scheme 直接提交给 Core。
+
+目标切换始终保留 NFC 实际写入的 `payload_value` 和 `linkforty_link_id`。更新前通过 `GET /api/links/{id}` 校验 Core 目标与银行 `target_url` 快照一致；多 Payload 传播按 Link ID 去重。Core 更新成功后才落银行快照，银行事务失败、后续 Core 更新失败或批量失败时使用旧目标补偿，并通过 `trace_id` 和 `operation_logs` 记录成功、失败、冲突与补偿结果。Core 与银行库不组成分布式事务，因此该流程提供补偿意义上的最终一致，而非原子事务。
 
 ## 集成规则
 

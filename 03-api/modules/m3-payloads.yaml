@@ -1,5 +1,5 @@
 # M3：载体内容。org_id和employee_id由资产同步，禁止客户端指定；可选 address_page_id
-# 关联银行地址页面，关联时从数据库读取 target_url。
+# 关联银行地址页面。payload_value 始终是 NFC 实际写入的短链/内容，目标切换时不变。
 payloads:
   x-canonical-path: /touchpoint-payloads
   get:
@@ -47,6 +47,20 @@ payloadById:
     x-permission: touchpoint.payload.manage
     x-data-scope: ASSET_SCOPE
     x-idempotency: domain_key_object_version
+    x-audit: true
+    description: 提交 addressPageId 时复用实时切换 Service，不信任前端 URL；同一 Link 与目标重复请求返回 NO_CHANGE。
+payloadSwitchAddressPage:
+  x-canonical-path: /touchpoint-payloads/{id}/switch-address-page
+  post:
+    operationId: switchTouchpointPayloadAddressPage
+    tags: [touchpoint-payloads]
+    summary: 不重新写 NFC，切换同一短链的地址页面目标
+    x-status: reviewed
+    x-owner: API/后端
+    x-permission: touchpoint.payload.manage
+    x-required-permissions: [touchpoint.payload.manage, touchpoint.address-page.read]
+    x-data-scope: ASSET_SCOPE
+    x-idempotency: domain_key_link_target
     x-audit: true
     responses: {}
 

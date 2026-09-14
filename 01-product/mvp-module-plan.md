@@ -148,11 +148,11 @@ V1.3.2 的正式范围为 8 张银行业务表、1 张横向导入任务表、8 
 
 ## 7.3 M3 NFC 触点资产与载体内容管理
 
-**定位：**管理 NFC 触点资产、卡内实际写入内容、当前责任范围和 LinkForty 外部逻辑引用。
+**定位：**管理 NFC 触点资产、可复用地址页面、卡内实际写入内容、当前责任范围和 LinkForty 外部逻辑引用。
 
 **数据所有权：**拥有 touchpoint_assets 和 touchpoint_payloads。
 
-M3 同时拥有 `touchpoint_address_pages`。地址页面是银行后台可复用的内容主数据，不是 `target_resources` 或 `routing_rules`；其 `content_type` 固定为 1 小程序、2 APP、3 网页，`target_url` 保存实际内容且不强制使用 HTTP/HTTPS 协议。
+M3 同时拥有 `touchpoint_address_pages`。地址页面是银行后台可复用的内容主数据，不是 `target_resources` 或 `routing_rules`；其 `content_type` 固定为 1 小程序、2 APP、3 网页。`url` 是原始/展示值，只做首尾空格清理；`target_url` 是目标配置，进入 Core 前由 Service 按内容类型解析。小程序要求公开 HTTPS Universal Link，APP 使用 `card-switch-demo` 的 `app-open.html` Bridge，网页直接使用目标 URL。
 
 **输入：**asset_code、asset_type、carrier_uid、责任 org_id/employee_id、资产状态，以及 Payload 类型、值、来源、提供方和外部链接标识。
 
@@ -160,11 +160,11 @@ M3 同时拥有 `touchpoint_address_pages`。地址页面是银行后台可复�
 
 **负责事项：**保证 asset_code 全局唯一和非空 carrier_uid 唯一；一期 asset_type 固定为 NFC；维护资产状态和载体内容状态。
 
-**边界：**Payload 表示卡内实际写入内容，不代表最终跳转目标；linkforty_link_id 只是 LinkForty 链接逻辑引用；不直接修改外部平台表。
+**边界：**Payload 表示卡内实际写入内容，不代表最终跳转目标；`linkforty_link_id` 只是 LinkForty 链接逻辑引用；不直接修改外部平台表。地址页面目标发生变化时，M3 更新同一个 Core Link 并同步 Payload 的 `target_url` 快照，不修改 `payload_value`，因此不需要重新写 NFC。
 
 **依赖：**依赖 M2 的责任组织和员工；通过 LinkForty API 与 NFC 适配能力完成外部登记、写入或核验。
 
-**验收重点：资产编码、物理 UID、NFC 限定、资产和内容状态、责任范围及逻辑引用正确；外部失败和补偿可通过 M1 审计与 trace_id 追踪，不依赖 Payload 同步状态字段。**
+**验收重点：资产编码、物理 UID、NFC 限定、资产和内容状态、地址页面内容类型、责任范围及逻辑引用正确；单条和批量目标切换、Core 外部状态冲突、失败补偿和审计可通过 M1 的 `trace_id` 追踪，不依赖 Payload 同步状态字段。**
 
 ## 7.4 M4 触点载体员工绑定管理
 

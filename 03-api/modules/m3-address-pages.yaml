@@ -1,4 +1,7 @@
 # M3：可复用地址页面主数据，不属于 target_resources 或 routing_rules。
+# url 仅作为展示/原始内容保存，trim 后不做通用 HTTP/HTTPS 审查。
+# target_url 是发送给 LinkForty Core 的目标快照；APP 页面由 metadata
+# 按 card-switch-demo/app-open.html 约定生成 Bridge URL，小程序只接受公开 HTTPS Universal Link。
 addressPages:
   x-canonical-path: /touchpoint-address-pages
   get:
@@ -62,8 +65,7 @@ addressPageById:
     x-data-scope: ORG_SUBTREE
     x-idempotency: domain_key_object_version
     x-audit: true
-    responses: {}
-
+    description: 目标配置变化会传播到已关联且未永久失效的 Payload；Core 更新失败通过补偿回滚，展示字段变化不触发 Core。
 addressPageEnable:
   x-canonical-path: /touchpoint-address-pages/{id}/enable
   post:
