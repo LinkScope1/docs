@@ -8,7 +8,7 @@ React + TypeScript
 bank-admin-service
 Python + FastAPI
         |
-        +-- PostgreSQL bank_admin schema: 7 V1.3.2 tables
+        +-- PostgreSQL bank_admin schema: 8 V1.3.2 business tables plus import_batches
         +-- Redis + Celery
         +-- Casdoor
         +-- Nginx `/linkapi/` -> LinkForty API（私有网络 + ACL + HTTPS/TLS；无应用层认证）
@@ -30,6 +30,7 @@ TypeScript + Fastify
 - 前端只能调用银行后台 API，不直接调用 LinkForty Core。
 - 银行库不创建 `iam_*` 表；Casdoor 角色和功能权限不复制到本地。
 - V1.3.2 暂不建设目标资源和路由规则。M3 通过 LinkForty API 发起外部调用，M1 负责结果审计。
+- M3 的地址页面由银行后台自有 `touchpoint_address_pages` 管理；Payload 通过 `address_page_id` 逻辑关联并从数据库读取 `target_url`，不复制为目标资源或路由规则。
 
 Webhook Secret provisioning 方案已确认，但配置服务自动接入、网络访问审计和生产配置接入尚未完成；该决策不等同于 M5 业务功能已全部实现。
 

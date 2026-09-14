@@ -8,6 +8,8 @@ erDiagram
   organization_units ||--o{ touchpoint_assets : scopes
   employees ||--o{ touchpoint_assets : responsible_for
   touchpoint_assets ||--o{ touchpoint_payloads : has
+  organization_units ||--o{ touchpoint_address_pages : owns
+  touchpoint_address_pages ||--o{ touchpoint_payloads : selected_by
   touchpoint_assets ||--o{ touchpoint_employee_assignments : assigned
   employees ||--o{ touchpoint_employee_assignments : receives
   organization_units ||--o{ touchpoint_employee_assignments : scopes
@@ -43,6 +45,8 @@ V1.3.2 的银行业务关系均为应用层逻辑外键，不创建数据库 FOR
 | touchpoint_assets.created_by_employee_id | employees.id | 是 | 人工创建时取当前启用员工；导入或系统任务可空 | 保留历史引用 | 被引用员工不得物理删除 |
 | touchpoint_assets.updated_by_employee_id | employees.id | 是 | 人工修改时取当前启用员工 | 保留历史引用 | 被引用员工不得物理删除 |
 | touchpoint_payloads.asset_id | touchpoint_assets.id | 否 | 资产必须存在且未永久作废 | 资产停用时内容保留，是否可用由内容状态共同决定 | 存在内容时资产不得物理删除 |
+| touchpoint_address_pages.org_id | organization_units.id | 否 | 地址页面创建或修改责任组织时必须存在、启用且在操作者范围内 | 停用后保留页面和既有 Payload 关联；不自动重写卡内容 | 被 Payload 使用时不得物理删除 |
+| touchpoint_payloads.address_page_id | touchpoint_address_pages.id | 是 | 选择时页面必须存在、启用、可读，且责任组织是资产组织的祖先或同组织 | 页面停用或修改不删除、不重写既有 Payload；历史 Payload 仍可查询 | 被引用地址页面不得物理删除 |
 | touchpoint_payloads.org_id | organization_units.id | 否 | 由所属资产同步，禁止客户端独立指定 | 随资产责任范围调整 | 存在内容时组织不得物理删除 |
 | touchpoint_payloads.employee_id | employees.id | 是 | 由所属资产同步，禁止客户端独立指定 | 随资产绑定、解绑或转交同步 | 被引用员工不得物理删除 |
 | touchpoint_payloads.created_by_employee_id | employees.id | 是 | 人工创建时取当前启用员工；系统任务可空 | 保留历史引用 | 被引用员工不得物理删除 |
@@ -75,12 +79,14 @@ V1.3.2 的银行业务关系均为应用层逻辑外键，不创建数据库 FOR
 - 员工只属于一个直接组织，employees.org_id 是员工责任范围根。
 - 资产绑定员工后，touchpoint_assets.employee_id 等于当前绑定员工，touchpoint_assets.org_id 等于该员工的 org_id。
 - 载体内容的 org_id、employee_id 必须与所属资产一致，由 M3 Service 同步维护。
+- 地址页面的 `org_id` 是责任组织；`content_type` 为 1 小程序、2 APP、3 网页；`target_url` 是实际内容，不强制要求 HTTP/HTTPS 格式。Payload 通过可空 `address_page_id` 逻辑关联。
 - M4 绑定、解绑和转交必须在同一事务内更新绑定记录、资产责任范围和全部所属内容责任范围。
 - 前端传入的组织或员工 ID 只能缩小查询条件，不能扩大访问上下文的数据范围。
 
 ## 6. 删除和停用规则
 
 - MVP 业务接口不提供物理删除，组织和员工使用停用，资产使用停用或永久作废，内容使用停用或失效，绑定使用解绑。
+- 地址页面使用停用/启用；停用不影响既有 Payload、历史查询、审计记录或已经写入 NFC 的内容。
 - 停用组织前必须确认不存在启用的下级组织、启用员工、非作废资产和当前有效绑定。
 - 停用员工前必须先结束或转交当前有效绑定，并清除资产和内容中的当前员工责任引用。
 - 永久作废资产前必须结束当前有效绑定；内容、绑定、事件和操作日志继续保留。

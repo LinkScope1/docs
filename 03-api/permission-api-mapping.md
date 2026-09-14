@@ -15,15 +15,17 @@ Casdoor 是权限编码唯一来源。以下编码是 V1.3.2 本地冻结契约�
 | `touchpoint.asset.scrap` | POST | `/api/v1/touchpoint-assets/{id}/scrap` | `ASSET_SCOPE` | 是 |
 | `touchpoint.payload.read` | GET | `/api/v1/touchpoint-payloads`、`/api/v1/touchpoint-payloads/{id}`、`/api/v1/touchpoint-assets/{assetId}/payloads` | `ASSET_SCOPE` | 否 |
 | `touchpoint.payload.manage` | POST/PATCH/POST command | `/api/v1/touchpoint-payloads/**`、`/api/v1/touchpoint-assets/{assetId}/payloads` | `ASSET_SCOPE` | 是 |
+| `touchpoint.address-page.read` | GET | `/api/v1/touchpoint-address-pages`、`/api/v1/touchpoint-address-pages/{id}`、`/api/v1/touchpoint-address-pages/options` | `ORG_SUBTREE`；选项叠加 `ASSET_SCOPE` | 否 |
+| `touchpoint.address-page.manage` | POST/PATCH/POST command | `/api/v1/touchpoint-address-pages/**` | `ORG_SUBTREE` | 是 |
 | `touchpoint.assignment.read` | GET | `/api/v1/touchpoint-assignments`、`/api/v1/touchpoint-assignments/{id}` | `ASSET_SCOPE` | 否 |
 | `touchpoint.assignment.manage` | POST | `/api/v1/touchpoint-assignments`、`/api/v1/touchpoint-assignments/{id}/unbind` | `ASSET_SCOPE` | 是 |
 | `touchpoint.assignment.transfer` | POST | `/api/v1/touchpoint-assignments/transfer` | `SOURCE_AND_TARGET_ORG` | 是 |
 | `access-event.read` | GET | `/api/v1/access-events`、`/api/v1/access-events/{id}` | `ORG_SUBTREE`/`EMPLOYEE_SELF` | 否 |
 | `analytics.read` | GET | `/api/v1/analytics/summary` | `ORG_SUBTREE` | 否 |
 | `import.validate` | POST | `/api/v1/imports/validate` | `ORG_SUBTREE`，按模板资源再收窄 | 是 |
-| `import.validate` | GET | `/api/v1/imports/templates/{templateType}` | `ORG_SUBTREE` | 否 |
+| `import.validate` | GET | `/api/v1/imports/templates/{templateType}`、`/api/v1/imports/templates/employees` | `ORG_SUBTREE` | 否 |
 | `import.validate` | POST | `/api/v1/imports/execute` | `ORG_SUBTREE`，执行时叠加业务管理权限 | 是 |
-| `import.validate` | GET | `/api/v1/imports/{batchId}`、`/api/v1/imports/{batchId}/failure-report` | 创建者本人；全局管理员可查看 | 否 |
+| `import.validate` | GET | `/api/v1/imports/{batchId}`、`/api/v1/imports/{batchId}/failure-report` | `EMPLOYEE_SELF`；全局管理员可查看 | 否 |
 | `employee.manage` | POST | `/api/v1/imports/employees/execute` | `ORG_SUBTREE` | 是 |
 | `import.validate` | GET | `/api/v1/imports/templates/organizations` | `ORG_SUBTREE` | 否 |
 | `organization.manage` | POST | `/api/v1/imports/organizations/execute` | `ORG_SUBTREE` | 是 |

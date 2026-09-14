@@ -28,6 +28,8 @@
 ## MVP 范围
 
 - 一期只支持 NFC 触点载体。
+- M3 同时维护可复用地址页面主数据；地址页面可按资产权限被载体内容选择，不属于 `target_resources` 或 `routing_rules`。
+- 地址页面至少包含责任组织 `org_id`、地址编码/标识、内容类型（小程序、APP、网页）、`target_url` 和 `status`；实际内容不强制要求 HTTP/HTTPS 格式。
 - Casdoor 作为身份、角色和功能权限权威。
 - 银行后台用 Token 的 `employee_code` Claim 定位 `employees`，并按业务表范围字段执行数据过滤。
 - `access_events` 不分区，`event_id` 全局唯一，`click_id` 非唯一。

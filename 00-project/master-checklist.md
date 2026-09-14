@@ -4,13 +4,17 @@
 
 ## 当前进度快照（2026-09-08）
 
+> 2026-09-14 增量变更说明：M3 新增可复用地址页面主数据 `touchpoint_address_pages`，并通过
+> `touchpoint_payloads.address_page_id` 接入载体内容选择。该增量的迁移、定向测试和前端构建
+> 证据以本次开发报告为准；以下历史快照中的 7 张表测试结果不自动覆盖本次新增表。
+
 - LinkForty Core `1.21.0` 已通过本地 Docker 环境完成一次真实短链点击和 `click_event` 投递；本地接收端已完成原始 body、Header、HMAC、字段、幂等、负向和重试验证。
 - 脱敏验证报告保存在仓库外受控目录 `/private/tmp/linkforty-webhook-evidence/verification-report.json`，不纳入 Git，且不含 Secret 或完整 payload。
 - LinkForty 负责人已确认正式签名、字段和重试契约（2026-08-21）；P0 Webhook 门禁和 M5-001 具备关闭条件。
 - Webhook Secret provisioning 方案已确认：配置服务一次性调用 Core 现有管理 API 获取 Secret；配置服务联调、网络访问审计和生产配置接入仍待实施与验收。
 - Casdoor 真实认证/权限外部联调和 NFC 真机/SDK/写卡读回核验延期至 V1.4；本次仅落地 OIDC BFF、PKCE、JWT/JWKS、Redis Session、Cookie 和 Fake/Mock 的代码边界，未配置真实认证的生产环境必须拒绝访问，因此不能把本地实现视为真实 Casdoor 联调或生产发布证据。
 - V1.3.2 内部数据语义、幂等边界、M4 规则、导入/导出范围和统计口径已按冻结记录收敛；LinkForty API、真实数据库/Redis 环境和发布证据仍需外部证据。LinkForty 数据库只读账号、授权和负向测试明确延期至 V1.4；Core 不处理 `Idempotency-Key` 的重复 Link 行为作为 V1.3.2 已知风险接受，不标记为幂等通过。
-- M4 绑定、解绑和调拨已补齐 Router → Service → Repository 的本地事务边界，继续使用既有 OpenAPI 路径和 7 张银行表；真实 M2 主数据、PostgreSQL 并发和发布证据仍未关闭。
+- M4 绑定、解绑和调拨已补齐 Router → Service → Repository 的本地事务边界，继续使用既有 OpenAPI 路径和 8 张银行业务表；真实 M2 主数据、PostgreSQL 并发和发布证据仍未关闭。
 - 本次真实 Docker 集成验收已通过：银行后端全量 `1004 passed`，定向 Worker/数据库测试 `23 passed`，P1-ENV-005 Seed 首次/重复执行与 `--verify` 通过；Ruff/mypy、Alembic 重复升级与回滚、7 张银行表、角色权限、Redis DB0/DB1/DB2、Celery `inspect ping`、测试队列 Worker、API/Worker 脱敏配置和三类任务场景均通过。脱敏环境报告保存在仓库外受控目录 `/private/tmp/bank-touchpoint-test-evidence/verification-report.json`，Seed 脱敏报告为 `/private/tmp/bank-touchpoint-test-evidence/seed-verification.json`，测试资源已清理；未连接生产或 LinkForty 数据库。V1.3.2 不依赖 `bank_linkforty_ro`。
 - 代码复核后的任务清单统计：共 297 条；待开发 43、部分具备 153、已具备 20、已确认 19、条件开发 19、延期 28、阻塞待确认 7、已完成 7、验证中 1。状态变更仅反映可定位代码/测试证据，不代表外部环境或生产门禁已关闭。
 - LinkForty 本地真实 API 的重复请求验证发现：相同 `Idempotency-Key` 产生两个不同 Link，临时测试资源已清理；该结果作为 V1.3.2 已知缺陷记录，不作为幂等通过，也不创建 V1.4 修复任务。正式字段、TLS/ACL 和 API 生产安全例外仍待外部证据。
@@ -64,7 +68,7 @@
 - [x] 确认 NFC/NDEF Mock 方案（真实设备、SDK、写卡和读回核验延期至 V1.4）
 - [ ] 确认 PostgreSQL、Redis 和环境访问权限（本地容器健康；迁移 revision、银行后台/Worker 和生产访问证据待补）
 - [ ] 确认银行数据库迁移/运行角色权限（本地单账号配置可用于测试；LinkForty 数据库只读账号延期至 V1.4）
-- [ ] 冻结 V1.3.2 物理模型、V3.1 模块方案、权限矩阵、API 规范、7 张表数据字典和状态机（见 [V1.3.2-FREEZE-001](./v1.3.2-freeze-001.md)；外部证据门禁未闭合）
+- [ ] 冻结 V1.3.2 物理模型、V3.1 模块方案、权限矩阵、API 规范、8 张业务表数据字典和状态机（见 [V1.3.2-FREEZE-001](./v1.3.2-freeze-001.md)；外部证据门禁未闭合）
 - [x] 配置 Git 分支保护、PR 模板和 CI 基础检查
 - [x] 在现有 Issue #7、#9、#10 中关联[详细开发任务清单](./development-task-checklist.md)中的任务 ID；保留已明确的阻塞和延期状态，不把它们误标为完成
 - [x] 使用现有 Issue #7、#9、#10 维护目标、范围、验收、负责人、依赖、风险和回滚方案；不为子任务新建 Issue
@@ -133,4 +137,4 @@
 | LinkForty API 契约 | LinkForty 负责人 | 待指定 | 本地创建/查询和健康检查可用；同 Key 重复请求产生两个 Link，作为 V1.3.2 已知风险；安装/App 聚合统计本版本不纳入，正式字段、TLS/ACL 和只读证据按对应版本边界处理 |
 | Webhook 签名和事件样例 | LinkForty 负责人 | 待指定 | 本地真实样例已验证；负责人正式确认已完成 |
 | NFC 设备和 NDEF 方案 | 硬件/业务 | V1.4 | 延期至 V1.4；真实外部证据待补，V1.3.2 使用 Mock |
-| 数据库部署和只读账号 | 数据库/运维 | 待指定 | 代码 head 为 Alembic `0004_payload_target_url`；本次未连接 PostgreSQL/Redis/Celery，Worker、迁移、运行权限和生产证据待确认；LinkForty 数据库只读账号延期至 V1.4，V1.3.2 统计只调用 API |
+| 数据库部署和只读账号 | 数据库/运维 | 待指定 | 代码 head 为 Alembic `0006_touchpoint_address_pages`；本次未连接 PostgreSQL/Redis/Celery，Worker、迁移、运行权限和生产证据待确认；LinkForty 数据库只读账号延期至 V1.4，V1.3.2 统计只调用 API |

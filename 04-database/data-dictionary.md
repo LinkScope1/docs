@@ -4,7 +4,7 @@
 > **逻辑关系**：逻辑外键、引用校验和删除规则以 [V1.3.2 数据关系与逻辑外键规则](./erd.md) 为准。
 > **状态转换**：各状态字段的允许转换、前置条件和终态规则以 [V1.3.2 状态转换规则](./state-machines.md) 为准。
 
-> 版本定位：V1.3.2 正式模型：7 张银行业务表 + 1 张批量导入任务表 + 8 张 LinkForty 外部现有表 + Casdoor 外部身份边界。
+> 版本定位：V1.3.2 正式模型：8 张银行业务表 + 1 张批量导入任务表 + 8 张 LinkForty 外部现有表 + Casdoor 外部身份边界。
 
 | 项目 | 内容 |
 | --- | --- |
@@ -22,7 +22,7 @@ V1.3.2 将组织层级、员工责任范围、NFC 载体、载体实际内容、
 
 # 1. 模型范围与系统边界
 
-本版本物理模型面向银行触点载体管理后台，覆盖组织、员工、NFC 触点载体、卡内内容、员工绑定生命周期、访问事件接入和员工操作审计。Casdoor 负责身份认证、角色和功能权限；银行后台根据本地员工主数据和业务表中的责任范围字段执行数据过滤。
+本版本物理模型面向银行触点载体管理后台，覆盖组织、员工、NFC 触点载体、可复用地址页面、卡内内容、员工绑定生命周期、访问事件接入和员工操作审计。Casdoor 负责身份认证、角色和功能权限；银行后台根据本地员工主数据和业务表中的责任范围字段执行数据过滤。
 
 > 边界原则：银行库只维护银行业务主数据和审计投影；LinkForty 的物理表不由银行系统直接执行 DDL、DML、TRUNCATE 或迁移。
 
@@ -33,6 +33,7 @@ V1.3.2 将组织层级、员工责任范围、NFC 载体、载体实际内容、
 | 组织 | organization_units | 以 org_code 前缀表达组织层级和数据范围根节点 |
 | 员工 | employees | 维护员工编码、员工名称和直接所属组织 |
 | 触点资产 | touchpoint_assets | 维护 NFC 载体业务编码、物理 UID 和当前责任 |
+| 地址页面 | touchpoint_address_pages | 维护可复用地址页面、责任组织、内容类型、展示值、实际内容和状态 |
 | 载体内容 | touchpoint_payloads | 记录卡内实际写入内容及 LinkForty 逻辑引用；不持久化专属外部同步状态 |
 | 员工绑定 | touchpoint_employee_assignments | 追加保存载体与员工的当前及历史绑定 |
 | 访问事件 | access_events | 接收事件幂等投影并关联资产、组织和员工 |
@@ -98,9 +99,9 @@ V1.3.2 将组织层级、员工责任范围、NFC 载体、载体实际内容、
 
 | 约束域 | 冻结值 |
 | --- | --- |
-| 表数量 | 银行库固定 7 张业务表 + 1 张横向批量导入任务表：`organization_units`、`employees`、`touchpoint_assets`、`touchpoint_payloads`、`touchpoint_employee_assignments`、`access_events`、`operation_logs`、`import_batches`。 |
+| 表数量 | 银行库固定 8 张业务表 + 1 张横向批量导入任务表：`organization_units`、`employees`、`touchpoint_assets`、`touchpoint_address_pages`、`touchpoint_payloads`、`touchpoint_employee_assignments`、`access_events`、`operation_logs`、`import_batches`。 |
 | 外键与删除 | 不建立本地数据库外键，不使用数据库级级联删除；逻辑引用由 Service 校验并保留历史语义。 |
-| 枚举 | 组织/员工状态为 `0/1`；资产类型固定 `1=NFC`，资产状态为 `0/1/2/9`；Payload 类型为 `1/2/3/99`、来源为 `1/2/3/4`、提供方为 `1/2/3/99`、状态为 `0/1/2/3`；绑定状态为 `1/2`；访问关联状态为 `0/1/2/3`；操作结果为 `1/2/3`。 |
+| 枚举 | 组织/员工状态为 `0/1`；资产类型固定 `1=NFC`，资产状态为 `0/1/2/9`；地址页面 `content_type` 为 `1=小程序/2=APP/3=网页`、`status` 为 `0/1`；Payload 类型为 `1/2/3/99`、来源为 `1/2/3/4`、提供方为 `1/2/3/99`、状态为 `0/1/2/3`；绑定状态为 `1/2`；访问关联状态为 `0/1/2/3`；操作结果为 `1/2/3`。 |
 | 标识唯一性 | `asset_code`、`employee_code`、`org_code`、`event_id` 全局唯一；非空 `carrier_uid` 唯一；非空 `linkforty_link_id` 全局唯一；`click_id` 不唯一。 |
 | 绑定一致性 | 当前绑定 `assignment_status=1` 必须 `effective_to IS NULL`；已解绑记录必须有 `effective_to > effective_from` 和 `unbind_reason_type`；时间区间使用 PostgreSQL 排他约束防重叠。 |
 | 事件语义 | `access_events.asset_id` 非空；无法唯一解析本地资产时拒绝写入事件表，只保留安全审计和补偿记录。 |
@@ -115,9 +116,10 @@ V1.3.2 将组织层级、员工责任范围、NFC 载体、载体实际内容、
 | 3 | touchpoint_assets | M3 | NFC 触点载体 |
 | 4 | touchpoint_payloads | M3 | 载体实际写入内容 |
 | 5 | touchpoint_employee_assignments | M4 | 载体与员工的当前及历史绑定 |
-| 6 | access_events | M5 | Webhook 访问事件投影和关联结果 |
-| 7 | operation_logs | M1 | 员工和系统操作审计 |
-| 8 | import_batches | 横向能力 | 批量导入幂等批次、异步状态和安全失败报告 |
+| 6 | touchpoint_address_pages | M3 | 可复用地址页面主数据 |
+| 7 | access_events | M5 | Webhook 访问事件投影和关联结果 |
+| 8 | operation_logs | M1 | 员工和系统操作审计 |
+| 9 | import_batches | 横向能力 | 批量导入幂等批次、异步状态和安全失败报告 |
 
 > 删除范围：V1.3.2 不创建 iam_*、target_resources 或 routing_rules 表；这些对象只在更新日志中作为 V1.2 下线内容保留。`import_batches` 仅存储批处理状态和安全结果，不替代业务表。
 
@@ -202,6 +204,8 @@ asset_code 用于业务查询和导入，carrier_uid 用于 NFC 物理盘点，�
 | employee_id | BIGINT | 是 | — | 从载体同步的直接责任员工 |
 | payload_type | SMALLINT | 否 | 1 | 1 短链 / 2 URL / 3 文本 / 99 其他 |
 | payload_value | VARCHAR(2048) | 否 | — | 卡内实际写入内容，不是最终目标 |
+| address_page_id | BIGINT | 是 | — | 可复用地址页面逻辑引用；选择时由 Service 校验启用状态和组织范围 |
+| target_url | VARCHAR(2048) | 是 | — | 关联地址页面的实际目标内容快照；手工 URL 类型内容时可由 payload_value 得出；不强制 HTTP/HTTPS |
 | payload_source | SMALLINT | 否 | — | 1 供应商预写 / 2 本系统 / 3 外部导入 / 4 人工录入 |
 | provider_type | SMALLINT | 否 | 1 | 1 LinkForty / 2 供应商 / 3 无平台 / 99 其他 |
 | linkforty_link_id | UUID | 是 | — | LinkForty 链接逻辑引用；非空时全局唯一，一个外部 Link 只能关联一条 Payload |
@@ -214,7 +218,34 @@ asset_code 用于业务查询和导入，carrier_uid 用于 NFC 物理盘点，�
 
 > 外部同步：linkforty_link_id 仅为 LinkForty 逻辑引用；touchpoint_payloads 不保存 LinkForty 专属同步状态，外部调用结果由 operation_logs 和 trace_id 审计。
 
-## 4.5 touchpoint_employee_assignments
+## 4.5 touchpoint_address_pages
+
+可复用地址页面主数据。`org_id` 是责任组织；地址页面可供同组织及下级资产使用。
+`content_type` 区分小程序、APP 和网页，`target_url` 保存实际内容，不强制要求
+HTTP/HTTPS scheme。`url` 保留为管理页面展示值；没有独立目标值时由 Service 使用
+`url` 初始化 `target_url`。
+
+| 字段 | 类型 | 可空 | 默认值 | 约束/说明 |
+| --- | --- | --- | --- | --- |
+| id | BIGINT | 否 | 雪花算法 | PK；API 以字符串传输 |
+| address_code | VARCHAR(64) | 否 | — | 全局唯一；创建和导入幂等键 |
+| address_name | VARCHAR(128) | 否 | — | 页面显示名称/地址标识 |
+| url | VARCHAR(2048) | 否 | — | 管理页面展示值；仅校验非空和长度 |
+| target_url | VARCHAR(2048) | 否 | — | 实际目标内容；仅校验非空和长度，不审查 HTTP/HTTPS 格式 |
+| content_type | SMALLINT | 否 | 3 | 1 小程序 / 2 APP / 3 网页 |
+| org_id | BIGINT | 否 | — | 责任组织，逻辑引用 `organization_units.id` |
+| status | SMALLINT | 否 | 1 | 0 停用 / 1 启用 |
+| description | VARCHAR(500) | 是 | — | 说明 |
+| metadata | JSONB | 否 | {} | 扩展属性对象 |
+| created_by_employee_id | BIGINT | 是 | — | 创建员工 |
+| updated_by_employee_id | BIGINT | 是 | — | 最后修改员工 |
+| created_at | TIMESTAMPTZ | 否 | NOW() | 创建时间 |
+| updated_at | TIMESTAMPTZ | 否 | NOW() | 修改时间 |
+
+地址页面修改或停用不会自动重写既有 `touchpoint_payloads`，也不会自动改变 NFC
+卡内容或 LinkForty 外部状态。被 Payload 使用的地址页面不得物理删除。
+
+## 4.6 touchpoint_employee_assignments
 
 新绑定必须新增记录；解绑通过更新当前有效记录的 `assignment_status`、`effective_to`、解绑操作人和解绑原因结束绑定。绑定历史不得删除、覆盖或恢复，不保存组织、支行和员工名称快照。
 
@@ -237,7 +268,7 @@ asset_code 用于业务查询和导入，carrier_uid 用于 NFC 物理盘点，�
 > 历史规则：历史查询显示当前员工和组织名称，不保证还原绑定发生时的名称。
 > 状态规则：绑定、解绑和转交的完整状态转换与事务要求统一见 [状态转换规则](./state-machines.md#5-m4-绑定状态)。
 
-## 4.6 access_events
+## 4.7 access_events
 
 事件关联状态只表示资产、组织和员工关联。
 
@@ -257,7 +288,7 @@ asset_code 用于业务查询和导入，carrier_uid 用于 NFC 物理盘点，�
 | received_at | TIMESTAMPTZ | 否 | NOW() | 首次接收时间，不更新 |
 | created_at | TIMESTAMPTZ | 否 | NOW() | 本地写入时间 |
 
-## 4.7 operation_logs
+## 4.8 operation_logs
 
 员工和系统操作审计，只追加且不记录密码、Token、密钥或 Secret。
 
@@ -268,7 +299,7 @@ asset_code 用于业务查询和导入，carrier_uid 用于 NFC 物理盘点，�
 | org_id | BIGINT | 是 | — | 本次操作数据范围 |
 | employee_id | BIGINT | 是 | — | 操作员工；系统任务可空 |
 | operation_type | SMALLINT | 否 | — | 1 登录 / 2 创建 / 3 修改 / 4 启停 / 5 绑定 / 6 解绑 / 7 调拨 / 8 导入 / 9 导出 / 10 外部同步 / 99 其他 |
-| object_type | SMALLINT | 否 | — | 1 组织 / 2 员工 / 3 载体 / 4 内容 / 5 绑定 / 6 事件 / 7 导入 / 99 其他 |
+| object_type | SMALLINT | 否 | — | 1 组织 / 2 员工 / 3 载体 / 4 内容 / 5 绑定 / 6 事件 / 7 导入 / 9 地址页面 / 99 其他 |
 | object_id | BIGINT | 是 | — | 本系统对象 ID |
 | external_object_id | UUID | 是 | — | 外部对象 ID |
 | operation_result | SMALLINT | 否 | — | 1 成功 / 2 失败 / 3 部分成功 |
@@ -284,14 +315,14 @@ asset_code 用于业务查询和导入，carrier_uid 用于 NFC 物理盘点，�
 | operation_time | TIMESTAMPTZ | 否 | NOW() | 操作时间 |
 | created_at | TIMESTAMPTZ | 否 | NOW() | 写入时间 |
 
-## 4.8 import_batches
+## 4.9 import_batches
 
 批量导入任务表属于横向异步能力，不承载卡片、载体内容或员工主数据。大文件入队前保留上传内容；执行完成后清理 `source_content`，仅保留结果摘要和不含原始内容值、完整手机号的失败报告。
 
 | 字段 | 类型 | 可空 | 默认值 | 约束/说明 |
 | --- | --- | --- | --- | --- |
 | id | BIGINT | 否 | 雪花算法 | PK；API 以字符串传输 |
-| template_type | VARCHAR(32) | 否 | — | `asset` / `payload` / `employee` |
+| template_type | VARCHAR(32) | 否 | — | `asset` / `payload` / `employee` / `address_page` |
 | status | VARCHAR(16) | 否 | — | `queued` / `running` / `completed` / `failed` |
 | idempotency_key | VARCHAR(128) | 否 | — | 全局唯一；同键重放返回原批次 |
 | created_by_employee_id | BIGINT | 否 | — | 创建者；用于批次结果访问控制 |
@@ -304,7 +335,7 @@ asset_code 用于业务查询和导入，carrier_uid 用于 NFC 物理盘点，�
 | failure_report | BYTEA | 是 | — | UTF-8 BOM CSV 失败报告 |
 | created_at / updated_at | TIMESTAMPTZ | 否 | NOW() | 创建和更新时间 |
 
-## 4.9 V1.3.2 数据关系图
+## 4.10 V1.3.2 数据关系图
 
 参见 [V1.3.2 数据关系图](./erd.md)。V1.3.2 DOCX 中内嵌的图示仍标注为 V1.3.1，不作为 Markdown 主文档内容迁移。
 
@@ -555,7 +586,7 @@ V1.3.2 删除配置状态、目标资源类型、路由冲突和路由发布相�
 | Repository | 数据库访问 | SQLAlchemy 2.x 查询、事务、索引和约束；不承载 Casdoor 或 LinkForty 业务。 |
 | Integration Adapter | 外部调用 | Casdoor OIDC/JWT Claim、LinkForty API、Webhook/NFC 适配和重试。 |
 | Worker / Celery | 异步任务 | 外部调用、事件重试、批量导入、补偿和结果审计；不得在银行业务表中补建 LinkForty 专属同步状态字段。 |
-| Alembic | 数据库演进 | V1.3.2 通过新迁移创建 7 张银行业务表及横向 `import_batches` 任务表；禁止直接删除已部署环境旧表。 |
+| Alembic | 数据库演进 | V1.3.2 通过新迁移创建 8 张银行业务表及横向 `import_batches` 任务表；本次以 `0006_touchpoint_address_pages` 增量创建地址页面并为 Payload 增加逻辑关联；禁止直接删除已部署环境旧表。 |
 
 # 9. V1.3.2 更新日志
 
@@ -570,5 +601,6 @@ V1.3.2 删除配置状态、目标资源类型、路由冲突和路由发布相�
 | V1.3 | 2026-08-18 | 新增文档导入预留契约、审计约定和 V1.3 Alembic 建表说明。 |
 | V1.3.1 | 2026-08-18 | 取消 external_sync_status 及其枚举；调用结果由 operation_logs 审计。 |
 | V1.3.2 | 2026-08-19 | 修正 access_events 模块归属 M7→M5；不改变表数量、字段、状态或外部边界。 |
+| V1.3.2 | 2026-09-14 | M3 增加 `touchpoint_address_pages`，支持组织范围、内容类型、`target_url`、地址标识和启停；`touchpoint_payloads` 增加可空 `address_page_id`，实际内容不强制 HTTP/HTTPS 格式。 |
 
 > 历史版本：V1.2 原文档保留为历史基线。

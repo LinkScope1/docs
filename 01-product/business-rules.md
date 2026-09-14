@@ -24,7 +24,12 @@
 - `asset_code` 唯一；非空 `carrier_uid` 不得重复。
 - 资产库存时 `employee_id` 可以为空；绑定、解绑、转交必须同步资产和内容的责任范围。
 - 资产不再保存 `config_status`、投放 `location_code` 或 `door_no`。
-- Payload 保存卡内实际内容，不保存路由目标。
+- Payload 的 `payload_value` 保存卡内实际内容；若关联地址页面，`address_page_id` 和 `target_url`
+  仅用于记录所选主数据及其当时解析出的实际内容，不构成 `target_resources` 或 `routing_rules`。
+- M3 维护可复用地址页面 `touchpoint_address_pages`；页面按 `org_id` 归属组织，可供同组织及下级资产选择。
+- 地址页面 `content_type` 为 `1=小程序`、`2=APP`、`3=网页`；同时保存 `address_name`、`status`、`url` 和 `target_url`。
+- 地址页面真实内容只校验非空和长度，不审查是否为规范 HTTP/HTTPS；Payload 选择页面时由后端读取数据库 `target_url`，不能信任前端传值。
+- 只有启用地址页面出现在资产下拉选项中；页面停用或修改不重写已有 Payload、NFC 内容或 LinkForty 状态。
 - `linkforty_link_id` 仅为 LinkForty 逻辑引用；Payload 不保存 LinkForty 专属同步状态、同步时间、错误摘要或重试次数。
 
 ## M4 绑定
@@ -44,7 +49,7 @@
 
 ## 批量导入
 
-- 导入支持载体内容、载体员工绑定、载体内容关系三类模板。
+- 导入支持载体内容、可复用地址页面、载体员工绑定、载体内容关系四类模板。
 - 按 `org_code`、`employee_code`、`asset_code`、`carrier_uid` 等稳定业务键匹配。
 - 匹配到时更新，匹配不到时按必填字段创建。
 - 文档缺少某行不代表删除、停用或解绑。

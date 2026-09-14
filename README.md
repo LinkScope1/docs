@@ -7,12 +7,13 @@
 - [MVP 功能模块划分分析方案 V3.1](./01-product/mvp-module-plan.md)
 - [数据物理模型与数据字典 V1.3.2](./04-database/data-dictionary.md)
 - [项目目录建设与说明 V2.0](./00-project/project-directory-guide.md)
+- [ADR-004：M3 可复用地址页面主数据](./adr/ADR-004-reusable-address-pages.md)
 
 以上三份 Markdown 是可编辑主版本来源。现有对应 DOCX 保留为只读历史/发布归档，不与 Markdown 双向手工维护；如需 DOCX，按 Markdown 主版本导出。
 
 原始 DOCX 统一归档在 [`archive/baselines`](./archive/baselines/) 下，并按文档系列分类；归档文件不作为编辑来源。
 
-V1.3.2 是 7 张银行业务表、横向批量导入任务表、字段、状态和外部数据边界的权威来源；V3.1 是 M1～M5 模块编号、职责、数据所有权和双人研发工作包的权威来源。两者冲突时，数据结构以 V1.3.2 为准，模块编号以 V3.1 为准。
+V1.3.2 是 8 张银行业务表、横向批量导入任务表、字段、状态和外部数据边界的权威来源；V3.1 是 M1～M5 模块编号、职责、数据所有权和双人研发工作包的权威来源。两者冲突时，数据结构以 V1.3.2 为准，模块编号以 V3.1 为准。M3 的 `touchpoint_address_pages` 是可复用地址页面主数据，不属于 `target_resources` 或 `routing_rules`。
 
 V2.0 是当前工作区目录边界、后端和前端目标落点、现有/目标/迁移期/禁止新建状态标记及双人研发目录工作包的权威说明；它不代表目录中的业务功能已经实现。
 

@@ -20,13 +20,13 @@
 |---|---|---|
 | M1 | Casdoor OIDC BFF、`employee_code` 员工映射、权限和数据范围上下文、操作审计 | Casdoor 是身份、角色和功能权限权威；银行后台不创建本地 IAM 权限投影；浏览器只持有 HttpOnly Session Cookie，关键操作通过 `operation_logs` 审计 |
 | M2 | 组织和员工管理 | 组织层级使用 `org_code` 前缀；员工使用唯一 `employee_code` 和直接所属 `org_id`；查询、写入和导出执行后端范围校验 |
-| M3 | NFC 触点资产和载体实际内容、LinkForty 外部调用编排 | 一期 `asset_type` 固定为 NFC；Payload 是卡内实际写入内容，不是目标资源；LinkForty 写入必须通过 API |
+| M3 | NFC 触点资产、可复用地址页面、载体实际内容、LinkForty 外部调用编排 | 一期 `asset_type` 固定为 NFC；地址页面按组织范围复用，`content_type` 为小程序/APP/网页，`target_url` 不强制 HTTP/HTTPS；Payload 是卡内实际写入内容，不是目标资源；LinkForty 写入必须通过 API |
 | M4 | 触点载体与员工的立即生效绑定、解绑、转交和历史记录 | 绑定历史只追加；有效区间不得重叠；不保存组织或员工名称快照；预约绑定延期至 V1.4 |
 | M5 | Webhook 验签、访问事件幂等投影、资产/绑定/组织/员工关联和失败重试 | `event_id` 全局唯一，`click_id` 非唯一；`access_events` 不分区；关联失败可进入重试或最终失败审计 |
 | 横向：权限与审计 | 数据范围、操作审计、幂等、Trace ID、敏感信息脱敏 | 前端隐藏不能替代后端权限校验；不得记录 JWT、Token、密码、密钥或 Webhook Secret |
 | 横向：统计与报表 | 点击、访问统计，以及同步导出；安装/App 统计字段保留兼容结构 | V1.3.2 只验收点击和访问统计；安装/App 聚合读取不纳入当前版本，相关字段保留但未支持时整体返回 `503 DATA_SOURCE_UNAVAILABLE`；统计不包含银行办理量、金额或真实业务转化；异步导出为 V1.4 |
 | 横向：Worker | Webhook、LinkForty 外部调用和关联失败的重试、补偿和审计 | Worker 不是新的业务模块；Redis/Celery 不能作为唯一事实来源；结果通过 `operation_logs` 和 `trace_id` 追踪 |
-| 横向：文档导入契约 | 载体内容、载体员工绑定、载体内容关系模板，以及稳定匹配键、预校验和逐行结果契约预留 | 使用 `org_code`、`employee_code`、`asset_code`、`carrier_uid` 等稳定键；缺少某行不推导删除、停用或解绑 |
+| 横向：文档导入契约 | 载体内容、地址页面、载体员工绑定、载体内容关系模板，以及稳定匹配键、预校验和逐行结果 | 使用 `org_code`、`employee_code`、`asset_code`、`carrier_uid`、`address_code` 等稳定键；缺少某行不推导删除、停用或解绑 |
 | 外部依赖：LinkForty | API 写入、授权事件只读访问、Webhook 事件接入和受控 Secret provisioning | 只读账号只能访问白名单表和字段；银行后台不得直接执行 LinkForty DML、DDL 或 TRUNCATE；Secret 仅通过受控 Core API 一次性交付 |
 | 外部依赖：NFC | NFC 适配器接口和明确的 Mock 流程 | 真实硬件写卡依赖硬件/SDK确认；没有真实设备时 Mock 不得伪造真实核验成功 |
 
@@ -48,7 +48,8 @@
 
 ## 三、系统边界与数据规则
 
-- 银行后台只拥有 7 张银行业务表：`operation_logs`、`organization_units`、`employees`、`touchpoint_assets`、`touchpoint_payloads`、`touchpoint_employee_assignments`、`access_events`。
+- 银行后台只拥有 8 张银行业务表：`operation_logs`、`organization_units`、`employees`、`touchpoint_assets`、`touchpoint_payloads`、`touchpoint_address_pages`、`touchpoint_employee_assignments`、`access_events`。
+- `touchpoint_address_pages` 的 `org_id` 是责任组织；`address_name` 是管理展示标识；`status` 为 0 停用/1 启用；地址页面被 Payload 使用后不得物理删除，停用不影响既有历史 Payload。
 - `touchpoint_payloads` 只保存卡内实际内容和必要的 `linkforty_link_id` 逻辑引用，不保存 LinkForty 专属同步状态、同步时间、错误摘要或重试次数。
 - 银行后台对 LinkForty 的写入必须通过 API；读取外部事件只能使用受限只读账号；不得通过 LinkForty 数据库直读 `webhooks.secret`。当前方案允许银行后端配置服务通过受控 Core API 一次性 provisioning Secret；不得记录、前端暴露或输出 Secret。
 - `event_id` 是访问事件全局唯一幂等键，`click_id` 只能作为非唯一逻辑引用；重复 `event_id` 必须幂等成功。
@@ -70,7 +71,7 @@
 | 领域 | 本次范围结论 | 后续执行要求 |
 |---|---|---|
 | API | 只为 M1～M5 和已确认的横向能力定义或实现接口；不新增目标资源、路由、二维码或本地 IAM API | 新 Issue 必须标明 `V1.3.2`、`V1.4` 或条件任务，并关联对应模块或横向能力 |
-| 数据库 | 只演进银行侧 7 张表；不创建 `iam_*`、`target_resources`、`routing_rules`、导入批次或导入明细表 | 数据结构变化使用新的银行侧 Alembic revision；不得修改 LinkForty 平台表 |
+| 数据库 | 只演进银行侧 8 张表及横向 `import_batches`；不创建 `iam_*`、`target_resources`、`routing_rules` 或导入明细表 | 数据结构变化使用新的银行侧 Alembic revision；不得修改 LinkForty 平台表 |
 | 权限与数据范围 | Casdoor 提供角色和功能权限；银行后台按 `org_id`、`employee_id` 执行范围过滤 | 所有 API、导出、导入预留和后台命令都必须有后端权限与范围校验 |
 | 外部集成 | LinkForty API、Webhook、受限只读和 NFC 适配属于外部/横向能力 | Casdoor、LinkForty、NFC 的未决契约分别保留 P0 外部确认依赖；未确认项不得被实现人员自行假定 |
 | 测试与验收 | 验收覆盖 M1～M5、统计报表、范围校验、幂等、审计和导入契约预留 | 验收矩阵不得把不纳入项列为 V1.3.2 完成条件；Mock 不替代真实硬件验收结论 |

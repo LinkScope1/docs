@@ -30,7 +30,7 @@ Webhook 签名 Secret 按 LinkForty `webhooks` 配置记录生成，不按单次
 
 1. 银行后台配置服务通过 Nginx `/linkapi/api/webhooks` 调用 `POST /api/webhooks` 创建订阅，并从响应取得该订阅记录的 Secret。
 2. 已存在的订阅可由受控配置流程通过 Nginx `/linkapi/api/webhooks/:id` 调用 `GET /api/webhooks/:id` 一次性读取 Secret。
-3. Secret 写入银行后台受保护的运行时配置，不写入银行 7 张业务表，不进入前端、日志、审计、fixture 或文档。
+3. Secret 写入银行后台受保护的运行时配置，不写入银行 8 张业务表，不进入前端、日志、审计、fixture 或文档。
 4. 后续 Webhook 事件由银行后台使用本地验签配置处理；事件接收和重试期间不再调用 Core 获取 Secret。
 
 上述创建/读取只允许银行后端配置服务执行，不允许浏览器或普通业务 API 代办。当前 Core 管理 API 不使用应用层认证，访问前必须满足 Nginx 私有网络、来源 ACL、防火墙、私有 DNS、HTTPS/TLS 和网络审计条件；配置服务联调、网络访问审计和生产配置接入仍是待实施事项。

@@ -1,0 +1,93 @@
+# M3：可复用地址页面主数据，不属于 target_resources 或 routing_rules。
+addressPages:
+  x-canonical-path: /touchpoint-address-pages
+  get:
+    operationId: listTouchpointAddressPages
+    tags: [touchpoint-address-pages]
+    summary: 分页查询可复用地址页面
+    x-status: reviewed
+    x-owner: API/后端
+    x-permission: touchpoint.address-page.read
+    x-data-scope: ORG_SUBTREE
+    x-idempotency: none
+    x-audit: false
+    responses: {}
+  post:
+    operationId: createTouchpointAddressPage
+    tags: [touchpoint-address-pages]
+    summary: 创建可复用地址页面
+    x-status: reviewed
+    x-owner: API/后端
+    x-permission: touchpoint.address-page.manage
+    x-data-scope: ORG_SUBTREE
+    x-idempotency: domain_key_address_code
+    x-audit: true
+    responses: {}
+
+addressPageOptions:
+  x-canonical-path: /touchpoint-address-pages/options
+  get:
+    operationId: listTouchpointAddressPageOptions
+    tags: [touchpoint-address-pages]
+    summary: 查询资产可使用的启用地址页面
+    x-status: reviewed
+    x-owner: API/后端
+    x-permission: touchpoint.address-page.read
+    x-required-permissions: [touchpoint.address-page.read, touchpoint.payload.manage, touchpoint.asset.manage]
+    x-data-scope: ASSET_SCOPE
+    x-idempotency: none
+    x-audit: false
+    responses: {}
+
+addressPageById:
+  x-canonical-path: /touchpoint-address-pages/{id}
+  get:
+    operationId: getTouchpointAddressPage
+    tags: [touchpoint-address-pages]
+    summary: 查询地址页面详情
+    x-status: reviewed
+    x-owner: API/后端
+    x-permission: touchpoint.address-page.read
+    x-data-scope: ORG_SUBTREE
+    x-idempotency: none
+    x-audit: false
+    responses: {}
+  patch:
+    operationId: updateTouchpointAddressPage
+    tags: [touchpoint-address-pages]
+    summary: 修改地址页面可编辑字段
+    x-status: reviewed
+    x-owner: API/后端
+    x-permission: touchpoint.address-page.manage
+    x-data-scope: ORG_SUBTREE
+    x-idempotency: domain_key_object_version
+    x-audit: true
+    responses: {}
+
+addressPageEnable:
+  x-canonical-path: /touchpoint-address-pages/{id}/enable
+  post:
+    operationId: enableTouchpointAddressPage
+    tags: [touchpoint-address-pages]
+    summary: 启用地址页面
+    x-status: reviewed
+    x-owner: API/后端
+    x-permission: touchpoint.address-page.manage
+    x-data-scope: ORG_SUBTREE
+    x-idempotency: domain_key_state_command
+    x-audit: true
+    responses: {}
+
+addressPageDisable:
+  x-canonical-path: /touchpoint-address-pages/{id}/disable
+  post:
+    operationId: disableTouchpointAddressPage
+    tags: [touchpoint-address-pages]
+    summary: 停用地址页面并保留历史关联
+    x-status: reviewed
+    x-owner: API/后端
+    x-permission: touchpoint.address-page.manage
+    x-data-scope: ORG_SUBTREE
+    x-idempotency: domain_key_state_command
+    x-audit: true
+    responses: {}
