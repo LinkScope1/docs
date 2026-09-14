@@ -22,7 +22,9 @@ Casdoor 提供角色和功能权限；银行后台不创建本地 IAM 表。后�
 | 查询访问事件 | 允许 | 允许 | 允许 | 允许 | 机构 `ORG_SUBTREE`；员工 `EMPLOYEE_SELF`；观察者 `ORG_SUBTREE` |
 | 统计查询 | 允许 | 允许 | 允许 | 允许 | 总行 `GLOBAL`；机构 `ORG_SUBTREE`；员工 `EMPLOYEE_SELF`；观察者 `ORG_SUBTREE` |
 | 导入预校验 | 允许 | 允许 | 允许 | 禁止 | `ORG_SUBTREE`/`ASSET_SCOPE`，仅校验不写表 |
+| 执行卡片、载体内容、员工导入 | 允许 | 允许 | 允许 | 禁止 | `import.validate` + 对应业务管理权限；每次执行必须携带 `Idempotency-Key` |
 | 同步导出 | 允许 | 允许 | 禁止 | 禁止 | `ORG_SUBTREE`/`ASSET_SCOPE` + 字段白名单 |
+| 载体内容原值导出 | 允许 | 按需授权 | 禁止 | 禁止 | `export.read` + `export.payload-content`，二次确认 |
 | 查询操作审计 | 允许 | 允许 | 禁止 | 禁止 | `ORG_SUBTREE` |
 
 ## 权限执行规则

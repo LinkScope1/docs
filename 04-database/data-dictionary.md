@@ -4,7 +4,7 @@
 > **逻辑关系**：逻辑外键、引用校验和删除规则以 [V1.3.2 数据关系与逻辑外键规则](./erd.md) 为准。
 > **状态转换**：各状态字段的允许转换、前置条件和终态规则以 [V1.3.2 状态转换规则](./state-machines.md) 为准。
 
-> 版本定位：V1.3.2 正式模型：7 张银行业务表 + 8 张 LinkForty 外部现有表 + Casdoor 外部身份边界。
+> 版本定位：V1.3.2 正式模型：7 张银行业务表 + 1 张批量导入任务表 + 8 张 LinkForty 外部现有表 + Casdoor 外部身份边界。
 
 | 项目 | 内容 |
 | --- | --- |
@@ -37,6 +37,7 @@ V1.3.2 将组织层级、员工责任范围、NFC 载体、载体实际内容、
 | 员工绑定 | touchpoint_employee_assignments | 追加保存载体与员工的当前及历史绑定 |
 | 访问事件 | access_events | 接收事件幂等投影并关联资产、组织和员工 |
 | 操作审计 | operation_logs | 记录员工和系统操作，不保存敏感凭证 |
+| 批量导入任务 | import_batches | 持久化异步导入状态、幂等键和安全结果；不属于 M1～M5 业务主数据 |
 | 外部系统 | Casdoor / LinkForty | 身份、角色、链接和访问底层能力，不属于银行业务表 |
 
 ## 1.2 V1.3.2 下线对象
@@ -97,7 +98,7 @@ V1.3.2 将组织层级、员工责任范围、NFC 载体、载体实际内容、
 
 | 约束域 | 冻结值 |
 | --- | --- |
-| 表数量 | 银行库固定 7 张业务表：`organization_units`、`employees`、`touchpoint_assets`、`touchpoint_payloads`、`touchpoint_employee_assignments`、`access_events`、`operation_logs`。 |
+| 表数量 | 银行库固定 7 张业务表 + 1 张横向批量导入任务表：`organization_units`、`employees`、`touchpoint_assets`、`touchpoint_payloads`、`touchpoint_employee_assignments`、`access_events`、`operation_logs`、`import_batches`。 |
 | 外键与删除 | 不建立本地数据库外键，不使用数据库级级联删除；逻辑引用由 Service 校验并保留历史语义。 |
 | 枚举 | 组织/员工状态为 `0/1`；资产类型固定 `1=NFC`，资产状态为 `0/1/2/9`；Payload 类型为 `1/2/3/99`、来源为 `1/2/3/4`、提供方为 `1/2/3/99`、状态为 `0/1/2/3`；绑定状态为 `1/2`；访问关联状态为 `0/1/2/3`；操作结果为 `1/2/3`。 |
 | 标识唯一性 | `asset_code`、`employee_code`、`org_code`、`event_id` 全局唯一；非空 `carrier_uid` 唯一；非空 `linkforty_link_id` 全局唯一；`click_id` 不唯一。 |
@@ -116,10 +117,11 @@ V1.3.2 将组织层级、员工责任范围、NFC 载体、载体实际内容、
 | 5 | touchpoint_employee_assignments | M4 | 载体与员工的当前及历史绑定 |
 | 6 | access_events | M5 | Webhook 访问事件投影和关联结果 |
 | 7 | operation_logs | M1 | 员工和系统操作审计 |
+| 8 | import_batches | 横向能力 | 批量导入幂等批次、异步状态和安全失败报告 |
 
-> 删除范围：V1.3.2 不创建 iam_*、target_resources 或 routing_rules 表；这些对象只在更新日志中作为 V1.2 下线内容保留。
+> 删除范围：V1.3.2 不创建 iam_*、target_resources 或 routing_rules 表；这些对象只在更新日志中作为 V1.2 下线内容保留。`import_batches` 仅存储批处理状态和安全结果，不替代业务表。
 
-# 4. 本系统 7 张表详细定义
+# 4. 本系统 8 张表详细定义
 
 ## 4.1 organization_units
 
@@ -282,7 +284,27 @@ asset_code 用于业务查询和导入，carrier_uid 用于 NFC 物理盘点，�
 | operation_time | TIMESTAMPTZ | 否 | NOW() | 操作时间 |
 | created_at | TIMESTAMPTZ | 否 | NOW() | 写入时间 |
 
-## 4.8 V1.3.2 数据关系图
+## 4.8 import_batches
+
+批量导入任务表属于横向异步能力，不承载卡片、载体内容或员工主数据。大文件入队前保留上传内容；执行完成后清理 `source_content`，仅保留结果摘要和不含原始内容值、完整手机号的失败报告。
+
+| 字段 | 类型 | 可空 | 默认值 | 约束/说明 |
+| --- | --- | --- | --- | --- |
+| id | BIGINT | 否 | 雪花算法 | PK；API 以字符串传输 |
+| template_type | VARCHAR(32) | 否 | — | `asset` / `payload` / `employee` |
+| status | VARCHAR(16) | 否 | — | `queued` / `running` / `completed` / `failed` |
+| idempotency_key | VARCHAR(128) | 否 | — | 全局唯一；同键重放返回原批次 |
+| created_by_employee_id | BIGINT | 否 | — | 创建者；用于批次结果访问控制 |
+| org_id | BIGINT | 否 | — | 创建者组织快照 |
+| filename | VARCHAR(255) | 是 | — | 原始文件名，不记录文件内容 |
+| content_type | VARCHAR(128) | 是 | — | 上传媒体类型 |
+| source_content | BYTEA | 是 | — | 待执行文件；完成后清空 |
+| total / succeeded / failed | INTEGER | 否 | 0 | 批次统计 |
+| result_data | JSONB | 是 | — | 安全行结果，不包含原始内容值或完整手机号 |
+| failure_report | BYTEA | 是 | — | UTF-8 BOM CSV 失败报告 |
+| created_at / updated_at | TIMESTAMPTZ | 否 | NOW() | 创建和更新时间 |
+
+## 4.9 V1.3.2 数据关系图
 
 参见 [V1.3.2 数据关系图](./erd.md)。V1.3.2 DOCX 中内嵌的图示仍标注为 V1.3.1，不作为 Markdown 主文档内容迁移。
 
@@ -522,7 +544,7 @@ V1.3.2 删除配置状态、目标资源类型、路由冲突和路由发布相�
 
 - 导入支持预校验、幂等键、逐行校验结果和失败原因；每批导入写入 operation_logs。
 
-- 本版本不创建导入批次表和导入明细表；异步导入启用时再扩展物理模型。
+- 本版本创建 `import_batches` 批次表承载异步状态、幂等键和安全结果；不创建导入明细表，逐行结果以安全 JSON/失败 CSV 保存。
 
 # 8. Python/FastAPI 与外部系统实施约定
 
@@ -533,7 +555,7 @@ V1.3.2 删除配置状态、目标资源类型、路由冲突和路由发布相�
 | Repository | 数据库访问 | SQLAlchemy 2.x 查询、事务、索引和约束；不承载 Casdoor 或 LinkForty 业务。 |
 | Integration Adapter | 外部调用 | Casdoor OIDC/JWT Claim、LinkForty API、Webhook/NFC 适配和重试。 |
 | Worker / Celery | 异步任务 | 外部调用、事件重试、批量导入、补偿和结果审计；不得在银行业务表中补建 LinkForty 专属同步状态字段。 |
-| Alembic | 数据库演进 | V1.3.2 通过新迁移创建 7 张银行业务表；禁止直接删除已部署环境旧表。 |
+| Alembic | 数据库演进 | V1.3.2 通过新迁移创建 7 张银行业务表及横向 `import_batches` 任务表；禁止直接删除已部署环境旧表。 |
 
 # 9. V1.3.2 更新日志
 

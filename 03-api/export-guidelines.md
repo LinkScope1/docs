@@ -1,22 +1,22 @@
-# V1.3.2 导出接口规范
+# 三类业务 CSV 导出规范
 
-- 只提供同步白名单字段导出，使用当前用户权限和数据范围。
-- 输出格式固定为 UTF-8 CSV；不允许导出 Token、JWT、密钥、Webhook Secret 或未脱敏个人信息。
-- 单次导出上限为 10 MiB 或 100,000 行，任一超限返回 `413 EXPORT_LIMIT_EXCEEDED`，不得静默截断。
-- 导出操作必须写入 `operation_logs`，包含资源、范围、字段白名单、行数和结果。
-- V1.3.2 不建设对象存储、下载 Token 或异步导出任务；大数据量异步导出延期到 V1.4。
-- 导出失败必须记录稳定错误码；数据源不可用统一返回 `503 DATA_SOURCE_UNAVAILABLE`。
+卡片、员工和载体内容导出使用 UTF-8 CSV（带 BOM），表头采用与导入模板一致的简洁中文。导出结果始终是“当前用户权限范围 ∩ 页面筛选条件”，筛选条件只能收窄范围。
 
-## V1.3.2 字段白名单
+## 字段白名单
 
-| 资源 | 允许字段 |
+| 资源 | 普通导出表头 |
 | --- | --- |
-| organizations | id、orgCode、orgName、status、sortNo、locationCode、doorNo、contactName、contactPhoneMasked、description |
-| employees | id、employeeCode、employeeName、orgId、phoneMasked、status、description |
-| touchpoint-assets | id、assetCode、assetType、carrierUid、orgId、employeeId、assetStatus、supplierCode、supplierBatchNo、description |
-| touchpoint-payloads | id、assetId、orgId、employeeId、payloadType、payloadSource、providerType、linkfortyLinkId、status、metadata |
-| assignments | id、assetId、orgId、employeeId、assignmentStatus、effectiveFrom、effectiveTo、unbindReasonType、unbindReason |
-| access-events | id、eventId、clickId、assetId、bindingId、orgId、employeeId、resolutionStatus、resolutionReason、receivedAt、resolvedAt |
-| audit-logs | id、traceId、orgId、employeeId、operationType、objectType、objectId、operationResult、errorCode、operationTime |
+| 卡片 | 卡片编码、物理UID、责任组织编码、状态、供应商编码、供应商批次、备注 |
+| 员工 | 员工编号、姓名、组织编码、脱敏手机号、状态、备注 |
+| 载体内容 | 内容ID、内容类型、内容来源、提供方、内容状态、卡片编码、物理UID |
 
-手机号只导出 `phoneMasked`/`contactPhoneMasked`；不导出密文、JWT、Token、密码、Secret、原始 Payload 或完整审计详情。统计导出需要外部只读数据源可用，否则返回 503，不返回部分结果。
+卡片状态输出为库存、启用、停用、作废；员工状态输出为正常、停用；载体内容的类型、来源、提供方和状态均输出中文枚举值。
+
+普通载体内容导出不包含原始内容值。具备 `export.payload-content` 权限的用户可选择“内容原值导出”，此模式在上述内容表头的“内容类型”后增加“内容值”，并且前端必须二次确认。后端仍会再次校验权限。
+
+## 限制与审计
+
+- 单次导出最多 100,000 行、10 MiB；任一超限返回 `413 EXPORT_LIMIT_EXCEEDED`，不得静默截断。
+- 手机号只输出脱敏值；不得输出手机号密文、Token、密码、Webhook Secret 或完整审计详情。
+- 导出成功和失败均写入 `operation_logs`，记录资源、数据范围、字段白名单、筛选字段、行数和错误码，不记录原始内容值。
+- 接口为 `GET /api/v1/exports/{resource}`，支持 `mode=standard`；载体内容受控原值导出使用 `mode=content`。

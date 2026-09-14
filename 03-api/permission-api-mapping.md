@@ -21,11 +21,14 @@ Casdoor 是权限编码唯一来源。以下编码是 V1.3.2 本地冻结契约�
 | `access-event.read` | GET | `/api/v1/access-events`、`/api/v1/access-events/{id}` | `ORG_SUBTREE`/`EMPLOYEE_SELF` | 否 |
 | `analytics.read` | GET | `/api/v1/analytics/summary` | `ORG_SUBTREE` | 否 |
 | `import.validate` | POST | `/api/v1/imports/validate` | `ORG_SUBTREE`，按模板资源再收窄 | 是 |
-| `import.validate` | GET | `/api/v1/imports/templates/employees` | `ORG_SUBTREE` | 否 |
+| `import.validate` | GET | `/api/v1/imports/templates/{templateType}` | `ORG_SUBTREE` | 否 |
+| `import.validate` | POST | `/api/v1/imports/execute` | `ORG_SUBTREE`，执行时叠加业务管理权限 | 是 |
+| `import.validate` | GET | `/api/v1/imports/{batchId}`、`/api/v1/imports/{batchId}/failure-report` | 创建者本人；全局管理员可查看 | 否 |
 | `employee.manage` | POST | `/api/v1/imports/employees/execute` | `ORG_SUBTREE` | 是 |
 | `import.validate` | GET | `/api/v1/imports/templates/organizations` | `ORG_SUBTREE` | 否 |
 | `organization.manage` | POST | `/api/v1/imports/organizations/execute` | `ORG_SUBTREE` | 是 |
 | `export.read` | GET | `/api/v1/exports/{resource}` | `ORG_SUBTREE`，按资源再收窄为 `ASSET_SCOPE` | 是 |
+| `export.payload-content` | GET | `/api/v1/exports/touchpoint-payloads?mode=content` | 在 `export.read` 数据范围内 | 是 |
 | `audit.read` | GET | `/api/v1/audit-logs`、`/api/v1/audit-logs/{id}` | `ORG_SUBTREE` | 否 |
 
 `system_webhook` 仅表示 LinkForty Webhook 的 HMAC 集成主体，不是 Casdoor 用户权限，也不进入角色矩阵。
@@ -41,4 +44,4 @@ Casdoor 是权限编码唯一来源。以下编码是 V1.3.2 本地冻结契约�
 - `ASSET_SCOPE`：资源 `org_id` 在授权范围内；员工角色额外限制为本人责任资产或本机构库存资产。
 - `SOURCE_AND_TARGET_ORG`：来源和目标组织均在授权范围内，且调用方具备 Transfer 权限。
 
-V1.3.2 不提供 `/api/v1/imports/execute`；异步导入执行延期 V1.4。统计不拥有本地表，导出不创建对象存储或下载 Token。
+三类业务导入统一使用 `/api/v1/imports/validate` 和 `/api/v1/imports/execute`；超过 1,000 行由 Celery 异步执行，使用 `batchId` 查询结果。普通载体内容导出不含原始内容值，原值导出必须额外具备 `export.payload-content` 权限并二次确认。统计不拥有本地表，导出不创建对象存储或下载 Token。
