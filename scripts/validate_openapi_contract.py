@@ -197,8 +197,8 @@ def check_modules(document: dict[str, Any], errors: list[str]) -> None:
                         errors.append(
                             f"{path.relative_to(ROOT)}:{key}:{method}: {field} differs from main OpenAPI"
                         )
-    if mirror_count != 48:
-        errors.append(f"modules: expected 48 mirrored operations, found {mirror_count}")
+    if mirror_count != 49:
+        errors.append(f"modules: expected 49 mirrored operations, found {mirror_count}")
 
     m5 = load_yaml(MODULE_DIR / "m5-access-events.yaml")
     m5_expectations = {
@@ -228,8 +228,8 @@ def check_document(document: dict[str, Any], errors: list[str]) -> None:
     if [server.get("url") for server in document.get("servers", [])] != ["/api/v1"]:
         errors.append("openapi.yaml: server must be exactly /api/v1")
     ops = operations(document)
-    if len(ops) != 59:
-        errors.append(f"openapi.yaml: expected 59 operations, found {len(ops)}")
+    if len(ops) != 60:
+        errors.append(f"openapi.yaml: expected 60 operations, found {len(ops)}")
     operation_ids: dict[str, tuple[str, str]] = {}
     for path, method, operation in ops:
         operation_id = operation.get("operationId")
@@ -410,7 +410,7 @@ def main() -> int:
         print("OpenAPI contract validation failed:")
         print("\n".join(f"- {error}" for error in errors))
         return 1
-    print("OpenAPI contract validation passed (59 operations, 48 module mirrors).")
+    print("OpenAPI contract validation passed (60 operations, 49 module mirrors).")
     return 0
 
 

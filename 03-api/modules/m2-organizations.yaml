@@ -35,8 +35,23 @@ organizations:
     x-owner: API/后端
     x-permission: organization.manage
     x-data-scope: ORG_SUBTREE
-    x-idempotency: domain_key_org_code
+    x-idempotency: domain_key_parent_org_name
     x-audit: true
+    responses: {}
+
+organizationTree:
+  x-canonical-path: /organizations/tree
+  get:
+    operationId: listOrganizationTree
+    tags: [organizations]
+    summary: 按当前数据范围查询组织树
+    description: ORG_SELF 只返回当前组织；ORG_SUBTREE 返回授权范围内的组织树。
+    x-status: reviewed
+    x-owner: API/后端
+    x-permission: organization.read
+    x-data-scope: ORG_SUBTREE
+    x-idempotency: none
+    x-audit: false
     responses: {}
 
 organizationById:
