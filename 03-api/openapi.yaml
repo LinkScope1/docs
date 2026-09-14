@@ -1212,7 +1212,7 @@ paths:
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
-        '200': { $ref: '#/components/responses/Success' }
+        '200': { $ref: '#/components/responses/AuditLogListSuccess' }
   /audit-logs/{id}:
     parameters: [{ $ref: '#/components/parameters/Id' }]
     get:
@@ -1229,7 +1229,7 @@ paths:
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
-        '200': { $ref: '#/components/responses/Success' }
+        '200': { $ref: '#/components/responses/AuditLogDetailSuccess' }
 
 components:
   parameters:
@@ -1566,28 +1566,50 @@ components:
         resolutionReason: { type: [string, 'null'] }
         receivedAt: { type: string, format: date-time }
         resolvedAt: { type: [string, 'null'], format: date-time }
-    AuditLog:
+    AuditLogSummary:
       type: object
       additionalProperties: false
-      required: [id, traceId, orgId, employeeId, operationType, objectType, objectId, operationResult, operationSummary, errorCode, operationTime]
+      required:
+        [id, traceId, orgId, employeeId, operationType, objectType, objectId,
+         operationResult, operationSummary, errorCode, operationTime]
       properties:
         id: { $ref: '#/components/schemas/Id' }
-        traceId: { type: string }
+        traceId: { type: string, maxLength: 64 }
         orgId: { $ref: '#/components/schemas/NullableId' }
         employeeId: { $ref: '#/components/schemas/NullableId' }
         operationType: { type: integer }
         objectType: { type: integer }
         objectId: { $ref: '#/components/schemas/NullableId' }
         operationResult: { type: integer, enum: [1, 2, 3] }
-        operationSummary: { type: [string, 'null'] }
-        errorCode: { type: [string, 'null'] }
+        operationSummary: { type: [string, 'null'], maxLength: 1000 }
+        errorCode: { type: [string, 'null'], maxLength: 64 }
         operationTime: { type: string, format: date-time }
-        externalObjectId: { $ref: '#/components/schemas/NullableId' }
+    AuditLogDetail:
+      type: object
+      additionalProperties: false
+      required:
+        [id, traceId, orgId, employeeId, operationType, objectType, objectId,
+         operationResult, operationSummary, errorCode, operationTime,
+         externalObjectId, operationDetail, beforeData, afterData, errorMessage,
+         userAgent, createdAt]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        traceId: { type: string, maxLength: 64 }
+        orgId: { $ref: '#/components/schemas/NullableId' }
+        employeeId: { $ref: '#/components/schemas/NullableId' }
+        operationType: { type: integer }
+        objectType: { type: integer }
+        objectId: { $ref: '#/components/schemas/NullableId' }
+        operationResult: { type: integer, enum: [1, 2, 3] }
+        operationSummary: { type: [string, 'null'], maxLength: 1000 }
+        errorCode: { type: [string, 'null'], maxLength: 64 }
+        operationTime: { type: string, format: date-time }
+        externalObjectId: { type: [string, 'null'], format: uuid }
         operationDetail: { type: object, additionalProperties: true }
         beforeData: { type: [object, 'null'], additionalProperties: true }
         afterData: { type: [object, 'null'], additionalProperties: true }
-        errorMessage: { type: [string, 'null'] }
-        userAgent: { type: [string, 'null'] }
+        errorMessage: { type: [string, 'null'], maxLength: 500 }
+        userAgent: { type: [string, 'null'], maxLength: 512 }
         createdAt: { type: string, format: date-time }
     Page:
       type: object
@@ -1604,7 +1626,7 @@ components:
               - { $ref: '#/components/schemas/TouchpointPayload' }
               - { $ref: '#/components/schemas/Assignment' }
               - { $ref: '#/components/schemas/AccessEvent' }
-              - { $ref: '#/components/schemas/AuditLog' }
+              - { $ref: '#/components/schemas/AuditLogSummary' }
         page: { type: integer, minimum: 1 }
         pageSize: { type: integer, minimum: 1 }
         total: { type: integer, minimum: 0 }
@@ -1731,7 +1753,7 @@ components:
             - { $ref: '#/components/schemas/TouchpointPayload' }
             - { $ref: '#/components/schemas/Assignment' }
             - { $ref: '#/components/schemas/AccessEvent' }
-            - { $ref: '#/components/schemas/AuditLog' }
+            - { $ref: '#/components/schemas/AuditLogDetail' }
             - { $ref: '#/components/schemas/AnalyticsSummaryData' }
             - { $ref: '#/components/schemas/WebhookAcceptedData' }
     ErrorDetail:
@@ -1787,6 +1809,42 @@ components:
         accessEventId: { $ref: '#/components/schemas/Id' }
         replayed: { type: boolean }
   responses:
+    AuditLogListSuccess:
+      description: Paginated operation-log summaries in the caller scope.
+      headers:
+        X-Request-ID: { $ref: '#/components/headers/RequestId' }
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [requestId, data]
+            additionalProperties: false
+            properties:
+              requestId: { type: string }
+              data:
+                type: object
+                required: [items, page, pageSize, total]
+                additionalProperties: false
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/AuditLogSummary' }
+                  page: { type: integer, minimum: 1 }
+                  pageSize: { type: integer, minimum: 1 }
+                  total: { type: integer, minimum: 0 }
+    AuditLogDetailSuccess:
+      description: One sanitized operation-log detail in the caller scope.
+      headers:
+        X-Request-ID: { $ref: '#/components/headers/RequestId' }
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [requestId, data]
+            additionalProperties: false
+            properties:
+              requestId: { type: string }
+              data: { $ref: '#/components/schemas/AuditLogDetail' }
     AnalyticsSuccess:
       description: Analytics summary with four aggregate counters
       headers:

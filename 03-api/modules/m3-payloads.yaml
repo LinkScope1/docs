@@ -12,10 +12,24 @@ payloads:
     x-idempotency: none
     x-audit: false
     responses: {}
-  post:
-    operationId: createTouchpointPayload
+
+assetPayloads:
+  x-canonical-path: /touchpoint-assets/{assetId}/payloads
+  get:
+    operationId: listTouchpointAssetPayloads
     tags: [touchpoint-payloads]
-    summary: 创建载体内容
+    summary: 查询指定资产的全部载体内容
+    x-status: reviewed
+    x-owner: API/后端
+    x-permission: touchpoint.payload.read
+    x-data-scope: ASSET_SCOPE
+    x-idempotency: none
+    x-audit: false
+    responses: {}
+  post:
+    operationId: createTouchpointAssetPayload
+    tags: [touchpoint-payloads]
+    summary: 为指定资产创建 LinkForty 短链内容
     x-status: reviewed
     x-owner: API/后端
     x-permission: touchpoint.payload.manage
