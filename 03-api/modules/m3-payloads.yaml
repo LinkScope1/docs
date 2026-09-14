@@ -1,4 +1,5 @@
-# M3：载体内容。org_id和employee_id由资产同步，禁止客户端指定。
+# M3：载体内容。org_id和employee_id由资产同步，禁止客户端指定；可选 address_page_id
+# 关联银行地址页面，关联时从数据库读取 target_url。
 payloads:
   x-canonical-path: /touchpoint-payloads
   get:
@@ -12,24 +13,10 @@ payloads:
     x-idempotency: none
     x-audit: false
     responses: {}
-
-assetPayloads:
-  x-canonical-path: /touchpoint-assets/{assetId}/payloads
-  get:
-    operationId: listTouchpointAssetPayloads
-    tags: [touchpoint-payloads]
-    summary: 查询指定资产的全部载体内容
-    x-status: reviewed
-    x-owner: API/后端
-    x-permission: touchpoint.payload.read
-    x-data-scope: ASSET_SCOPE
-    x-idempotency: none
-    x-audit: false
-    responses: {}
   post:
-    operationId: createTouchpointAssetPayload
+    operationId: createTouchpointPayload
     tags: [touchpoint-payloads]
-    summary: 为指定资产创建 LinkForty 短链内容
+    summary: 创建载体内容
     x-status: reviewed
     x-owner: API/后端
     x-permission: touchpoint.payload.manage

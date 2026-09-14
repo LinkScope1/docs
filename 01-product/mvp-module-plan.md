@@ -43,11 +43,11 @@ V3.1 的有效业务模块为 M1～M5。旧编号仅用于迁移追溯，不得�
 
 # 3. V1.3.2 系统范围和边界
 
-V1.3.2 的正式范围为 7 张银行业务表、8 张 LinkForty 外部现有表，以及 Casdoor 外部身份边界。银行库只维护银行业务主数据和审计投影。
+V1.3.2 的正式范围为 8 张银行业务表、1 张横向导入任务表、8 张 LinkForty 外部现有表，以及 Casdoor 外部身份边界。银行库只维护银行业务主数据和审计投影。
 
 | 边界对象 | V1.3.2 定位 | 银行后台约束 |
 | --- | --- | --- |
-| 银行业务数据库 | 7 张本地业务表 | 由银行后台负责数据所有权和演进 |
+| 银行业务数据库 | 8 张本地业务表 | 由银行后台负责数据所有权和演进 |
 | Casdoor | 身份、角色与功能权限权威 | 通过 OIDC 供 BFF 服务端兑换和验证 JWT，并读取 employee_code；不建立本地权限投影 |
 | LinkForty | 链接、点击和 Webhook 等底层能力 | 写入走 API；读取受限；不直接迁移或修改外部表 |
 | NFC | 一期触点载体类型 | 资产类型固定为 NFC，写入和核验通过适配能力完成 |
@@ -68,7 +68,7 @@ V1.3.2 的正式范围为 7 张银行业务表、8 张 LinkForty 外部现有表
 
 # 5. 物理模型与数据归属
 
-## 5.1 银行侧 7 张业务表
+## 5.1 银行侧 8 张业务表
 
 | 序号 | 物理表 | 新归属 | 数据职责 |
 | --- | --- | --- | --- |
@@ -77,8 +77,9 @@ V1.3.2 的正式范围为 7 张银行业务表、8 张 LinkForty 外部现有表
 | 3 | employees | M2 | 员工编码、员工名称和直接所属组织 |
 | 4 | touchpoint_assets | M3 | NFC 载体业务编码、物理 UID 和当前责任 |
 | 5 | touchpoint_payloads | M3 | 卡内实际写入内容及 LinkForty 逻辑引用；不保存同步状态 |
-| 6 | touchpoint_employee_assignments | M4 | 载体与员工的当前及历史绑定 |
-| 7 | access_events | M5 | 访问事件幂等投影及资产、组织、员工关联 |
+| 6 | touchpoint_address_pages | M3 | 可复用地址页面、责任组织、内容类型、实际目标内容和状态 |
+| 7 | touchpoint_employee_assignments | M4 | 载体与员工的当前及历史绑定 |
+| 8 | access_events | M5 | 访问事件幂等投影及资产、组织、员工关联 |
 
 ## 5.2 LinkForty 外部 8 张现有表
 
@@ -99,7 +100,7 @@ V1.3.2 的正式范围为 7 张银行业务表、8 张 LinkForty 外部现有表
 | --- | --- | --- | --- | --- |
 | M1 | 后台访问与操作审计 | operation_logs | 认证上下文协作与操作审计 | Casdoor |
 | M2 | 组织与员工管理 | organization_units<br>employees | 组织层级、员工主数据和数据范围 | Casdoor Claim |
-| M3 | NFC 触点资产与载体内容管理 | touchpoint_assets<br>touchpoint_payloads | NFC 资产、卡内内容和外部调用编排 | LinkForty API、NFC |
+| M3 | NFC 触点资产与载体内容管理 | touchpoint_assets<br>touchpoint_payloads<br>touchpoint_address_pages | NFC 资产、可复用地址页面、卡内内容和外部调用编排 | LinkForty API、NFC |
 | M4 | 触点载体员工绑定管理 | touchpoint_employee_assignments | 当前及历史绑定、解绑和责任关系 | M2、M3 |
 | M5 | 访问事件接入与关联管理 | access_events | 事件幂等投影、关联和重试状态 | LinkForty 事件 |
 
@@ -150,6 +151,8 @@ V1.3.2 的正式范围为 7 张银行业务表、8 张 LinkForty 外部现有表
 **定位：**管理 NFC 触点资产、卡内实际写入内容、当前责任范围和 LinkForty 外部逻辑引用。
 
 **数据所有权：**拥有 touchpoint_assets 和 touchpoint_payloads。
+
+M3 同时拥有 `touchpoint_address_pages`。地址页面是银行后台可复用的内容主数据，不是 `target_resources` 或 `routing_rules`；其 `content_type` 固定为 1 小程序、2 APP、3 网页，`target_url` 保存实际内容且不强制使用 HTTP/HTTPS 协议。
 
 **输入：**asset_code、asset_type、carrier_uid、责任 org_id/employee_id、资产状态，以及 Payload 类型、值、来源、提供方和外部链接标识。
 
@@ -280,7 +283,7 @@ V1.3.2 的正式范围为 7 张银行业务表、8 张 LinkForty 外部现有表
 | Repository | 数据库访问 | SQLAlchemy 查询、事务、索引和约束；不承载外部平台业务 |
 | Integration Adapter | 外部调用 | Casdoor Claim、LinkForty API、Webhook 和 NFC 适配及重试 |
 | Worker / Celery | 异步任务 | LinkForty 调用重试、事件重试、批量导入和补偿；执行结果由 M1 审计 |
-| Alembic | 数据库演进 | 只演进银行侧 7 张业务表；禁止修改 LinkForty 平台表 |
+| Alembic | 数据库演进 | 只演进银行侧 8 张业务表及横向导入任务表；禁止修改 LinkForty 平台表 |
 
 # 12. 两人研发工作包划分
 
@@ -288,7 +291,7 @@ V1.3.2 的正式范围为 7 张银行业务表、8 张 LinkForty 外部现有表
 
 | 工作包 | 负责模块 | 主要数据表 | 研发重点 | 主要交接 |
 | --- | --- | --- | --- | --- |
-| A | M1～M3 | operation_logs<br>organization_units<br>employees<br>touchpoint_assets<br>touchpoint_payloads | 访问上下文、审计、主数据、NFC 资产和载体内容 | 向 B 提供组织/员工/资产/Payload 校验、外部 Link 引用和审计上下文 |
+| A | M1～M3 | operation_logs<br>organization_units<br>employees<br>touchpoint_assets<br>touchpoint_payloads<br>touchpoint_address_pages | 访问上下文、审计、主数据、NFC 资产、地址页面和载体内容 | 向 B 提供组织/员工/资产/Payload/地址页面校验、外部 Link 引用和审计上下文 |
 | B | M4～M5 | touchpoint_employee_assignments<br>access_events | 绑定、解绑、调拨、事件幂等、资产关联和访问事件 | 向 A 的审计能力写入绑定及事件处理结果 |
 
 ## 12.1 共同冻结的协作契约

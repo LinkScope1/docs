@@ -4,9 +4,12 @@ Total output lines: 463
 # 银行触点载体管理系统开发任务清单
 
 > 版本：v1.3.2
-> 更新日期：2026-09-08
+> 更新日期：2026-09-14
 > 用途：将 V1.3.2 的产品、架构、API、数据库、安全、测试、部署和运维要求拆分为可直接创建 Issue 或看板卡片的最小任务。
 > 事实原则：目录、迁移、接口草稿、占位页面和 Mock 只能作为证据类型，不直接等同于业务闭环完成。
+>
+> 2026-09-14 增量：M3 增加可复用地址页面 `touchpoint_address_pages`，当前代码 head 为
+> `0006_touchpoint_address_pages`；本次迁移和新增地址页面闭环仍需实际数据库/环境验收。
 
 ## 1. 使用说明
 
@@ -16,7 +19,7 @@ Total output lines: 463
 - 统计、批量导入、认证、权限、幂等、审计、Worker、外部集成、导出和运维属于横向能力，不新增业务模块编号。
 - 阶段固定映射：P0 外部契约和范围冻结；P1 工程基础；P2 M1/M2 与 M3 基础能力；P3 M4/M5 闭环；P4 导入/统计/导出/补偿；P5 发布和运维。
 - linkforty/core 是独立的 LinkForty Core；card-switch-demo 是演示项目；两者不计入银行后台业务完成度。
-- 不创建本地 iam_*、target_resources、routing_rules、导入批次表或导入明细表。
+- 不创建本地 iam_*、target_resources、routing_rules 或导入明细表；`import_batches` 仅作为批量导入横向能力的任务表。
 - 银行后台只通过 LinkForty API 写外部系统；LinkForty 事件表仅通过受限只读边界读取；不得通过数据库直读、记录或输出 `webhooks.secret`，Secret provisioning 只能通过受控 Core API 一次性交付给配置服务。
 
 ### 1.2 关联权威文档与引用规则
@@ -79,7 +82,7 @@ Total output lines: 463
 |---|---|---|---|
 | 工作区 | 后端、前端、演示项目为独立 Git 仓库；Core 保留用户已有 `docker-compose.yml` 修改，其他工作区均未发现用户修改。 | 各仓库 `git status --short --branch` | 保留独立仓库边界，不创建单体仓库任务。 |
 | 后端 | 已发现 FastAPI 入口、M1～M5 Router/Service/Repository、审计、Webhook、幂等和 Worker 技术落点；真实认证、数据库/队列环境和部分闭环仍未验证。 | `bank-touchpoint-backend/src/app/`、`tests/` | 有代码但缺闭环或环境证据的任务标为部分具备，不直接标记完成。 |
-| 数据库 | 已有 `bank_admin` Schema、7 张 V1.3.2 银行业务表和 Alembic revision；当前代码 head 为 `0004_payload_target_url`。 | `bank-touchpoint-backend/alembic/versions/`、`alembic heads` | 迁移脚本和模型证据与真实升级、回滚、权限验证分开计量。 |
+| 数据库 | 已有 `bank_admin` Schema、8 张 V1.3.2 业务表和 Alembic revision；当前代码 head 为 `0006_touchpoint_address_pages`。 | `bank-touchpoint-backend/alembic/versions/`、`alembic heads` | 迁移脚本和模型证据与真实升级、回滚、权限验证分开计量。 |
 | 前端 | 有布局、路由、API 客户端、生成类型和统计页；M1～M5 业务路由仍使用 `ModuleStatusPage`。 | `bank-touchpoint-frontend/src/routes/`、`src/components/ModuleStatusPage.tsx` | 统计页按部分具备计量，M1～M5 业务页面不因路由存在而完成。 |
 | 前端基线验证 | Vitest 19 项、lint、typecheck、build 已通过；build 有 chunk 大小警告。 | 2026-09-08 本地命令结果 | 仅记录已验证范围；Playwright 因会启动 Vite 未执行。 |
 | 后端基线验证 | disposable 测试环境中后端全量测试 `1004 passed`，定向 Worker/数据库测试 `23 passed`，Ruff 和 mypy 通过；新增 P1-ENV-005 Seed/fixture 集成用例已实际执行。 | 2026-09-08 Docker 验收命令结果 | 测试资源已按脚本清理；环境报告和 Seed 脱敏报告保存在仓库外受控目录。 |
@@ -130,7 +133,7 @@ Total output lines: 463
 | P0-LF-005 | P0 | P0 | 平台横向 | 横向只读 | 确认 LinkForty 只读账号、白名单表、字段和网络访问方式。 | 延期 | 决策记录/外部确认 | DBA | 后端/测试 | ENV-DB-001 | V1.4 只读账号和白名单证据 | V1.4 完成账号、字段授权和 DML/DDL/TRUNCATE/Secret 负向测试；V1.3.2 不建立该账号，统计只调用 LinkForty API。 | V1.4，不纳入 V1.3.2 | 否 | V1.4 | V1.3.2 不连接 LinkForty 数据库；SQL 授权与负向证据仅作为 V1.4 准备。 | 1 |
 | P0-NFC-001 | P0 | P0 | 平台横向 | M3/NFC | 确认 NFC 介质类型、UID 读取方式和 NDEF 内容格式。 | 延期 | 决策记录/外部确认 | 硬件 | LinkForty/硬件 | ENV-NFC-001 | NFC 契约 | 至少有一个测试卡或明确 Mock 字段映射。 | V1.4，不纳入 V1.3.2 | 否 | V1.4 | V1.3.2 仅保留抽象 NFC 接口和失败可模拟的 Mock；真实介质/NDEF 方案延期。 | 1 |
 | P0-NFC-002 | P0 | P0 | 平台横向 | M3/NFC | 确认写卡/读卡设备、SDK、失败返回、读回核验和批量能力。 | 延期 | 决策记录/外部确认 | 硬件 | LinkForty/硬件 | DEC-NFC-001 | 设备集成说明 | 失败和核验未通过时不会伪造成功。 | V1.4，不纳入 V1.3.2 | 否 | V1.4 | 真实设备、SDK、写卡和读回核验延期；V1.3.2 不宣称真机验收。 | 1 |
-| P0-DB-001 | P0 | P0 | 平台横向 | 数据库 | 确认 PostgreSQL 14+、`bank_admin` Schema、连接方式和迁移权限。 | 部分具备 | 代码/迁移/环境缺口 | DBA | 后端/测试 | ENV-BASE-001 | 数据库连接与权限记录 | 银行代码已有 `bank_admin` Schema、7 张表模型和 Alembic 链；当前代码 head 为 `0004_payload_target_url`，但本次未连接数据库，实际迁移版本、权限和生产访问仍待补。 | V1.3.2 | 是 | — | 迁移脚本存在但未取得本次运行环境数据库证据；不得把历史 Docker 记录当作当前数据库事实。 | 0.5 |
+| P0-DB-001 | P0 | P0 | 平台横向 | 数据库 | 确认 PostgreSQL 14+、`bank_admin` Schema、连接方式和迁移权限。 | 部分具备 | 代码/迁移/环境缺口 | DBA | 后端/测试 | ENV-BASE-001 | 数据库连接和迁移权限记录 | 银行代码已有 `bank_admin` Schema、8 张表模型和 Alembic 链；当前代码 head 为 `0006_touchpoint_address_pages`，但本次未连接数据库，实际迁移版本、权限和生产访问仍待补。 | V1.3.2 | 是 | — | 迁移脚本存在但未取得本次运行环境数据库证据；不得把历史 Docker 记录当作当前数据库事实。 | 0.5 |
 | P0-DB-002 | P0 | P0 | 平台横向 | 数据库 | 确认 Snowflake ID 生成策略、节点配置和 BIGINT API 字符串传输规则。 | 部分具备 | 代码骨架/协议 | 架构 | 后端/测试 | EPIC-DATA-001 | ID 生成契约 | 数据库主键不重复，API 返回 BIGINT 为字符串。 | V1.3.2 | 是 | — | 多实例 ID 冲突风险。 | 1 |
 | P0-REDIS-001 | P0 | P0 | 平台横向 | Worker | 确认 Redis、Celery Broker、Result Backend 和生产队列隔离方式。 | 部分具备 | 环境验证/Compose 配置 | 运维 | 后端/测试 | ENV-BASE-001 | Redis/Celery 连接记录 | Redis 7.4.11 可用，银行侧 0/1/2 数据库配置已分离且当前为空；Worker 运行、测试隔离和生产队列证据仍待补。 | V1.3.2 | 是 | — | Redis 不能成为业务事实来源；仅 PING 成功不能替代 Worker/队列隔离验收。 | 0.5 |
 | P0-SEC-001 | P0 | P0 | 平台横向 | 安全 | 冻结 JWT、权限、数据范围、审计、日志脱敏和只读账号安全要求。 | 部分具备 | 决策记录/代码/安全检查 | 安全 | 后端/测试 | DEC-CAS-005, DEC-LF-005 | 安全评审记录 | AccessContext、权限判断、生产拒绝 Mock 和敏感字段过滤已有本地基线；Casdoor 真实证明、生产安全审批待补，LinkForty 数据库只读账号延期 V1.4。 | V1.3.2 | 是 | — | 本地安全边界具备；V1.3.2 统计不连接 LinkForty 数据库。 | 1 |
@@ -220,8 +223,8 @@ Total output lines: 463
 | P1-BE-003 | P1 | P1 | 平台横向 | 配置 | 增加生产配置安全校验和环境分层配置。 | 待开发 | 待产生 | 后端 | 后端/测试 | P1-ENV-002 | Settings 校验 | production 禁止默认密码、默认密钥和本地地址。 | V1.3.2 | 是 | — | 配置缺失应在启动时失败。 | 1 |
 | P1-BE-004 | P1 | P1 | 平台横向 | 数据库 | 建立 SQLAlchemy Declarative Base、bank_admin Schema 类型和异步 Session 依赖。 | 部分具备 | 代码骨架/协议 | 后端 | 后端/测试 | P1-BE-001 | DB 基础代码 | Repository 只能通过 Session 访问银行库。 | V1.3.2 | 是 | — | 不得连接 LinkForty 写库。 | 1 |
 | P1-BE-005 | P1 | P1 | 平台横向 | 数据库 | 建立事务上下文和 Service 层提交/回滚约定。 | 部分具备 | 代码骨架 | 后端 | 后端/测试 | P1-BE-004 | 事务辅助代码 | 业务状态、历史和审计在一个本地事务中提交。 | V1.3.2 | 是 | — | 外部 HTTP 不得长时间占用数据库事务。 | 1 |
-| P1-BE-006 | P1 | P1 | 平台横向 | 数据库 | 实现 Snowflake ID 生成器并接入 7 张银行表模型。 | 部分具备 | 代码骨架/迁移 | 后端 | 后端/测试 | P0-DB-002, P1-BE-004 | ID 生成和模型基类 | 并发生成无重复，API 层把 BIGINT 序列化为字符串。 | V1.3.2 | 是 | — | 节点配置错误会造成主键冲突。 | 1 |
-| P1-BE-007 | P1 | P1 | 平台横向 | 数据库 | 汇总 7 个独立 SQLAlchemy 模型并执行字段、索引和约束对照 | 部分具备 | 代码骨架/迁移 | 后端 | 后端/测试 | P1-BE-004, P1-BE-025, P1-BE-026, P1-BE-027, P1-BE-028, P1-BE-029, P1-BE-030, P1-BE-031 | 模型注册和数据字典对照报告 | 7 个模型均已注册；字段、Schema、索引、NOT NULL、唯一、排他和只追加约束与现有迁移/数据字典逐项一致。 | V1.3.2 | 是 | — | 不得新增本地 iam、target_resources、routing_rules 或导入批次/明细表。 | 2 |
+| P1-BE-006 | P1 | P1 | 平台横向 | 数据库 | 实现 Snowflake ID 生成器并接入 8 张银行表模型。 | 部分具备 | 代码骨架/迁移 | 后端 | 后端/测试 | P0-DB-002, P1-BE-004 | ID 生成和模型基类 | 并发生成无重复，API 层把 BIGINT 序列化为字符串。 | V1.3.2 | 是 | — | 节点配置错误会造成主键冲突。 | 1 |
+| P1-BE-007 | P1 | P1 | 平台横向 | 数据库 | 汇总 8 个独立 SQLAlchemy 模型并执行字段、索引和约束对照 | 部分具备 | 代码骨架/迁移 | 后端 | 后端/测试 | P1-BE-004, P1-BE-025, P1-BE-026, P1-BE-027, P1-BE-028, P1-BE-029, P1-BE-030, P1-BE-031 | 模型注册和数据字典对照报告 | 8 个模型均已注册；字段、Schema、索引、NOT NULL、唯一、排他和只追加约束与现有迁移/数据字典逐项一致。 | V1.3.2 | 是 | — | 不得新增本地 iam、target_resources、routing_rules 或导入明细表。 | 2 |
 | P1-BE-008 | P1 | P1 | 平台横向 | API | 实现统一 `requestId/data/error` Envelope 和统一错误响应。 | 部分具备 | 代码骨架/迁移 | 后端 | 后端/测试 | P1-BE-001 | 响应模型/异常处理 | 成功、400、401、403、404、409、422、500 均包含 requestId。 | V1.3.2 | 是 | — | 不能把内部堆栈返回客户端。 | 1 |
 | P1-BE-009 | P1 | P1 | 平台横向 | API | 完善异常码、业务异常、数据库约束异常和外部异常映射。 | 部分具备 | 代码骨架/迁移 | 后端 | 后端/测试 | P1-BE-008 | 错误码注册表 | `ASSIGNMENT_CONFLICT` 等业务错误可被前端稳定展示。 | V1.3.2 | 是 | — | 错误码变更需同步 OpenAPI。 | 1 |
 | P1-BE-010 | P1 | P1 | 平台横向 | 追踪 | 统一 request_id、trace_id、operator_id、event_id、click_id 和 task_id 传播。 | 部分具备 | 代码骨架 | 后端 | 后端/测试 | P1-BE-001 | Trace middleware/context | 同一请求、Worker、外部调用和审计记录可通过 trace_id 关联。 | V1.3.2 | 是 | — | 禁止把 Token 写入上下文日志。 | 1 |
@@ -437,7 +440,7 @@ Total output lines: 180
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---:|
 | T-UNIT-001 | P1 | P1 | 测试 | 后端 Schema | 为所有请求/响应 Schema 编写合法、非法、边界和 BIGINT/时间测试。 | 部分具备 | 代码/测试证据 | 后端 | 后端/测试 | P1-BE-008, EPIC-SCHEMA-001 | Unit tests | 422、错误码和序列化符合 API 规范。 | V1.3.2 | 否 | — | M2～M5、analytics 和公共 Schema 已有局部测试；“所有 Schema”覆盖和契约漂移校验仍需补齐。 | 1 |
 | T-UNIT-002 | P1 | P1 | 测试 | Service | 为组织编码、资产状态、Payload、绑定区间和事件状态机编写 Service 单元测试。 | 部分具备 | 代码/测试证据 | 后端 | 后端/测试 | EPIC-A-M2-001, EPIC-B-M4-001, EPIC-A-M3-001, EPIC-B-M5-001 | Service tests | 业务规则不依赖 HTTP 或真实外部系统即可验证。 | V1.3.2 | 否 | — | 状态机、组织、资产、Payload、绑定和事件已有大量单元测试；全量失败分支和数据库语义仍需补齐。 | 2 |
-| T-REPO-001 | P1 | P1 | 测试 | Repository | 为 7 张银行表编写真实 PostgreSQL Repository 测试。 | 部分具备 | 模型/单元测试证据 | 后端 | 后端/测试 | P1-ENV-004, P1-BE-007 | DB tests | 唯一、索引、JSON object、exclusion 和 append-only 约束有效。 | V1.3.2 | 否 | — | 模型、索引和约束镜像测试已有；真实 PostgreSQL Repository 和 append-only 权限测试仍受 P1-ENV-004 约束。 | 2 |
+| T-REPO-001 | P1 | P1 | 测试 | Repository | 为 8 张银行表编写真实 PostgreSQL Repository 测试。 | 部分具备 | 模型/单元测试证据 | 后端 | 后端/测试 | P1-ENV-004, P1-BE-007 | DB tests | 唯一、索引、JSON object、exclusion 和 append-only 约束有效。 | V1.3.2 | 否 | — | 模型、索引和约束镜像测试已有；真实 PostgreSQL Repository 和 append-only 权限测试仍受 P1-ENV-004 约束。 | 2 |
 | T-API-001 | P1 | P0 | 测试 | API | 为认证、组织、员工、资产、Payload、绑定和事件 API 编写集成测试。 | 部分具备 | API/单元测试证据 | 后端 | 后端/测试 | P1-ENV-004, EPIC-REF-001 | API tests | 成功、400、401、403、404、409、422 和统一 Envelope 全覆盖。 | V1.3.2 | 否 | — | TestClient、Router 和错误边界已有局部覆盖；真实数据库、测试 JWT 和全 M1～M5 集成矩阵未完成。 | 2 |
 | T-SEC-001 | P5 | P0 | 测试 | 安全 | 执行 JWT 伪造、过期、issuer/audience、Claim 缺失和停用员工测试。 | 部分具备 | 代码/测试边界证据 | 安全 | 后端/测试 | A-M1-002, A-M1-003, A-M1-004, A-M1-005 | Security report | 所有非法认证被拒绝，日志无敏感数据。 | V1.3.2 | 否 | — | 本地测试签名、Fake OIDC、JWKS 和员工停用边界已有；真实 Casdoor issuer/audience/JWKS 和停用同步外部证据仍延期。 | 1 |
 | T-SEC-002 | P5 | P0 | 测试 | 越权 | 执行跨组织查询、写入、绑定、导入、导出和审计访问测试。 | 部分具备 | 代码/测试证据 | 安全 | 后端/测试 | P1-BE-013, P1-BE-014, EPIC-API-002 | Scope tests | 请求参数不能扩大权限；角色矩阵逐项通过。 | V1.3.2 | 否 | — | 多个 Service/Router 已有 scope/403 测试；完整 M1～M5、导入导出和真实角色矩阵仍未完成。 | 2 |
@@ -452,7 +455,7 @@ Total output lines: 180
 | T-FE-004 | P5 | P1 | 测试 | 权限与界面编号 | 覆盖 Casdoor 权限映射、菜单/按钮 `data-testid` 和失败关闭行为。 | 条件开发 | 决策记录/代码边界 | 前端 | 安全/测试 | P1-FE-011, P1-FE-012, F-COM-007, F-M1-003, F-M2-003, F-M3-004, F-M4-003, F-M5-003, F-ANL-002 | Permission/UI ID tests | 已冻结权限码与 `data-testid` 不混用、缺失映射默认拒绝和稳定编号规则；真实 Casdoor 映射及 Playwright 验收延期 V1.4。 | V1.3.2 | 否 | — | 权限编码未确认前不能标记真实映射通过。 | 1.5 |
 | T-E2E-001 | P5 | P1 | 测试 | E2E | 用 Playwright 覆盖登录、组织、资产、绑定、事件和导出关键旅程。 | 部分具备 | 测试证据 | 测试 | 后端/测试 | F-E2E-001, P1-ENV-004 | E2E report | 测试环境可重复执行，失败截图和 trace 可保留。 | V1.3.2 | 否 | — | 外部系统用测试实例或 Mock。 | 2 |
 | T-MIG-001 | P1 | P1 | 测试 | 迁移 | 验证 Alembic upgrade/downgrade、重复执行和干净数据库迁移。 | 待开发 | 待产生 | DBA | 后端/测试 | P1-ENV-004, P1-BE-007 | Migration report | 只改 bank_admin，未触碰 LinkForty；关键约束存在。 | V1.3.2 | 否 | — | 生产禁止未经评审 downgrade。 | 1 |
-| T-MIG-002 | P1 | P1 | 测试 | 数据质量 | 验证 7 张表字段、状态、唯一性、JSON object、审计只追加和无旧表。 | 待开发 | 待产生 | DBA | 后端/测试 | T-MIG-001 | Data quality checks | 不存在本地 iam/target/routing 表；7 张表符合数据字典。 | V1.3.2 | 否 | — | 历史数据库可能需要人工核对。 | 1 |
+| T-MIG-002 | P1 | P1 | 测试 | 数据质量 | 验证 8 张表字段、状态、唯一性、JSON object、审计只追加和无旧表。 | 待开发 | 待产生 | DBA | 后端/测试 | T-MIG-001 | Data quality checks | 不存在本地 iam/target/routing 表；8 张表符合数据字典。 | V1.3.2 | 否 | — | 历史数据库可能需要人工核对。 | 1 |
 | T-PERF-001 | P5 | P1 | 测试 | 性能 | 按冻结阈值执行列表、事件、统计和同步导出性能测试 | 阻塞待确认 | 决策记录/外部确认 | 性能 | 后端/测试/运维 | DEC-PERF-001, T-REPO-001, B-M5-014, X-ANL-006, X-EXP-005 | 性能测试报告；执行入口：`08-testing/performance-test.md` 固定数据集/并发配置和压测 Runbook | 在隔离环境使用固定数据量、并发量和配置，分别测试列表 P95 ≤ 500ms、访问事件 ≤ 1s、统计 ≤ 2s、同步导出 ≤ 5s；同时记录 P99、错误率 <1%、连接池、慢查询、Redis 延迟和队列积压 <100，持续观察 30 分钟；报告覆盖无外部 Link 空数据、点击 API 可用、安装/App 不可用返回 503 三条统计路径后方可关闭。 | V1.3.2 | 否 | — | 当前只冻结阈值和测试入口，未产生完整报告前保持阻塞；P99 仅观测，不作为额外关闭门槛。 | 2 |
 | T-SEC-003 | P5 | P0 | 测试 | 日志 | 扫描应用、Worker、审计和测试输出中的敏感字段。 | 待开发 | 待产生测试 | 安全 | 后端/测试 | P1-BE-011, X-SEC-001 | Log security report | 无 JWT、Token、密码、Webhook Secret、DB 密码和未脱敏个人信息。 | V1.3.2 | 否 | — | 第三方异常需脱敏。 | 0.5 |
 | T-ACC-001 | P5 | P1 | 测试 | 验收 | 汇总分域验收证据索引和未关闭缺陷 | 待开发 | 待产生 | 产品 | 后端/测试 | T-ACC-002, T-ACC-003, T-ACC-004, T-QA-001 | Acceptance report | 每个需求编号有测试证据、结果、缺陷、负责人和关闭结论；未确认决策不得标记通过。 | V1.3.2 | 否 | — | 最终发布门禁由 R-P5-001 汇总。 | 2 |
@@ -523,6 +526,6 @@ Webhook 验签 → 解析 event_id/click_id/linkforty_link_id → 唯一解析 a
 | Webhook Secret provisioning、Core API 网络访问和生产配置接入 | LinkForty/安全/运维 | DEC-LF-006、R-P3-007 | 方案已确认；联调、审计和上线配置待完成 |
 | LinkForty 数据库只读账号、表字段白名单和网络访问 | DBA/LinkForty/安全 | P0-LF-005、P1-BE-020、X-SEC-002 | 延期至 V1.4；V1.3.2 不建立或使用 `bank_linkforty_ro`，统计改为 API-only；SQL 授权和负向证据保留为 V1.4 准备 |
 | NFC 介质、UID、NDEF、设备、SDK、读回核验 | 硬件/供应商 | P0-NFC、B-M3、F-M3-003 | 延期至 V1.4；V1.3.2 使用 Mock，真实证据待补 |
-| PostgreSQL、Redis、Celery、Schema、备份和生产权限 | DBA/运维 | P0-DB、P1-ENV、R-P3/P4 | 代码 head 为 Alembic `0004_payload_target_url`；本次未连接 PostgreSQL/Redis/Celery，Worker、迁移、备份、恢复和生产权限证据待确认 |
+| PostgreSQL、Redis、Celery、Schema、备份和生产权限 | DBA/运维 | P0-DB、P1-ENV、R-P3/P4 | 代码 head 为 Alembic `0006_touchpoint_address_pages`；本次未连接 PostgreSQL/Redis/Celery，Worker、迁移、备份、恢复和生产权限证据待确认 |
 | 预约绑定生效、跨组织调拨、导入事务策略 | 产品/架构 | A-M4-009/010、X-IMP-008 | 规则已冻结；实现/测试或 V1.4 条件待执行 |
 | 统计和导出 API、指标口径、字段白名单和文件存储 | 产品/API/安全/运维 | X-ANL、X-EXP、F-ANL、F-EXP | 口径和范围已冻结；API/权限/只读证据待补 |

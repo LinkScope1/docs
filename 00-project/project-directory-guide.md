@@ -48,7 +48,7 @@
 
 - 有效业务模块为 M1～M5；旧 M1～M8 编号只用于迁移追溯，不得继续用于新需求、研发任务或验收项。
 
-- 银行侧保留 7 张业务表：operation_logs、organization_units、employees、touchpoint_assets、touchpoint_payloads、touchpoint_employee_assignments、access_events。
+- 银行侧保留 8 张业务表：operation_logs、organization_units、employees、touchpoint_assets、touchpoint_payloads、touchpoint_address_pages、touchpoint_employee_assignments、access_events。
 
 - Casdoor 负责身份、角色和功能权限；LinkForty 负责链接、点击、Webhook 和访问底层能力；NFC 仅通过适配接口进入银行后台。
 
@@ -105,7 +105,7 @@ bank-touchpoint-backend/
 │   │   ├── linkforty/
 │   │   └── nfc/
 │   └── workers/                     # 【现有 / 目标】Celery 异步任务、重试、补偿和对账
-├── alembic/versions/                # 【现有 / 目标】银行侧 7 张表的独立 Revision
+├── alembic/versions/                # 【现有 / 目标】银行侧 8 张业务表的独立 Revision
 ├── database/{seeds,checks}/          # 【现有 / 目标】种子、检查和辅助说明，不放正式 DDL
 ├── scripts/                          # 【现有 / 目标】开发、数据准备和联调辅助脚本
 ├── nginx/                            # 【现有 / 目标】银行后台 Nginx 代理与 Webhook 转发配置
@@ -164,7 +164,7 @@ bank-touchpoint-frontend/
 | src/app/modules | 按 M1～M5 聚合业务规则、状态解释、权限和数据访问；每张银行表只有一个责任模块。 |
 | src/app/integrations | 封装 Casdoor、LinkForty API/只读/Webhook 和 NFC 适配；外部调用不得散落在 Router。 |
 | src/app/workers | 承载异步任务、重试、补偿、批量导入和对账；任务结果通过 Service、Trace ID 和 M1 审计追踪。 |
-| alembic | 只演进银行侧 7 张表；每次结构变化使用独立 Revision，不直接修改 LinkForty 平台表。 |
+| alembic | 只演进银行侧 8 张业务表及横向导入任务表；每次结构变化使用独立 Revision，不直接修改 LinkForty 平台表。 |
 | database | 只放 seeds、checks 和辅助说明，不放正式建表逻辑。 |
 | tests | 按分层和风险覆盖 API、权限、数据范围、幂等、外部失败、迁移和端到端链路。 |
 
@@ -182,7 +182,7 @@ bank-touchpoint-frontend/
 | --- | --- | --- | --- | --- |
 | M1 | core/security.py、integrations/casdoor、modules/audit | modules/auth、modules/audit | operation_logs | 后台访问上下文、员工定位、操作审计；依赖 Casdoor 和 M2 employees。 |
 | M2 | modules/organizations/employees | modules/organizations | organization_units、employees | 组织编码层级、员工主数据、直接组织归属和数据范围根节点。 |
-| M3 | modules/touchpoints | modules/touchpoints | touchpoint_assets、touchpoint_payloads | NFC 资产、卡内实际内容和 LinkForty 逻辑引用；依赖 LinkForty API、NFC。 |
+| M3 | modules/touchpoints | modules/touchpoints | touchpoint_assets、touchpoint_payloads、touchpoint_address_pages | NFC 资产、可复用地址页面、卡内实际内容和 LinkForty 逻辑引用；依赖 LinkForty API、NFC。 |
 | M4 | modules/assignments | modules/assignments | touchpoint_employee_assignments | 绑定、解绑、转交和历史区间；依赖 M2、M3。 |
 | M5 | modules/events | modules/events | access_events | Webhook 事件幂等投影、资产/绑定/组织/员工关联和重试；依赖 LinkForty 事件或受限读取。 |
 
@@ -271,13 +271,13 @@ src/app/integrations/
 
 # 9. 数据库与迁移边界
 
-银行后台数据库使用 PostgreSQL 14+ 的 bank_admin Schema。V1.3.2 业务库只保留 7 张银行业务表，LinkForty 的 8 张外部表不进入银行侧 Alembic 迁移。
+银行后台数据库使用 PostgreSQL 14+ 的 bank_admin Schema。V1.3.2 业务库保留 8 张银行业务表，LinkForty 的 8 张外部表不进入银行侧 Alembic 迁移。
 
 | 责任模块 | 银行侧表 |
 | --- | --- |
 | M1 | operation_logs |
 | M2 | organization_units、employees |
-| M3 | touchpoint_assets、touchpoint_payloads |
+| M3 | touchpoint_assets、touchpoint_payloads、touchpoint_address_pages |
 | M4 | touchpoint_employee_assignments |
 | M5 | access_events |
 
@@ -346,7 +346,7 @@ main
 
 | 工作包 | 负责模块 | 主要数据表 | 交接内容 |
 | --- | --- | --- | --- |
-| A | M1～M3 | operation_logs、organization_units、employees、touchpoint_assets、touchpoint_payloads | 访问上下文、审计、组织员工主数据、NFC 资产和 Payload；向 B 提供组织/员工/资产/Payload 校验、外部 Link 引用和审计上下文。 |
+| A | M1～M3 | operation_logs、organization_units、employees、touchpoint_assets、touchpoint_payloads、touchpoint_address_pages | 访问上下文、审计、组织员工主数据、NFC 资产、地址页面和 Payload；向 B 提供组织/员工/资产/Payload/地址页面校验、外部 Link 引用和审计上下文。 |
 | B | M4～M5 | touchpoint_employee_assignments、access_events | 绑定、解绑、调拨、事件幂等、资产关联和访问事件查询；向 A 的审计能力写入绑定及事件处理结果。 |
 
 - main 禁止直接提交；每个 PR 聚焦一个业务模块或一个公共变更；API、迁移、权限、幂等和公共代码必须双人审核。
@@ -365,7 +365,8 @@ main
 
 - Casdoor OIDC/JWT、employee_code Claim、BFF Session、LinkForty 网络访问边界、Webhook 验签要求和 NFC Mock 均有明确的本地验证范围；Casdoor 正式 Claim/权限契约和真实认证联调仍待外部确认。
 
-- 7 张银行业务表可在空数据库完成迁移，权限、数据范围、事件幂等、外部失败补偿和审计测试已准备。
+- 8 张银行业务表可在空数据库完成迁移，权限、数据范围、事件幂等、外部失败补偿和审计测试已准备；
+  本次新增地址页面迁移尚未连接实际 PostgreSQL 验证。
 
 - M1～M5 目录职责、API 第一批契约、OpenAPI 同步方式和两个工作包的交接字段已确认。
 

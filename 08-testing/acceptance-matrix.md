@@ -11,12 +11,14 @@
 | M2-002 | 员工维护 | `employees` | 员工编码唯一、组织范围、状态 | 待测 |
 | M3-001 | 触点资产 | `touchpoint_assets` | 资产编码、UID 唯一、状态、范围字段 | 待测 |
 | M3-002 | 载体内容 | `touchpoint_payloads` | 内容类型、实际写入值、范围同步、LinkForty 逻辑引用、无本地同步状态字段 | 待测 |
+| M3-003 | 可复用地址页面 | `touchpoint_address_pages`、`/touchpoint-address-pages` | 组织范围、地址编码唯一、内容类型（小程序/APP/网页）、`target_url` 非 HTTP 内容兼容、启停保留历史、Payload 下拉选项 | 待测 |
 | M4-001 | 绑定 | `touchpoint_employee_assignments` | 重叠、当前唯一、历史无快照、转交 | 待测 |
 | M5-001 | Webhook | `access_events` | 签名、幂等、重复 click、关联重试 | 通过：本地真实联调和负责人正式确认已完成 |
 | INT-LINKFORTY-NGINX-001 | LinkForty 外部集成 | Nginx `/linkapi/`、Webhook location | `/linkapi/` 路径映射、Core health/API/短链、HTTP/1.1、Header、缓存、方法/Body/`Idempotency-Key` 保留；Webhook 原始 body 和签名 Header 保留 | 待执行：测试拓扑 |
 | CAP-ANL-001 | 统计与报表横向能力（不编号） | analytics | 点击/访问时间、机器人、范围、只读边界、审计；安装/App 不支持时整体 503 | 通过 |
 | IMP-001 | 文档导入预留 | `/imports/validate` | 模板、稳定匹配键、逐行错误 | 待测 |
 | IMP-002 | 文档导入预留 | `/imports/execute` | 更新并新增、幂等、显式解绑、审计 | 待测 |
+| IMP-003 | 地址页面导入导出 | `address_page`、`touchpoint-address-pages` | 中文固定表头、预校验、逐行失败、重复导入、缺失行不停用、权限范围和字段白名单 | 待测 |
 
 ## 认证外部证据门禁
 

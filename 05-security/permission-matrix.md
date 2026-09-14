@@ -16,6 +16,9 @@ Casdoor 提供角色和功能权限；银行后台不创建本地 IAM 表。后�
 | 永久作废资产 | 允许 | 允许（目标资产在 `ASSET_SCOPE`） | 禁止 | 禁止 | `touchpoint.asset.scrap` + `ASSET_SCOPE` |
 | 查询载体内容 | 允许 | 允许 | 允许 | 允许 | `ASSET_SCOPE` |
 | 管理载体内容 | 允许 | 允许 | 仅本机构/本人责任范围 | 禁止 | `touchpoint.payload.manage` |
+| 查询地址页面 | 允许 | 允许 | 仅本机构/本人责任范围 | 禁止 | `touchpoint.address-page.read` + `ORG_SUBTREE` |
+| 管理地址页面 | 允许 | 允许 | 仅本机构/本人责任范围 | 禁止 | `touchpoint.address-page.manage` + `ORG_SUBTREE`；根组织页面可供下级资产使用 |
+| 在载体内容中选择地址页面 | 允许 | 允许 | 资产可管理且地址页面责任组织可使用 | 禁止 | 同时校验 `touchpoint.payload.manage`、`touchpoint.asset.manage`、`touchpoint.address-page.read` |
 | 查询绑定历史 | 允许 | 允许 | 允许 | 允许 | `ASSET_SCOPE` |
 | 绑定/解绑 | 允许 | 允许（同组织 `ORG_SUBTREE`） | 仅同组织 `ORG_SELF` | 禁止 | `touchpoint.assignment.manage` |
 | 跨组织转交 | 允许（需 `touchpoint.assignment.transfer`） | 允许（需 `touchpoint.assignment.transfer`） | 禁止 | 禁止 | `SOURCE_AND_TARGET_ORG` |
@@ -23,6 +26,7 @@ Casdoor 提供角色和功能权限；银行后台不创建本地 IAM 表。后�
 | 统计查询 | 允许 | 允许 | 允许 | 允许 | 总行 `GLOBAL`；机构 `ORG_SUBTREE`；员工 `EMPLOYEE_SELF`；观察者 `ORG_SUBTREE` |
 | 导入预校验 | 允许 | 允许 | 允许 | 禁止 | `ORG_SUBTREE`/`ASSET_SCOPE`，仅校验不写表 |
 | 执行卡片、载体内容、员工导入 | 允许 | 允许 | 允许 | 禁止 | `import.validate` + 对应业务管理权限；每次执行必须携带 `Idempotency-Key` |
+| 执行地址页面导入 | 允许 | 允许 | 允许 | 禁止 | `import.validate` + `touchpoint.address-page.manage`；缺失行不触发停用或删除 |
 | 同步导出 | 允许 | 允许 | 禁止 | 禁止 | `ORG_SUBTREE`/`ASSET_SCOPE` + 字段白名单 |
 | 载体内容原值导出 | 允许 | 按需授权 | 禁止 | 禁止 | `export.read` + `export.payload-content`，二次确认 |
 | 查询操作审计 | 允许 | 允许 | 禁止 | 禁止 | `ORG_SUBTREE` |

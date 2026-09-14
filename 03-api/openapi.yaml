@@ -16,6 +16,7 @@ tags:
   - name: organizations
   - name: employees
   - name: touchpoint-assets
+  - name: touchpoint-address-pages
   - name: touchpoint-payloads
   - name: assignments
   - name: access-events
@@ -553,6 +554,139 @@ paths:
         '200': { $ref: '#/components/responses/Success' }
         '409': { $ref: '#/components/responses/Conflict' }
 
+  /touchpoint-address-pages:
+    get:
+      tags: [touchpoint-address-pages]
+      operationId: listTouchpointAddressPages
+      x-owner: API/后端
+      summary: List reusable address pages
+      x-permission: touchpoint.address-page.read
+      x-data-scope: ORG_SUBTREE
+      x-idempotency: none
+      x-audit: false
+      x-status: reviewed
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+        - { name: addressCode, in: query, schema: { type: string, maxLength: 64 } }
+        - { name: addressName, in: query, schema: { type: string, maxLength: 128 } }
+        - { name: url, in: query, schema: { type: string, maxLength: 2048 } }
+        - { name: contentType, in: query, schema: { type: integer, enum: [1, 2, 3] } }
+        - { name: status, in: query, schema: { type: string, enum: ['0', '1'] } }
+        - { name: orgCodePrefix, in: query, schema: { type: string, maxLength: 64 } }
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [touchpoint-address-pages]
+      operationId: createTouchpointAddressPage
+      x-owner: API/后端
+      summary: Create a reusable address page
+      x-permission: touchpoint.address-page.manage
+      x-data-scope: ORG_SUBTREE
+      x-idempotency: domain_key_address_code
+      x-audit: true
+      x-status: reviewed
+      security: [{ sessionCookie: [] }]
+      requestBody: { $ref: '#/components/requestBodies/TouchpointAddressPageCreate' }
+      responses:
+        '201': { $ref: '#/components/responses/Success' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /touchpoint-address-pages/options:
+    get:
+      tags: [touchpoint-address-pages]
+      operationId: listTouchpointAddressPageOptions
+      x-owner: API/后端
+      summary: List active address pages usable by an asset
+      x-permission: touchpoint.address-page.read
+      x-required-permissions: [touchpoint.address-page.read, touchpoint.payload.manage, touchpoint.asset.manage]
+      x-data-scope: ASSET_SCOPE
+      x-idempotency: none
+      x-audit: false
+      x-status: reviewed
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: assetId, in: query, required: true, schema: { $ref: '#/components/schemas/Id' } }
+        - { name: keyword, in: query, required: false, schema: { type: string, maxLength: 128 } }
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /touchpoint-address-pages/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    get:
+      tags: [touchpoint-address-pages]
+      operationId: getTouchpointAddressPage
+      x-owner: API/后端
+      summary: Get a reusable address page
+      x-permission: touchpoint.address-page.read
+      x-data-scope: ORG_SUBTREE
+      x-idempotency: none
+      x-audit: false
+      x-status: reviewed
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    patch:
+      tags: [touchpoint-address-pages]
+      operationId: updateTouchpointAddressPage
+      x-owner: API/后端
+      summary: Update an address page without changing its owner or code
+      x-permission: touchpoint.address-page.manage
+      x-data-scope: ORG_SUBTREE
+      x-idempotency: domain_key_object_version
+      x-audit: true
+      x-status: reviewed
+      security: [{ sessionCookie: [] }]
+      requestBody: { $ref: '#/components/requestBodies/TouchpointAddressPagePatch' }
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /touchpoint-address-pages/{id}/enable:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    post:
+      tags: [touchpoint-address-pages]
+      operationId: enableTouchpointAddressPage
+      x-owner: API/后端
+      summary: Enable an address page
+      x-permission: touchpoint.address-page.manage
+      x-data-scope: ORG_SUBTREE
+      x-idempotency: domain_key_state_command
+      x-audit: true
+      x-status: reviewed
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /touchpoint-address-pages/{id}/disable:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    post:
+      tags: [touchpoint-address-pages]
+      operationId: disableTouchpointAddressPage
+      x-owner: API/后端
+      summary: Disable an address page while retaining history and payload links
+      x-permission: touchpoint.address-page.manage
+      x-data-scope: ORG_SUBTREE
+      x-idempotency: domain_key_state_command
+      x-audit: true
+      x-status: reviewed
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
   /touchpoint-payloads:
     get:
       tags: [touchpoint-payloads]
@@ -966,13 +1100,13 @@ paths:
       x-owner: API/后端/导入
       summary: Validate an import file without writing business tables
       description: >-
-        Synchronous, read-only CSV pre-validation. The card, payload and employee
+        Synchronous, read-only CSV pre-validation. The card, payload, address-page and employee
         templates use complete, fixed Chinese headers and Chinese enum values.
         Headers with missing, duplicate or unknown columns are rejected. Rows
         omitted from the CSV are ignored and never imply deletion, disabling or
         unbinding. Assignment and organization templates remain compatibility
         endpoints; the unified execution endpoint is for cards, payloads and
-        employees. The import execution endpoint is used after this read-only
+        employees and address pages. The import execution endpoint is used after this read-only
         validation step.
       x-permission: import.validate
       x-data-scope: ORG_SUBTREE
@@ -989,7 +1123,7 @@ paths:
               required: [file, templateType]
               properties:
                 file: { type: string, format: binary }
-                templateType: { type: string, enum: [asset, payload, employee, assignment, asset_payload_relation, organization] }
+                templateType: { type: string, enum: [asset, payload, employee, assignment, asset_payload_relation, organization, address_page] }
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '200': { $ref: '#/components/responses/Success' }
@@ -1004,7 +1138,7 @@ paths:
       tags: [imports]
       operationId: executeUnifiedImport
       x-owner: API/后端/导入
-      summary: Execute a card, payload or employee CSV import
+      summary: Execute a card, payload, address page or employee CSV import
       description: >-
         Requires a pre-validated UTF-8 CSV and an Idempotency-Key. At most 1,000
         rows execute synchronously; larger files create a Celery batch and return
@@ -1014,7 +1148,7 @@ paths:
         failure reports or logs.
       x-permission: import.validate
       x-data-scope: ORG_SUBTREE
-      x-idempotency: Idempotency-Key
+      x-idempotency: domain_key_import_batch
       x-audit: true
       x-status: reviewed
       security: [{ sessionCookie: [] }]
@@ -1032,7 +1166,7 @@ paths:
               required: [file, templateType]
               properties:
                 file: { type: string, format: binary }
-                templateType: { type: string, enum: [asset, payload, employee] }
+                templateType: { type: string, enum: [asset, payload, employee, address_page] }
       responses:
         '200':
           description: Synchronous import result.
@@ -1062,7 +1196,8 @@ paths:
       description: >-
         Returns a UTF-8 BOM CSV with an exact fixed header. Supported templateType
         values are asset, payload and employee. All headers and enum values in
-        these three templates are concise Chinese labels.
+        these templates are concise Chinese labels. The address_page template uses
+        地址编码,地址标识,URL,实际内容,组织编码,内容类型,说明 and missing rows never disable data.
       x-permission: import.validate
       x-data-scope: ORG_SUBTREE
       x-idempotency: none
@@ -1073,7 +1208,7 @@ paths:
         - in: path
           name: templateType
           required: true
-          schema: { type: string, enum: [asset, payload, employee] }
+          schema: { type: string, enum: [asset, payload, employee, address_page] }
       responses:
         '200':
           description: UTF-8 BOM CSV template
@@ -1090,7 +1225,7 @@ paths:
       x-owner: API/后端/导入
       summary: Get an import batch result
       x-permission: import.validate
-      x-data-scope: ORG_SUBTREE
+      x-data-scope: EMPLOYEE_SELF
       x-idempotency: none
       x-audit: false
       x-status: reviewed
@@ -1117,7 +1252,7 @@ paths:
       x-owner: API/后端/导入
       summary: Download an import batch failure report
       x-permission: import.validate
-      x-data-scope: ORG_SUBTREE
+      x-data-scope: EMPLOYEE_SELF
       x-idempotency: none
       x-audit: false
       x-status: reviewed
@@ -1299,7 +1434,7 @@ paths:
           required: true
           schema:
             type: string
-            enum: [organizations, employees, touchpoint-assets, touchpoint-payloads, assignments, access-events, audit-logs, analytics]
+            enum: [organizations, employees, touchpoint-assets, touchpoint-payloads, touchpoint-address-pages, assignments, access-events, audit-logs, analytics]
         - in: query
           name: mode
           required: false
@@ -1345,6 +1480,22 @@ paths:
           name: payloadSource
           required: false
           schema: { type: string, enum: ['1', '2', '3', '4'] }
+        - in: query
+          name: addressCode
+          required: false
+          schema: { type: string, maxLength: 64 }
+        - in: query
+          name: addressName
+          required: false
+          schema: { type: string, maxLength: 128 }
+        - in: query
+          name: url
+          required: false
+          schema: { type: string, maxLength: 2048 }
+        - in: query
+          name: contentType
+          required: false
+          schema: { type: integer, enum: [1, 2, 3] }
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '200':
@@ -1472,6 +1623,16 @@ components:
       content:
         application/json:
           schema: { $ref: '#/components/schemas/TouchpointAssetPatchRequest' }
+    TouchpointAddressPageCreate:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/TouchpointAddressPageCreateRequest' }
+    TouchpointAddressPagePatch:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/TouchpointAddressPagePatchRequest' }
     TouchpointPayloadCreate:
       required: true
       content:
@@ -1626,6 +1787,7 @@ components:
         assetId: { $ref: '#/components/schemas/Id' }
         payloadType: { type: integer, enum: [1, 2, 3, 99] }
         payloadValue: { type: string, minLength: 1, maxLength: 2048 }
+        addressPageId: { $ref: '#/components/schemas/NullableId' }
         payloadSource: { type: integer, enum: [1, 2, 3, 4] }
         providerType: { type: integer, enum: [1, 2, 3, 99], default: 1 }
         linkfortyLinkId: { type: [string, 'null'], format: uuid }
@@ -1636,9 +1798,34 @@ components:
       minProperties: 1
       properties:
         payloadValue: { type: string, minLength: 1, maxLength: 2048 }
+        addressPageId: { $ref: '#/components/schemas/NullableId' }
         payloadSource: { type: integer, enum: [1, 2, 3, 4] }
         providerType: { type: integer, enum: [1, 2, 3, 99] }
         linkfortyLinkId: { type: [string, 'null'], format: uuid }
+        metadata: { $ref: '#/components/schemas/Metadata' }
+    TouchpointAddressPageCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [addressCode, addressName, url, orgId]
+      properties:
+        addressCode: { type: string, minLength: 1, maxLength: 64 }
+        addressName: { type: string, minLength: 1, maxLength: 128 }
+        url: { type: string, minLength: 1, maxLength: 2048, description: '地址展示值；可为小程序、APP 或网页载荷，不限制 HTTP/HTTPS scheme。' }
+        targetUrl: { type: [string, 'null'], minLength: 1, maxLength: 2048, description: '实际目标内容；可为小程序、APP 或网页载荷，不限制 HTTP/HTTPS scheme；缺省时取 url。' }
+        contentType: { type: integer, enum: [1, 2, 3], default: 3, description: '1 小程序，2 APP，3 网页' }
+        orgId: { $ref: '#/components/schemas/Id' }
+        description: { type: [string, 'null'], maxLength: 500 }
+        metadata: { $ref: '#/components/schemas/Metadata' }
+    TouchpointAddressPagePatchRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        addressName: { type: string, minLength: 1, maxLength: 128 }
+        url: { type: string, minLength: 1, maxLength: 2048 }
+        targetUrl: { type: [string, 'null'], minLength: 1, maxLength: 2048, description: '实际目标内容；不限制 HTTP/HTTPS scheme。' }
+        contentType: { type: integer, enum: [1, 2, 3], description: '1 小程序，2 APP，3 网页' }
+        description: { type: [string, 'null'], maxLength: 500 }
         metadata: { $ref: '#/components/schemas/Metadata' }
     AssignmentCreateRequest:
       type: object
@@ -1710,7 +1897,7 @@ components:
     TouchpointPayload:
       type: object
       additionalProperties: false
-      required: [id, assetId, payloadType, payloadValue, payloadSource, providerType, status]
+      required: [id, assetId, payloadType, payloadValue, payloadSource, providerType, status, addressPageId, addressCode, addressName, targetUrl]
       properties:
         id: { $ref: '#/components/schemas/Id' }
         assetId: { $ref: '#/components/schemas/Id' }
@@ -1718,11 +1905,52 @@ components:
         employeeId: { $ref: '#/components/schemas/NullableId' }
         payloadType: { type: integer }
         payloadValue: { type: string }
+        addressPageId: { $ref: '#/components/schemas/NullableId' }
+        addressCode: { type: [string, 'null'] }
+        addressName: { type: [string, 'null'] }
+        targetUrl: { type: [string, 'null'], maxLength: 2048 }
         payloadSource: { type: integer }
         providerType: { type: integer }
         linkfortyLinkId: { type: [string, 'null'], format: uuid }
         status: { $ref: '#/components/schemas/Status' }
         metadata: { $ref: '#/components/schemas/Metadata' }
+    TouchpointAddressPage:
+      type: object
+      additionalProperties: false
+      required: [id, addressCode, addressName, url, contentType, targetUrl, orgId, orgName, status, description, metadata]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        addressCode: { type: string, maxLength: 64 }
+        addressName: { type: string, maxLength: 128 }
+        url: { type: string, maxLength: 2048 }
+        contentType: { type: integer, enum: [1, 2, 3] }
+        targetUrl: { type: string, maxLength: 2048 }
+        orgId: { $ref: '#/components/schemas/Id' }
+        orgName: { type: string }
+        status: { type: integer, enum: [0, 1] }
+        description: { type: [string, 'null'] }
+        metadata: { $ref: '#/components/schemas/Metadata' }
+        createdAt: { type: [string, 'null'], format: date-time }
+        updatedAt: { type: [string, 'null'], format: date-time }
+    TouchpointAddressPageOption:
+      type: object
+      additionalProperties: false
+      required: [id, addressCode, addressName, url, contentType, targetUrl]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        addressCode: { type: string }
+        addressName: { type: string }
+        url: { type: string }
+        contentType: { type: integer, enum: [1, 2, 3] }
+        targetUrl: { type: string }
+    TouchpointAddressPageOptionsData:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/TouchpointAddressPageOption' }
     Assignment:
       type: object
       additionalProperties: false
@@ -1968,7 +2196,7 @@ components:
       required: [batchId, templateType, status, total, succeeded, failed]
       properties:
         batchId: { $ref: '#/components/schemas/Id' }
-        templateType: { type: string, enum: [asset, payload, employee] }
+        templateType: { type: string, enum: [asset, payload, employee, address_page] }
         status: { type: string, enum: [queued, running, completed, failed] }
         total: { type: integer, minimum: 0 }
         succeeded: { type: integer, minimum: 0 }
