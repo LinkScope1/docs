@@ -5,7 +5,7 @@ Casdoor 是权限编码唯一来源。以下编码是 V1.3.2 本地冻结契约�
 | 权限编码 | 方法 | 路径 | 数据范围 | 审计 |
 |---|---|---|---|---:|
 | `authenticated` | GET | `/api/v1/auth/me` | `EMPLOYEE_SELF` | 否 |
-| `organization.read` | GET | `/api/v1/organizations`、`/api/v1/organizations/{id}` | `ORG_SUBTREE` | 否 |
+| `organization.read` | GET | `/api/v1/organizations`、`/api/v1/organizations/tree`、`/api/v1/organizations/{id}` | `ORG_SUBTREE` | 否 |
 | `organization.manage` | POST/PATCH/POST command | `/api/v1/organizations/**` | `ORG_SUBTREE` | 是 |
 | `employee.read` | GET | `/api/v1/employees`、`/api/v1/employees/{id}` | `ORG_SUBTREE` | 否 |
 | `employee.manage` | POST/PATCH/POST command | `/api/v1/employees/**` | `ORG_SUBTREE` | 是 |

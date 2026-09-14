@@ -182,7 +182,7 @@ paths:
       summary: Create an organization
       x-permission: organization.manage
       x-data-scope: ORG_SUBTREE
-      x-idempotency: domain_key_org_code
+      x-idempotency: domain_key_parent_org_name
       x-audit: true
       x-status: reviewed
       security: [{ sessionCookie: [] }]
@@ -192,6 +192,24 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '409': { $ref: '#/components/responses/Conflict' }
+
+  /organizations/tree:
+    get:
+      tags: [organizations]
+      operationId: listOrganizationTree
+      x-owner: API/后端
+      summary: List organizations as a scoped tree
+      description: The response is always filtered by the caller AccessContext. ORG_SELF returns only the current organization; ORG_SUBTREE returns the authorized subtree.
+      x-permission: organization.read
+      x-data-scope: ORG_SUBTREE
+      x-idempotency: none
+      x-audit: false
+      x-status: reviewed
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
 
   /organizations/{id}:
     parameters: [{ $ref: '#/components/parameters/Id' }]
@@ -1709,9 +1727,9 @@ components:
     OrganizationCreateRequest:
       type: object
       additionalProperties: false
-      required: [orgCode, orgName]
+      required: [orgName]
       properties:
-        orgCode: { type: string, maxLength: 64, pattern: '^1([0-9]{3})*$' }
+        parentOrganizationId: { $ref: '#/components/schemas/NullableId' }
         orgName: { type: string, minLength: 1, maxLength: 128 }
         sortNo: { type: integer, default: 100 }
         locationCode: { type: [string, 'null'], maxLength: 64 }
@@ -1719,6 +1737,18 @@ components:
         contactName: { type: [string, 'null'], maxLength: 100 }
         contactPhone: { type: [string, 'null'], maxLength: 32, writeOnly: true }
         description: { type: [string, 'null'], maxLength: 500 }
+    OrganizationTreeNode:
+      type: object
+      additionalProperties: false
+      required: [id, orgCode, orgName, status, children]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        orgCode: { type: string }
+        orgName: { type: string }
+        status: { $ref: '#/components/schemas/Status' }
+        children:
+          type: array
+          items: { $ref: '#/components/schemas/OrganizationTreeNode' }
     OrganizationPatchRequest:
       type: object
       additionalProperties: false
@@ -2219,6 +2249,8 @@ components:
           oneOf:
             - { $ref: '#/components/schemas/Page' }
             - { $ref: '#/components/schemas/Organization' }
+            - type: array
+              items: { $ref: '#/components/schemas/OrganizationTreeNode' }
             - { $ref: '#/components/schemas/Employee' }
             - { $ref: '#/components/schemas/TouchpointAsset' }
             - { $ref: '#/components/schemas/TouchpointPayload' }
