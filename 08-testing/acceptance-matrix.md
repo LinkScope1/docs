@@ -9,7 +9,7 @@
 | M1-001 | Casdoor 登录 | `/auth/me` | JWT、Claim 缺失、停用员工、越权 | 条件开发：真实 Casdoor 外部契约待确认 |
 | M2-001 | 组织维护 | `organization_units` | 编码唯一、前缀分段、停用阻断 | 待测 |
 | M2-002 | 员工维护 | `employees` | 员工编码唯一、组织范围、状态 | 待测 |
-| M3-001 | 触点资产 | `touchpoint_assets` | 资产编码、UID 唯一、状态、范围字段 | 待测 |
+| M3-001 | 触点资产 | `touchpoint_assets` | 卡ID格式、按 Asia/Shanghai 业务日递增、并发唯一、资产编码、UID 唯一、状态、范围字段、导出 | 待测 |
 | M3-002 | 载体内容 | `touchpoint_payloads` | 内容类型、实际写入值、范围同步、LinkForty 逻辑引用、无本地同步状态字段；地址切换保持 `payload_value`/Link ID 并更新 Core 目标快照 | 待测 |
 | M3-003 | 可复用地址页面 | `touchpoint_address_pages`、`/touchpoint-address-pages` | 组织范围、地址编码唯一、内容类型（小程序/APP/网页）、`url` 原始值兼容、Core 目标传播、失败补偿、启停保留历史、Payload 下拉选项 | 待测 |
 | M4-001 | 绑定 | `touchpoint_employee_assignments` | 重叠、当前唯一、历史无快照、转交 | 待测 |
