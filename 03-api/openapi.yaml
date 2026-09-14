@@ -450,6 +450,11 @@ paths:
           required: false
           schema: { type: integer, enum: [0, 1, 2, 9] }
         - in: query
+          name: assetId
+          required: false
+          description: Card ID prefix; a complete card ID uniquely identifies one asset.
+          schema: { type: string, maxLength: 13, pattern: '^PK[0-9]{0,11}$' }
+        - in: query
           name: assetCode
           required: false
           schema: { type: string, maxLength: 64 }
@@ -1822,6 +1827,7 @@ components:
     TouchpointAssetCreateRequest:
       type: object
       additionalProperties: false
+      description: assetId is server-generated after creation and must not be submitted by the client.
       required: [assetCode, orgId]
       properties:
         assetCode: { type: string, minLength: 1, maxLength: 64 }
@@ -1951,10 +1957,11 @@ components:
     TouchpointAsset:
       type: object
       additionalProperties: false
-      required: [id, assetCode, assetType, orgId, assetStatus]
+      required: [id, assetId, assetCode, assetType, orgId, assetStatus]
       properties:
         id: { $ref: '#/components/schemas/Id' }
-        assetCode: { type: string }
+        assetId: { type: string, minLength: 13, maxLength: 13, pattern: '^PK[0-9]{11}$' }
+        assetCode: { type: string, maxLength: 64 }
         assetType: { type: integer, const: 1 }
         carrierUid: { type: [string, 'null'] }
         orgId: { $ref: '#/components/schemas/Id' }
@@ -2485,7 +2492,8 @@ components:
         application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } }
     Conflict:
       description: >-
-        Unique, state or assignment conflict. M5 Webhook state conflicts use
+        Unique, state, assignment or daily card-ID sequence conflict. M3 card
+        ID exhaustion uses ASSET_ID_EXHAUSTED; M5 Webhook state conflicts use
         STATE_CONFLICT.
       headers:
         X-Request-ID: { $ref: '#/components/headers/RequestId' }
