@@ -966,12 +966,14 @@ paths:
       x-owner: API/后端/导入
       summary: Validate an import file without writing business tables
       description: >-
-       Synchronous, read-only CSV pre-validation. Only assignment rows carry
-       the required explicit operation column, whose accepted values are bind,
-       unbind and transfer. Rows omitted from the CSV are ignored and never
-       imply deletion, disabling or unbinding. Employee and organization
-       templates are also supported for pre-validation; the import execution
-       endpoints are exposed separately for small master-data batches.
+        Synchronous, read-only CSV pre-validation. The card, payload and employee
+        templates use complete, fixed Chinese headers and Chinese enum values.
+        Headers with missing, duplicate or unknown columns are rejected. Rows
+        omitted from the CSV are ignored and never imply deletion, disabling or
+        unbinding. Assignment and organization templates remain compatibility
+        endpoints; the unified execution endpoint is for cards, payloads and
+        employees. The import execution endpoint is used after this read-only
+        validation step.
       x-permission: import.validate
       x-data-scope: ORG_SUBTREE
       x-idempotency: none
@@ -987,7 +989,7 @@ paths:
               required: [file, templateType]
               properties:
                 file: { type: string, format: binary }
-                templateType: { type: string, enum: [payload, assignment, asset_payload_relation, employee, organization] }
+                templateType: { type: string, enum: [asset, payload, employee, assignment, asset_payload_relation, organization] }
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '200': { $ref: '#/components/responses/Success' }
@@ -997,6 +999,143 @@ paths:
         '415': { $ref: '#/components/responses/ImportFileTypeInvalid' }
         '422': { $ref: '#/components/responses/RequestSchemaInvalid' }
 
+  /imports/execute:
+    post:
+      tags: [imports]
+      operationId: executeUnifiedImport
+      x-owner: API/后端/导入
+      summary: Execute a card, payload or employee CSV import
+      description: >-
+        Requires a pre-validated UTF-8 CSV and an Idempotency-Key. At most 1,000
+        rows execute synchronously; larger files create a Celery batch and return
+        202. Each row is committed independently. Repeating the same key returns
+        the existing batch and missing rows never delete, disable, unbind or
+        transfer existing data. Payload values are never included in ordinary
+        failure reports or logs.
+      x-permission: import.validate
+      x-data-scope: ORG_SUBTREE
+      x-idempotency: Idempotency-Key
+      x-audit: true
+      x-status: reviewed
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 128 }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, templateType]
+              properties:
+                file: { type: string, format: binary }
+                templateType: { type: string, enum: [asset, payload, employee] }
+      responses:
+        '200':
+          description: Synchronous import result.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ImportExecutionSuccess' }
+        '202':
+          description: Import batch accepted for Celery execution.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ImportBatchSuccess' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '413': { $ref: '#/components/responses/ImportFileTooLarge' }
+        '415': { $ref: '#/components/responses/ImportFileTypeInvalid' }
+        '422': { $ref: '#/components/responses/RequestSchemaInvalid' }
+        '503': { $ref: '#/components/responses/DataSourceUnavailable' }
+
+  /imports/templates/{templateType}:
+    get:
+      tags: [imports]
+      operationId: downloadUnifiedImportTemplate
+      x-owner: API/后端/导入
+      summary: Download a Chinese CSV import template
+      description: >-
+        Returns a UTF-8 BOM CSV with an exact fixed header. Supported templateType
+        values are asset, payload and employee. All headers and enum values in
+        these three templates are concise Chinese labels.
+      x-permission: import.validate
+      x-data-scope: ORG_SUBTREE
+      x-idempotency: none
+      x-audit: false
+      x-status: reviewed
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - in: path
+          name: templateType
+          required: true
+          schema: { type: string, enum: [asset, payload, employee] }
+      responses:
+        '200':
+          description: UTF-8 BOM CSV template
+          content:
+            text/csv: { schema: { type: string, format: binary } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/RequestSchemaInvalid' }
+
+  /imports/{batchId}:
+    get:
+      tags: [imports]
+      operationId: getImportBatch
+      x-owner: API/后端/导入
+      summary: Get an import batch result
+      x-permission: import.validate
+      x-data-scope: ORG_SUBTREE
+      x-idempotency: none
+      x-audit: false
+      x-status: reviewed
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - in: path
+          name: batchId
+          required: true
+          schema: { type: string, pattern: '^[0-9]*[1-9][0-9]*$' }
+      responses:
+        '200':
+          description: Import batch status
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ImportBatchSuccess' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /imports/{batchId}/failure-report:
+    get:
+      tags: [imports]
+      operationId: downloadImportFailureReport
+      x-owner: API/后端/导入
+      summary: Download an import batch failure report
+      x-permission: import.validate
+      x-data-scope: ORG_SUBTREE
+      x-idempotency: none
+      x-audit: false
+      x-status: reviewed
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - in: path
+          name: batchId
+          required: true
+          schema: { type: string, pattern: '^[0-9]*[1-9][0-9]*$' }
+      responses:
+        '200':
+          description: UTF-8 BOM CSV failure report without raw payload values.
+          content:
+            text/csv: { schema: { type: string, format: binary } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
   /imports/templates/employees:
     get:
       tags: [imports]
@@ -1004,11 +1143,11 @@ paths:
       x-owner: API/后端/导入
       summary: Download the employee master-data CSV template
       description: >-
-        Downloads a UTF-8 BOM CSV named 员工导入模板.csv with the fixed header
-        员工编号,姓名,所属组织编码,手机号,状态,备注.
-        员工编号, 姓名 and 所属组织编码 are required. 手机号,
-        status and description are optional; status accepts enabled or
-        disabled, and is disabled by default when creating a new employee.
+        Downloads a UTF-8 BOM CSV named 员工导入模板.csv with the fixed Chinese
+        header 员工编号,姓名,组织编码,手机号,状态,备注.
+        员工编号, 姓名 and 组织编码 are required. 手机号、状态 and 备注 are
+        optional; status accepts 正常 or 停用. When omitted, a new employee is
+        created as 正常 and an existing employee keeps its current status.
         The template writes its phone sample in the Excel text-literal form
         ="13800001234"; the importer safely restores that form to a phone
         number. The two sample rows must be replaced or deleted before upload.
@@ -1141,7 +1280,13 @@ paths:
       tags: [exports]
       operationId: exportResource
       x-owner: API/后端/导出
-      summary: Synchronously export a whitelisted resource within the caller scope
+      summary: Export a whitelisted resource within the caller scope and page filters
+      description: >-
+        Exports the intersection of the caller's data scope and the page filter
+        parameters. Card, employee and payload exports use concise Chinese
+        headers and Chinese enum values. Ordinary payload exports omit payloadValue;
+        mode=content includes it only with the export.payload-content permission
+        and a second confirmation in the client. Results are UTF-8 CSV with BOM.
       x-permission: export.read
       x-data-scope: ORG_SUBTREE
       x-idempotency: none
@@ -1155,6 +1300,51 @@ paths:
           schema:
             type: string
             enum: [organizations, employees, touchpoint-assets, touchpoint-payloads, assignments, access-events, audit-logs, analytics]
+        - in: query
+          name: mode
+          required: false
+          description: Use content only for a controlled raw payload-value export.
+          schema: { type: string, enum: [standard, content], default: standard }
+        - in: query
+          name: employeeCode
+          required: false
+          schema: { type: string, maxLength: 64 }
+        - in: query
+          name: employeeName
+          required: false
+          schema: { type: string, maxLength: 100 }
+        - in: query
+          name: assetCode
+          required: false
+          schema: { type: string, maxLength: 64 }
+        - in: query
+          name: carrierUid
+          required: false
+          schema: { type: string, maxLength: 128 }
+        - in: query
+          name: orgCode
+          required: false
+          schema: { type: string, maxLength: 64 }
+        - in: query
+          name: employeeId
+          required: false
+          schema: { $ref: '#/components/schemas/Id' }
+        - in: query
+          name: assetId
+          required: false
+          schema: { $ref: '#/components/schemas/Id' }
+        - in: query
+          name: status
+          required: false
+          schema: { type: string, enum: ['0', '1', '2', '3'] }
+        - in: query
+          name: assetStatus
+          required: false
+          schema: { type: string, enum: ['0', '1', '2', '9'] }
+        - in: query
+          name: payloadSource
+          required: false
+          schema: { type: string, enum: ['1', '2', '3', '4'] }
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '200':
@@ -1667,14 +1857,14 @@ components:
       additionalProperties: false
       required: [filename, contentType, encoding, content]
       properties:
-        filename: { type: string, const: 员工导入失败报告.csv }
+        filename: { type: string }
         contentType: { type: string, const: text/csv;charset=utf-8 }
         encoding: { type: string, const: base64 }
         content:
           type: string
           description: >-
-            Base64-encoded UTF-8 BOM CSV containing only failed rows. Columns
-            are 行号、员工编号、姓名、所属组织编码、手机号、状态（原文件）、备注、操作、错误代码、错误原因.
+            Base64-encoded UTF-8 BOM CSV containing only failed rows. It never
+            includes raw payload values or complete phone numbers.
     EmployeeImportExecutionData:
       type: object
       additionalProperties: false
@@ -1738,6 +1928,59 @@ components:
       properties:
         requestId: { type: string }
         data: { $ref: '#/components/schemas/OrganizationImportExecutionData' }
+    UnifiedImportRowResult:
+      type: object
+      additionalProperties: false
+      required: [rowNumber, status]
+      properties:
+        rowNumber: { type: integer, minimum: 2 }
+        operation: { type: [string, 'null'], enum: [create, update, skip, 'null'] }
+        status: { type: string, enum: [success, failed] }
+        errorCode: { type: [string, 'null'] }
+        message: { type: [string, 'null'] }
+    UnifiedImportExecutionData:
+      type: object
+      additionalProperties: false
+      required: [batchId, status, total, succeeded, failed, failureReport, rows]
+      properties:
+        batchId: { $ref: '#/components/schemas/Id' }
+        status: { type: string, enum: [completed, failed] }
+        total: { type: integer, minimum: 0 }
+        succeeded: { type: integer, minimum: 0 }
+        failed: { type: integer, minimum: 0 }
+        failureReport:
+          oneOf:
+            - { $ref: '#/components/schemas/ImportFailureReport' }
+            - { type: 'null' }
+        rows:
+          type: array
+          items: { $ref: '#/components/schemas/UnifiedImportRowResult' }
+    ImportExecutionSuccess:
+      type: object
+      additionalProperties: false
+      required: [requestId, data]
+      properties:
+        requestId: { type: string }
+        data: { $ref: '#/components/schemas/UnifiedImportExecutionData' }
+    ImportBatchData:
+      type: object
+      additionalProperties: false
+      required: [batchId, templateType, status, total, succeeded, failed]
+      properties:
+        batchId: { $ref: '#/components/schemas/Id' }
+        templateType: { type: string, enum: [asset, payload, employee] }
+        status: { type: string, enum: [queued, running, completed, failed] }
+        total: { type: integer, minimum: 0 }
+        succeeded: { type: integer, minimum: 0 }
+        failed: { type: integer, minimum: 0 }
+        result: { type: object, additionalProperties: true }
+    ImportBatchSuccess:
+      type: object
+      additionalProperties: false
+      required: [requestId, data]
+      properties:
+        requestId: { type: string }
+        data: { $ref: '#/components/schemas/ImportBatchData' }
     SuccessEnvelope:
       type: object
       required: [requestId, data]
