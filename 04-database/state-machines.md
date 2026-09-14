@@ -69,8 +69,9 @@
 | 相同状态 | 相同状态 | 幂等成功 | 不改变既有 Payload，不自动重写 NFC 或 LinkForty |
 
 - 新建地址页面默认启用；地址编码和责任组织创建后不可修改。
-- 只有启用地址页面才能出现在目标资产的选择下拉框中。已关联后再停用，不会使历史 Payload 失效，也不会自动改写 `payload_value` 或 `target_url`。
-- 地址页面的 `target_url` 可承载小程序、APP 或网页真实内容，不以 HTTP/HTTPS scheme 作为有效性条件。
+- 只有启用地址页面才能出现在目标资产的选择下拉框中。已关联后再停用，不会使历史 Payload 失效，也不会自动改写 `payload_value` 或删除 `target_url` 快照。
+- `url` 只做首尾空格清理，不做通用 HTTP/HTTPS 审查；进入 Core 时，小程序必须是公开 HTTPS Universal Link，APP 必须解析为公开 HTTPS Bridge URL，网页按 Core 的目标校验处理。
+- 地址页面的目标配置、内容类型或 APP Bridge 配置变化触发既有关联 Payload 的实时传播；展示名称、说明和无关元数据变化不触发传播。传播先校验外部快照，Core 更新失败或银行落库失败时执行补偿。
 
 ## 5. M4 绑定状态
 

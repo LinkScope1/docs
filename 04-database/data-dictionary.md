@@ -205,7 +205,7 @@ asset_code 用于业务查询和导入，carrier_uid 用于 NFC 物理盘点，�
 | payload_type | SMALLINT | 否 | 1 | 1 短链 / 2 URL / 3 文本 / 99 其他 |
 | payload_value | VARCHAR(2048) | 否 | — | 卡内实际写入内容，不是最终目标 |
 | address_page_id | BIGINT | 是 | — | 可复用地址页面逻辑引用；选择时由 Service 校验启用状态和组织范围 |
-| target_url | VARCHAR(2048) | 是 | — | 关联地址页面的实际目标内容快照；手工 URL 类型内容时可由 payload_value 得出；不强制 HTTP/HTTPS |
+| target_url | VARCHAR(2048) | 是 | — | LinkForty Core 目标快照；网页/小程序为实际目标，APP 为按 Link ID 解析后的 Bridge URL；手工 URL 类型内容时可由 payload_value 得出 |
 | payload_source | SMALLINT | 否 | — | 1 供应商预写 / 2 本系统 / 3 外部导入 / 4 人工录入 |
 | provider_type | SMALLINT | 否 | 1 | 1 LinkForty / 2 供应商 / 3 无平台 / 99 其他 |
 | linkforty_link_id | UUID | 是 | — | LinkForty 链接逻辑引用；非空时全局唯一，一个外部 Link 只能关联一条 Payload |
@@ -221,17 +221,19 @@ asset_code 用于业务查询和导入，carrier_uid 用于 NFC 物理盘点，�
 ## 4.5 touchpoint_address_pages
 
 可复用地址页面主数据。`org_id` 是责任组织；地址页面可供同组织及下级资产使用。
-`content_type` 区分小程序、APP 和网页，`target_url` 保存实际内容，不强制要求
-HTTP/HTTPS scheme。`url` 保留为管理页面展示值；没有独立目标值时由 Service 使用
-`url` 初始化 `target_url`。
+`content_type` 区分小程序、APP 和网页。`url` 是原始/展示值，只做首尾空格清理；
+`target_url` 是进入 LinkForty Core 前使用的目标配置。网页和小程序通常与 `url`
+一致；APP 在提供 `metadata.app` 和 Bridge 基础地址时保存可按 Link ID 解析的
+`app-open.html` 模板，Payload 中保存解析后的实际 Bridge URL。银行业务字段不做通用
+HTTP/HTTPS 格式审查，但 Core 集成会执行内容类型所需的目标校验。
 
 | 字段 | 类型 | 可空 | 默认值 | 约束/说明 |
 | --- | --- | --- | --- | --- |
 | id | BIGINT | 否 | 雪花算法 | PK；API 以字符串传输 |
 | address_code | VARCHAR(64) | 否 | — | 全局唯一；创建和导入幂等键 |
 | address_name | VARCHAR(128) | 否 | — | 页面显示名称/地址标识 |
-| url | VARCHAR(2048) | 否 | — | 管理页面展示值；仅校验非空和长度 |
-| target_url | VARCHAR(2048) | 否 | — | 实际目标内容；仅校验非空和长度，不审查 HTTP/HTTPS 格式 |
+| url | VARCHAR(2048) | 否 | — | 原始/管理页面展示值；首尾空格清理，仅校验非空和长度 |
+| target_url | VARCHAR(2048) | 否 | — | Core 目标配置；仅校验非空和长度，不做通用 HTTP/HTTPS 格式审查；APP 可为 Bridge 模板 |
 | content_type | SMALLINT | 否 | 3 | 1 小程序 / 2 APP / 3 网页 |
 | org_id | BIGINT | 否 | — | 责任组织，逻辑引用 `organization_units.id` |
 | status | SMALLINT | 否 | 1 | 0 停用 / 1 启用 |
@@ -242,8 +244,11 @@ HTTP/HTTPS scheme。`url` 保留为管理页面展示值；没有独立目标值
 | created_at | TIMESTAMPTZ | 否 | NOW() | 创建时间 |
 | updated_at | TIMESTAMPTZ | 否 | NOW() | 修改时间 |
 
-地址页面修改或停用不会自动重写既有 `touchpoint_payloads`，也不会自动改变 NFC
-卡内容或 LinkForty 外部状态。被 Payload 使用的地址页面不得物理删除。
+地址页面仅修改 `address_name`、`description` 或无关展示元数据时，不触发 Core 更新。
+网页目标、小程序 Universal Link、APP Bridge 配置或 `target_url` 变化时，Service 会锁定
+关联 Payload，按 Link ID 去重更新 Core，并同步所有 Payload 的 `target_url` 快照；
+失败时使用旧目标补偿。`payload_value` 始终不变。停用不会删除历史 Payload、改写 NFC
+或自动切换目标；被 Payload 使用的地址页面不得物理删除。
 
 ## 4.6 touchpoint_employee_assignments
 
@@ -524,6 +529,7 @@ LinkForty 的 8 张现有表属于外部系统物理模型，本节仅用于说�
 - LinkForty 的 click_events 或 Webhook 事件通过 event_id、click_id 等逻辑字段进入 access_events。
 
 - touchpoint_payloads 不定义 external_sync_status；M3 负责 LinkForty 调用和外部同步编排，Worker 执行重试与补偿，成功、失败和补偿结果由 M1 通过 operation_logs 与 trace_id 审计。V1.3.2 不再存在 旧 M6 publish_status、version_no 或 last_published_at。
+- 目标切换通过 LinkForty API 更新同一个 `links.id`；网页和小程序使用直接目标，APP 使用 `card-switch-demo` 的 `app-open.html` Bridge。Core 与银行数据库无法形成单一事务，采用预读快照、Core 更新、银行落库和失败补偿实现最终一致。
 
 - 目标资源和路由规则不再作为银行后台到 LinkForty 的中间对象。
 

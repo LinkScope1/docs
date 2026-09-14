@@ -4,7 +4,7 @@
 
 - 绑定、解绑、转交和状态命令使用领域业务唯一键或命令键。
 - 资产、组织、员工和 Payload 创建使用业务唯一键；重复键返回冲突或首次业务结果，按接口契约执行。
-- LinkForty API 写入必须使用稳定的外部 `Idempotency-Key`，该能力需由 Core 正式契约和联调证据确认。
+- LinkForty 创建接口沿用现有稳定业务幂等策略；目标切换的 Core `PUT` 不添加 Core 尚未声明支持的幂等请求头，使用同 Link ID + 同目标的逻辑幂等。
 - Webhook 使用 `event_id` 全局唯一；`click_id` 只作非唯一逻辑引用。
 - `/imports/validate` 只读校验，不写业务表，不引入通用幂等表。
 - 地址页面以全局唯一 `addressCode` 作为创建和重复导入的领域幂等键；重复编码不创建第二条记录。
@@ -17,8 +17,9 @@
 - `click_id` 不得作为唯一键。
 - 数据库唯一约束是并发最终防线。
 - 领域命令重复提交必须返回幂等成功、状态冲突或唯一键冲突中的一种明确结果；不得重复产生业务事实或审计事实。
-- 外部 API 请求必须携带稳定的幂等标识。
-- 地址页面 PATCH 使用对象级版本/幂等策略；enable/disable 为状态命令，同一目标状态重复提交幂等成功。Payload 关联变更在同一 Service 事务中完成，选中的页面 `target_url` 必须从数据库读取。
+- 外部 API 请求按外部契约携带稳定标识；不向不支持的 Core `PUT` 强行添加请求头。
+- 地址页面 PATCH 使用对象级版本/幂等策略；enable/disable 为状态命令，同一目标状态重复提交幂等成功。Payload 地址切换使用 `POST /touchpoint-payloads/{id}/switch-address-page`，同一 Link、同一目标和同一地址页面返回 `NO_CHANGE`，不调用 Core。选中的页面目标必须由 Service 从数据库读取。
+- 地址页面目标传播按 Payload 加锁、按 Link ID 去重；Core 与银行数据库无法单一事务，使用外部状态预校验和补偿更新保证最终一致。银行落库失败也必须补偿 Core。
 
 ## V1.4 预留
 

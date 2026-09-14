@@ -29,12 +29,14 @@
 
 - 一期只支持 NFC 触点载体。
 - M3 同时维护可复用地址页面主数据；地址页面可按资产权限被载体内容选择，不属于 `target_resources` 或 `routing_rules`。
-- 地址页面至少包含责任组织 `org_id`、地址编码/标识、内容类型（小程序、APP、网页）、`target_url` 和 `status`；实际内容不强制要求 HTTP/HTTPS 格式。
+- 地址页面至少包含责任组织 `org_id`、地址编码/标识、内容类型（小程序、APP、网页）、`url`、`target_url` 和 `status`；`url` 只做首尾空格清理，不做通用 HTTP/HTTPS 审查。
+- 同一张 NFC 卡的 LinkForty 短链可以通过地址页面切换目标而不重新写卡：`payload_value` 和 `linkforty_link_id` 保持不变。网页和小程序直接把目标提交给 Core；小程序必须使用公开 HTTPS Universal Link；APP 使用 `card-switch-demo` 的 `app-open.html` Bridge URL。
 - Casdoor 作为身份、角色和功能权限权威。
 - 银行后台用 Token 的 `employee_code` Claim 定位 `employees`，并按业务表范围字段执行数据过滤。
 - `access_events` 不分区，`event_id` 全局唯一，`click_id` 非唯一。
 - MVP 不包含银行办理量、办理金额和真实业务转化结果。
 - V1.3.2 不包含目标资源和路由发布。M3 通过 LinkForty API 发起外部调用，Worker 执行重试和补偿，M1 通过 `operation_logs` 和 `trace_id` 记录结果；`touchpoint_payloads` 不保存外部同步状态。
+- Core 与银行数据库不形成单一事务；目标切换采用 Core 更新优先、银行落库、失败补偿的最终一致方案。应用启动只做数据库连接检查，不自动执行 Alembic 迁移；迁移由部署流程显式执行。
 
 ## 明确不纳入本期
 

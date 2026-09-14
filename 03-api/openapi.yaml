@@ -773,6 +773,34 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '200': { $ref: '#/components/responses/Success' }
+  /touchpoint-payloads/{id}/switch-address-page:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    post:
+      tags: [touchpoint-payloads]
+      operationId: switchTouchpointPayloadAddressPage
+      x-owner: API/后端
+      summary: Switch an existing NFC short link to a reusable address page
+      description: >-
+        The bank backend reads the enabled address page, validates the asset
+        data scope and LinkForty snapshot, updates the same Core Link through
+        its API, and keeps payloadValue and linkfortyLinkId unchanged. NFC is
+        not rewritten. APP pages resolve to the card-switch-demo bridge URL;
+        mini-program pages require a public HTTPS Universal Link and call Core
+        directly without a bridge.
+      x-permission: touchpoint.payload.manage
+      x-required-permissions: [touchpoint.payload.manage, touchpoint.address-page.read]
+      x-data-scope: ASSET_SCOPE
+      x-idempotency: domain_key_link_target
+      x-audit: true
+      x-status: reviewed
+      security: [{ sessionCookie: [] }]
+      requestBody: { $ref: '#/components/requestBodies/TouchpointPayloadSwitchAddressPage' }
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '502': { $ref: '#/components/responses/BadGateway' }
   /touchpoint-payloads/{id}/enable:
     parameters: [{ $ref: '#/components/parameters/Id' }]
     post:
@@ -1661,6 +1689,11 @@ components:
       content:
         application/json:
           schema: { $ref: '#/components/schemas/TouchpointPayloadPatchRequest' }
+    TouchpointPayloadSwitchAddressPage:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/TouchpointPayloadSwitchAddressPageRequest' }
     AssignmentCreate:
       required: true
       content:
@@ -1828,11 +1861,18 @@ components:
       minProperties: 1
       properties:
         payloadValue: { type: string, minLength: 1, maxLength: 2048 }
+        targetUrl: { type: string, minLength: 1, maxLength: 2048, description: 'Legacy direct target command; new clients should use addressPageId or the switch endpoint.' }
         addressPageId: { $ref: '#/components/schemas/NullableId' }
         payloadSource: { type: integer, enum: [1, 2, 3, 4] }
         providerType: { type: integer, enum: [1, 2, 3, 99] }
         linkfortyLinkId: { type: [string, 'null'], format: uuid }
         metadata: { $ref: '#/components/schemas/Metadata' }
+    TouchpointPayloadSwitchAddressPageRequest:
+      type: object
+      additionalProperties: false
+      required: [addressPageId]
+      properties:
+        addressPageId: { $ref: '#/components/schemas/Id' }
     TouchpointAddressPageCreateRequest:
       type: object
       additionalProperties: false
@@ -1944,6 +1984,18 @@ components:
         linkfortyLinkId: { type: [string, 'null'], format: uuid }
         status: { $ref: '#/components/schemas/Status' }
         metadata: { $ref: '#/components/schemas/Metadata' }
+        switchResult: { $ref: '#/components/schemas/PayloadSwitchResult' }
+    PayloadSwitchResult:
+      type: object
+      additionalProperties: false
+      required: [mode, coreUpdated, requiresNfcRewrite, affectedPayloadCount, updatedLinkCount]
+      properties:
+        mode: { type: string, enum: [NO_CHANGE, LINKFORTY_DIRECT_REALTIME, LINKFORTY_BRIDGE_REALTIME, LINKFORTY_BATCH_REALTIME] }
+        coreUpdated: { type: boolean }
+        requiresNfcRewrite: { type: boolean }
+        affectedPayloadCount: { type: integer, minimum: 0 }
+        updatedLinkCount: { type: integer, minimum: 0 }
+        compensationFailed: { type: boolean }
     TouchpointAddressPage:
       type: object
       additionalProperties: false
@@ -1962,6 +2014,18 @@ components:
         metadata: { $ref: '#/components/schemas/Metadata' }
         createdAt: { type: [string, 'null'], format: date-time }
         updatedAt: { type: [string, 'null'], format: date-time }
+        propagation: { $ref: '#/components/schemas/AddressPagePropagationResult' }
+    AddressPagePropagationResult:
+      type: object
+      additionalProperties: false
+      required: [mode, coreUpdated, requiresNfcRewrite, affectedPayloadCount, updatedLinkCount]
+      properties:
+        mode: { type: string, enum: [NO_CHANGE, LINKFORTY_DIRECT_REALTIME, LINKFORTY_BRIDGE_REALTIME, LINKFORTY_BATCH_REALTIME] }
+        coreUpdated: { type: boolean }
+        requiresNfcRewrite: { type: boolean }
+        affectedPayloadCount: { type: integer, minimum: 0 }
+        updatedLinkCount: { type: integer, minimum: 0 }
+        compensationFailed: { type: boolean }
     TouchpointAddressPageOption:
       type: object
       additionalProperties: false
@@ -2381,6 +2445,12 @@ components:
         Business request failure. For M5 Webhook this includes
         WEBHOOK_EVENT_ID_MISSING and malformed JSON/envelope
         REQUEST_SCHEMA_INVALID responses.
+      headers:
+        X-Request-ID: { $ref: '#/components/headers/RequestId' }
+      content:
+        application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } }
+    BadGateway:
+      description: LinkForty Core target update failed or compensation could not complete.
       headers:
         X-Request-ID: { $ref: '#/components/headers/RequestId' }
       content:

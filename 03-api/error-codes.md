@@ -24,6 +24,17 @@
 | `EXPORT_LIMIT_EXCEEDED` | 413 | 同步导出超过 10 MiB 或 100,000 行限制 |
 | `NOT_IMPLEMENTED` | 501 | 已定义但尚未实现的工程占位能力 |
 | `INTERNAL_ERROR` | 500 | 未预期的系统错误 |
+| `LINKFORTY_LINK_REQUIRED` | 409 | Payload 没有关联可用于实时切换的 LinkForty Link ID |
+| `ADDRESS_PAGE_NOT_FOUND` | 404 | 地址页面不存在 |
+| `ADDRESS_PAGE_DISABLED` | 409 | 地址页面已停用，不能用于新的选择或切换 |
+| `ADDRESS_PAGE_OUT_OF_SCOPE` | 403 | 地址页面责任组织不在当前资产可使用范围 |
+| `ASSET_OUT_OF_SCOPE` | 403 | 目标资产不在当前用户管理范围 |
+| `TARGET_URL_INVALID` | 422 | 目标不满足内容类型或 LinkForty Core 的目标校验 |
+| `BRIDGE_CONFIG_REQUIRED` | 422/503 | APP Bridge 配置缺失或无法生成公开 HTTPS Bridge URL |
+| `EXTERNAL_STATE_CONFLICT` | 409 | LinkForty 当前目标与银行侧快照不一致 |
+| `LINKFORTY_UPDATE_FAILED` | 502 | LinkForty Link 目标更新失败 |
+| `LINKFORTY_COMPENSATION_FAILED` | 502 | 外部目标更新后补偿回滚失败，需要人工处理 |
+| `BANK_TRANSACTION_FAILED` | 500 | LinkForty 已更新但银行侧事务提交失败，已尝试补偿外部目标 |
 
 ## 使用规则
 
