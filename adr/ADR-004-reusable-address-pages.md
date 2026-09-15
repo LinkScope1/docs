@@ -19,7 +19,7 @@ Accepted（2026-09-14，代码增量已落地，真实数据库迁移验收待�
 - 页面不提供物理删除；停用不重写既有 Payload、NFC 内容或 LinkForty 状态。目标配置变化通过 `POST /touchpoint-payloads/{id}/switch-address-page` 或页面传播更新同一个 LinkForty Link；展示名称、说明和无关元数据变化不传播。
 - 网页和小程序直接将目标提交给 LinkForty Core；小程序要求公开 HTTPS Universal Link。APP 严格复用 `card-switch-demo` 的 `app-open.html` Bridge URL，使用 `metadata.app` 生成按 Link ID 区分的目标。
 - Core 与银行数据库无法形成单一事务；流程先预读外部目标快照，Core 更新成功后写银行库，银行落库失败或批量中途失败时按旧目标补偿。目标切换不重新写 NFC。
-- 地址页面导入沿用现有导入框架，以 `address_code` 幂等，缺失 CSV 行不触发停用、归档或删除。
+- 地址页面普通创建由服务端按内容类型生成 `address_code`；导入更新沿用 `address_code` 匹配，新增行可留空并自动生成；缺失 CSV 行不触发停用、归档或删除。
 
 ## 影响
 

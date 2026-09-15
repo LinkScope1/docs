@@ -2,6 +2,7 @@
 # url 仅作为展示/原始内容保存，trim 后不做通用 HTTP/HTTPS 审查。
 # target_url 是发送给 LinkForty Core 的目标快照；APP 页面由 metadata
 # 按 card-switch-demo/app-open.html 约定生成 Bridge URL，小程序只接受公开 HTTPS Universal Link。
+# addressCode 由服务端按 MINI/APP/WEB 类型前缀自动生成，普通创建请求不得提交。
 addressPages:
   x-canonical-path: /touchpoint-address-pages
   get:
@@ -23,8 +24,9 @@ addressPages:
     x-owner: API/后端
     x-permission: touchpoint.address-page.manage
     x-data-scope: ORG_SUBTREE
-    x-idempotency: domain_key_address_code
+    x-idempotency: server_generated_prefix_sequence
     x-audit: true
+    description: addressCode 由服务端生成并在响应返回；导入更新已有记录时保留原编码，新记录可留空由服务端生成。
     responses: {}
 
 addressPageOptions:
@@ -65,7 +67,7 @@ addressPageById:
     x-data-scope: ORG_SUBTREE
     x-idempotency: domain_key_object_version
     x-audit: true
-    description: 目标配置变化会传播到已关联且未永久失效的 Payload；Core 更新失败通过补偿回滚，展示字段变化不触发 Core。
+    description: addressCode 和 contentType 创建后不可修改；目标配置变化会传播到已关联且未永久失效的 Payload；Core 更新失败通过补偿回滚，展示字段变化不触发 Core。
 addressPageEnable:
   x-canonical-path: /touchpoint-address-pages/{id}/enable
   post:

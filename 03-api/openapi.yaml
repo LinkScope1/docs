@@ -309,6 +309,10 @@ paths:
           required: false
           schema: { type: string, maxLength: 64 }
         - in: query
+          name: employeeUid
+          required: false
+          schema: { type: string, maxLength: 64 }
+        - in: query
           name: employeeName
           required: false
           schema: { type: string, maxLength: 100 }
@@ -609,7 +613,7 @@ paths:
       summary: Create a reusable address page
       x-permission: touchpoint.address-page.manage
       x-data-scope: ORG_SUBTREE
-      x-idempotency: domain_key_address_code
+      x-idempotency: server_generated_prefix_sequence
       x-audit: true
       x-status: reviewed
       security: [{ sessionCookie: [] }]
@@ -1496,6 +1500,10 @@ paths:
           required: false
           schema: { type: string, maxLength: 64 }
         - in: query
+          name: employeeUid
+          required: false
+          schema: { type: string, maxLength: 64 }
+        - in: query
           name: employeeName
           required: false
           schema: { type: string, maxLength: 100 }
@@ -1778,11 +1786,12 @@ components:
     OrganizationTreeNode:
       type: object
       additionalProperties: false
-      required: [id, orgCode, orgName, status, children]
+      required: [id, orgCode, orgName, orgAbbr, status, children]
       properties:
         id: { $ref: '#/components/schemas/Id' }
         orgCode: { type: string }
         orgName: { type: string }
+        orgAbbr: { type: string, minLength: 2, maxLength: 12, pattern: '^[A-Z][A-Z0-9]{1,11}$', readOnly: true, description: '服务端生成且创建后稳定不变的机构缩写。' }
         status: { $ref: '#/components/schemas/Status' }
         children:
           type: array
@@ -1802,9 +1811,13 @@ components:
     EmployeeCreateRequest:
       type: object
       additionalProperties: false
+      description: >-
+        employeeCode is the HR/Casdoor-provided employee number and remains the
+        employee_code claim mapping used by authentication. employeeUid is
+        server-generated and is not accepted in this request or used for Casdoor authentication.
       required: [employeeCode, employeeName, orgId]
       properties:
-        employeeCode: { type: string, minLength: 1, maxLength: 64 }
+        employeeCode: { type: string, minLength: 1, maxLength: 64, description: '工号；继续作为 Casdoor Token 的 employee_code Claim 映射字段。' }
         employeeName: { type: string, minLength: 1, maxLength: 100 }
         orgId: { $ref: '#/components/schemas/Id' }
         phone: { type: [string, 'null'], maxLength: 32, writeOnly: true }
@@ -1882,13 +1895,16 @@ components:
     TouchpointAddressPageCreateRequest:
       type: object
       additionalProperties: false
-      required: [addressCode, addressName, url, orgId]
+      description: >-
+        addressCode is server-generated from contentType and is returned by the
+        response. It is not accepted from the client; existing address codes are
+        preserved only by the trusted import update path.
+      required: [addressName, url, orgId]
       properties:
-        addressCode: { type: string, minLength: 1, maxLength: 64 }
         addressName: { type: string, minLength: 1, maxLength: 128 }
         url: { type: string, minLength: 1, maxLength: 2048, description: '地址展示值；可为小程序、APP 或网页载荷，不限制 HTTP/HTTPS scheme。' }
         targetUrl: { type: [string, 'null'], minLength: 1, maxLength: 2048, description: '实际目标内容；可为小程序、APP 或网页载荷，不限制 HTTP/HTTPS scheme；缺省时取 url。' }
-        contentType: { type: integer, enum: [1, 2, 3], default: 3, description: '1 小程序，2 APP，3 网页' }
+        contentType: { type: integer, enum: [1, 2, 3], default: 3, description: '1 小程序，2 APP，3 网页；地址编码由服务端按类型自动生成' }
         orgId: { $ref: '#/components/schemas/Id' }
         description: { type: [string, 'null'], maxLength: 500 }
         metadata: { $ref: '#/components/schemas/Metadata' }
@@ -1929,11 +1945,12 @@ components:
     Organization:
       type: object
       additionalProperties: false
-      required: [id, orgCode, orgName, status]
+      required: [id, orgCode, orgName, orgAbbr, status]
       properties:
         id: { $ref: '#/components/schemas/Id' }
         orgCode: { type: string }
         orgName: { type: string }
+        orgAbbr: { type: string, minLength: 2, maxLength: 12, pattern: '^[A-Z][A-Z0-9]{1,11}$', readOnly: true, description: '服务端生成且创建后稳定不变的机构缩写。' }
         status: { $ref: '#/components/schemas/Status' }
         sortNo: { type: integer }
         locationCode: { type: [string, 'null'] }
@@ -1944,10 +1961,15 @@ components:
     Employee:
       type: object
       additionalProperties: false
-      required: [id, employeeCode, employeeName, orgId, orgName, status]
+      required: [id, employeeCode, employeeUid, employeeName, orgId, orgName, status]
+      description: >-
+        employeeCode is the employee number and Casdoor authentication mapping;
+        employeeUid is a separate server-generated display ID and never replaces
+        employeeCode for authentication.
       properties:
         id: { $ref: '#/components/schemas/Id' }
         employeeCode: { type: string }
+        employeeUid: { type: string, minLength: 1, maxLength: 64, pattern: '^[A-Z][A-Z0-9]{1,11}-E-[0-9]{6}$', readOnly: true, description: '服务端生成的员工ID，只读，不参与 Casdoor 认证。' }
         employeeName: { type: string }
         orgId: { $ref: '#/components/schemas/Id' }
         orgName: { type: string }
@@ -2009,7 +2031,7 @@ components:
       required: [id, addressCode, addressName, url, contentType, targetUrl, orgId, orgName, status, description, metadata]
       properties:
         id: { $ref: '#/components/schemas/Id' }
-        addressCode: { type: string, maxLength: 64 }
+        addressCode: { type: string, maxLength: 64, readOnly: true, description: '服务端生成的地址编码；历史非标准编码保持不变。' }
         addressName: { type: string, maxLength: 128 }
         url: { type: string, maxLength: 2048 }
         contentType: { type: integer, enum: [1, 2, 3] }
@@ -2039,7 +2061,7 @@ components:
       required: [id, addressCode, addressName, url, contentType, targetUrl]
       properties:
         id: { $ref: '#/components/schemas/Id' }
-        addressCode: { type: string }
+        addressCode: { type: string, readOnly: true, description: '服务端生成的地址编码。' }
         addressName: { type: string }
         url: { type: string }
         contentType: { type: integer, enum: [1, 2, 3] }
