@@ -296,6 +296,10 @@ paths:
       x-idempotency: none
       x-audit: false
       x-status: reviewed
+      description: >-
+        The associatedCardCount projection is populated only when the caller
+        also has touchpoint.assignment.read and touchpoint.asset.read; it is
+        null when the aggregate is not available under the caller's permissions.
       security: [{ sessionCookie: [] }]
       parameters:
         - { $ref: '#/components/parameters/Page' }
@@ -405,6 +409,45 @@ paths:
         '409': { $ref: '#/components/responses/Conflict' }
         '422': { $ref: '#/components/responses/RequestSchemaInvalid' }
         '500': { $ref: '#/components/responses/InternalError' }
+
+  /employees/{id}/associated-cards:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    get:
+      tags: [employees]
+      operationId: listEmployeeAssociatedCards
+      x-owner: API/后端
+      summary: List an employee's currently associated cards
+      description: >-
+        Returns current M4 bindings only. A card is counted when the assignment
+        has assignment_status=1 and effective_to is null. The response fields
+        are projections of the bank_admin database tables; payloadValue is not
+        returned. Address pages include database address-page fields referenced
+        by non-invalid Payload rows. In addition to employee.read, the backend
+        requires touchpoint.assignment.read and touchpoint.asset.read; missing
+        permissions return 403 and are never represented as a zero count. The
+        item mappings are assetId=touchpoint_assets.asset_id,
+        carrierUid=touchpoint_assets.carrier_uid,
+        supplierBatchNo=touchpoint_assets.supplier_batch_no,
+        assignmentStatus=touchpoint_employee_assignments.assignment_status,
+        assetStatus=touchpoint_assets.asset_status, and addressPages are
+        touchpoint_address_pages fields reached through
+        touchpoint_payloads.address_page_id.
+      x-permission: employee.read
+      x-data-scope: ORG_SUBTREE
+      x-idempotency: none
+      x-audit: false
+      x-status: reviewed
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200': { $ref: '#/components/responses/Success' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/RequestSchemaInvalid' }
+
   /employees/{id}/enable:
     parameters: [{ $ref: '#/components/parameters/Id' }]
     post:
@@ -2095,6 +2138,77 @@ components:
         phoneMasked: { type: [string, 'null'] }
         status: { $ref: '#/components/schemas/Status' }
         description: { type: [string, 'null'] }
+    EmployeeListItem:
+      type: object
+      additionalProperties: false
+      required: [id, employeeCode, employeeUid, employeeName, orgId, orgName, phoneMasked, status, associatedCardCount]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        employeeCode: { type: string }
+        employeeUid: { type: string, minLength: 1, maxLength: 64, pattern: '^[A-Z][A-Z0-9]{1,11}-E-[0-9]{6}$' }
+        employeeName: { type: string }
+        orgId: { $ref: '#/components/schemas/Id' }
+        orgName: { type: string }
+        phoneMasked: { type: [string, 'null'] }
+        status: { $ref: '#/components/schemas/Status' }
+        associatedCardCount: { type: [integer, 'null'], minimum: 0, description: '当前有效 M4 绑定卡数量；按 distinct asset_id 聚合。缺少 touchpoint.assignment.read 或 touchpoint.asset.read 时为 null，不表示数量为 0。' }
+    EmployeeListData:
+      type: object
+      additionalProperties: false
+      required: [items, page, pageSize, total]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/EmployeeListItem' }
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1, maximum: 100 }
+        total: { type: integer, minimum: 0 }
+    EmployeeAssociatedCardEmployee:
+      type: object
+      additionalProperties: false
+      required: [id, employeeCode, employeeUid, employeeName, orgId, orgName, status]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        employeeCode: { type: string }
+        employeeUid: { type: string, minLength: 1, maxLength: 64, pattern: '^[A-Z][A-Z0-9]{1,11}-E-[0-9]{6}$' }
+        employeeName: { type: string }
+        orgId: { $ref: '#/components/schemas/Id' }
+        orgName: { type: string }
+        status: { $ref: '#/components/schemas/Status' }
+    EmployeeAssociatedCardAddressPage:
+      type: object
+      additionalProperties: false
+      required: [id, addressCode, addressName, status]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        addressCode: { type: string, maxLength: 64 }
+        addressName: { type: string, maxLength: 128 }
+        status: { type: integer, enum: [0, 1] }
+    EmployeeAssociatedCardItem:
+      type: object
+      additionalProperties: false
+      required: [assetId, carrierUid, supplierBatchNo, assignmentStatus, assetStatus, addressPages]
+      properties:
+        assetId: { type: string, minLength: 13, maxLength: 13, pattern: '^PK[0-9]{11}$' }
+        carrierUid: { type: [string, 'null'], maxLength: 128 }
+        supplierBatchNo: { type: [string, 'null'], maxLength: 64 }
+        assignmentStatus: { type: integer, const: 1, description: '当前有效绑定关系。' }
+        assetStatus: { type: integer, enum: [0, 1, 2, 9] }
+        addressPages:
+          type: array
+          items: { $ref: '#/components/schemas/EmployeeAssociatedCardAddressPage' }
+    EmployeeAssociatedCardData:
+      type: object
+      additionalProperties: false
+      required: [employee, items, page, pageSize, total]
+      properties:
+        employee: { $ref: '#/components/schemas/EmployeeAssociatedCardEmployee' }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/EmployeeAssociatedCardItem' }
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1, maximum: 100 }
+        total: { type: integer, minimum: 0 }
     TouchpointAsset:
       type: object
       additionalProperties: false
@@ -2329,6 +2443,7 @@ components:
             oneOf:
               - { $ref: '#/components/schemas/Organization' }
               - { $ref: '#/components/schemas/Employee' }
+              - { $ref: '#/components/schemas/EmployeeListItem' }
               - { $ref: '#/components/schemas/TouchpointAsset' }
               - { $ref: '#/components/schemas/TouchpointPayload' }
               - { $ref: '#/components/schemas/Assignment' }
@@ -2511,6 +2626,8 @@ components:
             - type: array
               items: { $ref: '#/components/schemas/OrganizationTreeNode' }
             - { $ref: '#/components/schemas/Employee' }
+            - { $ref: '#/components/schemas/EmployeeListData' }
+            - { $ref: '#/components/schemas/EmployeeAssociatedCardData' }
             - { $ref: '#/components/schemas/TouchpointAsset' }
             - { $ref: '#/components/schemas/TouchpointPayload' }
             - { $ref: '#/components/schemas/Assignment' }
