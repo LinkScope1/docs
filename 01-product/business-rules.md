@@ -19,6 +19,7 @@
 - 停用组织前必须检查启用下级组织和员工。
 - 员工只保存一个直接所属组织。
 - Casdoor Token 的 `employee_code` Claim 定位本地启用员工。
+- 员工物理删除仅允许已停用且无当前绑定、资产/载体内容责任和正在执行员工关系写入任务的员工；禁止删除当前登录员工，并通过独立 `employee.delete` 权限控制。
 
 ## M3 触点载体和内容
 
@@ -30,8 +31,10 @@
   仅用于记录所选主数据及其当时解析出的实际内容，不构成 `target_resources` 或 `routing_rules`。
 - M3 维护可复用地址页面 `touchpoint_address_pages`；页面按 `org_id` 归属组织，可供同组织及下级资产选择。
 - 地址页面 `content_type` 为 `1=小程序`、`2=APP`、`3=网页`；同时保存 `address_name`、`status`、`url` 和 `target_url`。
-- 地址页面真实内容只校验非空和长度，不审查是否为规范 HTTP/HTTPS；Payload 选择页面时由后端读取数据库 `target_url`，不能信任前端传值。
-- 只有启用地址页面出现在资产下拉选项中；页面停用或修改不重写已有 Payload、NFC 内容或 LinkForty 状态。
+- 地址页面的 `url` 只校验非空和长度；`target_url` 按内容类型校验：小程序必须是公开 HTTPS Universal Link，APP 的回退页和 Bridge 必须是公开 HTTPS，网页直接使用目标地址。Payload 选择页面时由后端读取数据库 `target_url`，不能信任前端传值。
+- 只有启用地址页面出现在资产下拉选项中；页面停用不解绑历史 Payload、不改写 NFC；目标配置修改先提交地址页面主数据和审计，再由异步任务复用统一应用流程重新应用到历史绑定 Payload，保持 `payload_value` 不变。
+- 已停用地址页面可通过独立 `touchpoint.address-page.delete` 高风险权限物理删除；删除前锁定页面并阻止 queued/running 重新应用任务，归档快照、删除命令和审计与主表 DELETE 在同一事务中完成。既有 Payload、NFC、LinkForty 状态和历史任务不修改，历史查询通过归档快照解析。
+- 地址页面 `content_type=1` 的小程序目标必须是公开 HTTPS Universal Link；`content_type=2` 的 App 配置保存在 `metadata.app`，由银行后台按公开 `app-open.html` Bridge 协议生成目标；`content_type=3` 的网页直接使用 `target_url`。
 - `linkforty_link_id` 仅为 LinkForty 逻辑引用；Payload 不保存 LinkForty 专属同步状态、同步时间、错误摘要或重试次数。
 
 ## M4 绑定

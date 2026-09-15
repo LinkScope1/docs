@@ -13,7 +13,7 @@
 | `m2-employees.yaml` | M2 | 员工增查改、启停、调动 |
 | `m3-assets.yaml` | M3 | NFC资产增查改、启停、作废 |
 | `m3-payloads.yaml` | M3 | 载体内容增查改、启停、失效 |
-| `m3-address-pages.yaml` | M3 | 可复用地址页面增查改、启停和资产选项 |
+| `m3-address-pages.yaml` | M3 | 可复用地址页面增查改、启停、受控物理删除和资产选项 |
 | `m4-assignments.yaml` | M4 | 绑定、解绑、转交和历史查询 |
 | `m5-access-events.yaml` | M5 | 访问事件接入、查询和关联处理 |
 

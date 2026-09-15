@@ -17,6 +17,12 @@ erDiagram
   touchpoint_employee_assignments ||--o{ access_events : resolves
   employees ||--o{ operation_logs : operates
   organization_units ||--o{ operation_logs : scopes
+  employees ||--o{ deleted_employees : archived_as
+  organization_units ||--o{ deleted_employees : archived_scope
+  organization_units ||--o{ deleted_address_pages : archived_scope
+  touchpoint_address_pages ||--o{ deleted_address_pages : archived_as
+  master_data_delete_commands }o..o{ deleted_employees : commands
+  master_data_delete_commands }o..o{ deleted_address_pages : commands
 ~~~
 
 V1.3.2 的银行业务关系均为应用层逻辑外键，不创建数据库 FOREIGN KEY，也不使用级联删除。组织层级通过 organization_units.org_code 前缀解析，不保存 parent_org_id。
@@ -26,9 +32,10 @@ V1.3.2 的银行业务关系均为应用层逻辑外键，不创建数据库 FOR
 - 所有本地逻辑外键使用与目标主键一致的 BIGINT，LinkForty 外部逻辑引用使用 UUID。
 - Router 不接受由调用方绕过业务规则写入责任范围字段；Service 根据访问上下文和目标对象计算或校验责任范围。
 - 非空逻辑外键在写入前必须验证目标存在；需要参与当前业务的组织、员工、资产和内容还必须满足对应启用状态。
-- 历史记录允许继续引用已停用主数据，但不得引用不存在或已被物理删除的主数据。
-- MVP 业务 API 不提供组织、员工、资产、内容、绑定、事件和操作日志的物理删除；通过停用、作废、解绑或归档保留历史。
-- 运维清理属于受控维护操作，必须先检查全部逻辑引用、备份和审计，不得通过业务 Repository 静默删除。
+- 历史记录允许继续引用已停用主数据；员工或地址页面物理删除后，历史查询通过对应归档快照解析，不能丢失历史语义。
+- M2 员工和 M3 地址页面提供受高风险权限保护的物理删除命令；组织、资产、内容、绑定、事件和操作日志仍不提供物理删除。
+- 员工、地址页面主表删除前必须在同一事务内完成行锁、业务前置校验、归档、命令幂等记录和成功审计；任一步骤失败则整体回滚。
+- 运维或普通业务接口不得修改、删除归档表，也不得通过级联删除破坏历史关系。
 - 逻辑外键校验不能替代数据库唯一约束、排他约束和事务锁；并发冲突以数据库约束为最终防线。
 
 ## 3. 本地逻辑外键清单
@@ -45,8 +52,8 @@ V1.3.2 的银行业务关系均为应用层逻辑外键，不创建数据库 FOR
 | touchpoint_assets.created_by_employee_id | employees.id | 是 | 人工创建时取当前启用员工；导入或系统任务可空 | 保留历史引用 | 被引用员工不得物理删除 |
 | touchpoint_assets.updated_by_employee_id | employees.id | 是 | 人工修改时取当前启用员工 | 保留历史引用 | 被引用员工不得物理删除 |
 | touchpoint_payloads.asset_id | touchpoint_assets.id | 否 | 资产必须存在且未永久作废 | 资产停用时内容保留，是否可用由内容状态共同决定 | 存在内容时资产不得物理删除 |
-| touchpoint_address_pages.org_id | organization_units.id | 否 | 地址页面创建或修改责任组织时必须存在、启用且在操作者范围内 | 停用后保留页面和既有 Payload 关联；目标配置变化按 Core 补偿传播 | 被 Payload 使用时不得物理删除 |
-| touchpoint_payloads.address_page_id | touchpoint_address_pages.id | 是 | 选择时页面必须存在、启用、可读，且责任组织是资产组织的祖先或同组织 | 停用不删除历史关联；目标变化更新同一 Core Link 和 Payload `target_url` 快照，`payload_value` 不变 | 被引用地址页面不得物理删除 |
+| touchpoint_address_pages.org_id | organization_units.id | 否 | 地址页面创建或修改责任组织时必须存在、启用且在操作者范围内 | 停用后保留页面和既有 Payload 关联；目标配置变化按 Core 补偿传播 | 仅已停用、无 queued/running 重新应用任务且已写入归档快照后可物理删除 |
+| touchpoint_payloads.address_page_id | touchpoint_address_pages.id | 是 | 选择时页面必须存在、启用、可读，且责任组织是资产组织的祖先或同组织 | 停用或物理删除均不修改历史 Payload、`target_url` 或 `payload_value`；删除后通过地址页面归档快照解析展示 | Payload 引用不阻止地址页面归档和主表删除，但禁止删除/清空/改写 Payload |
 | touchpoint_payloads.org_id | organization_units.id | 否 | 由所属资产同步，禁止客户端独立指定 | 随资产责任范围调整 | 存在内容时组织不得物理删除 |
 | touchpoint_payloads.employee_id | employees.id | 是 | 由所属资产同步，禁止客户端独立指定 | 随资产绑定、解绑或转交同步 | 被引用员工不得物理删除 |
 | touchpoint_payloads.created_by_employee_id | employees.id | 是 | 人工创建时取当前启用员工；系统任务可空 | 保留历史引用 | 被引用员工不得物理删除 |
@@ -85,12 +92,15 @@ V1.3.2 的银行业务关系均为应用层逻辑外键，不创建数据库 FOR
 
 ## 6. 删除和停用规则
 
-- MVP 业务接口不提供物理删除，组织和员工使用停用，资产使用停用或永久作废，内容使用停用或失效，绑定使用解绑。
-- 地址页面使用停用/启用；停用不影响既有 Payload、历史查询、审计记录或已经写入 NFC 的内容。地址编码、内容类型和责任组织创建后不可修改；目标配置变化会传播到现有短链，失败时补偿 Core；展示字段变化不传播。
+- 组织使用停用，资产使用停用或永久作废，内容使用停用或失效，绑定使用解绑；这些对象以及事件、审计、历史绑定不提供物理删除。
+- 员工物理删除仅限已停用、无当前有效绑定、无当前资产/载体内容责任、无正在执行员工关系写入任务且非当前登录员工；操作前锁定员工行，归档后再删除主表。
+- 地址页面使用停用/启用；物理删除仅限已停用且没有 queued/running 重新应用任务。已完成、失败或取消的历史任务保留。
+- 地址页面物理删除不影响既有 Payload、历史查询、审计记录或已经写入 NFC 的内容；地址页面归档快照保留原编码、目标和必要展示字段。地址编码不可重用。
 - 停用组织前必须确认不存在启用的下级组织、启用员工、非作废资产和当前有效绑定。
 - 停用员工前必须先结束或转交当前有效绑定，并清除资产和内容中的当前员工责任引用。
 - 永久作废资产前必须结束当前有效绑定；内容、绑定、事件和操作日志继续保留。
 - operation_logs 禁止更新和删除；事件和绑定历史不得因主数据状态变化被级联删除。
-- 任何受控物理清理必须由单独的运维方案说明范围、备份、引用检查和审计，不属于普通业务 API。
+- `deleted_employees`、`deleted_address_pages` 和 `master_data_delete_commands` 只允许受控服务追加；普通列表不读取归档表，普通业务接口不得更新或删除归档。
+- 地址页面删除不调用 LinkForty/NFC 接口，不修改 `touchpoint_payloads`、`touchpoint_assets` 或重新应用历史。
 
 V1.3.2 不包含 iam_*、target_resources 或 routing_rules。

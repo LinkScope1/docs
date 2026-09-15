@@ -4,7 +4,7 @@
 > **逻辑关系**：逻辑外键、引用校验和删除规则以 [V1.3.2 数据关系与逻辑外键规则](./erd.md) 为准。
 > **状态转换**：各状态字段的允许转换、前置条件和终态规则以 [V1.3.2 状态转换规则](./state-machines.md) 为准。
 
-> 版本定位：V1.3.2 正式模型：8 张银行业务表 + 1 张批量导入任务表 + 8 张 LinkForty 外部现有表 + Casdoor 外部身份边界。
+> 版本定位：V1.3.2 正式模型：8 张银行核心业务表 + 1 张批量导入任务表 + 2 张地址页面重新应用任务表 + 3 张物理删除归档/幂等表 + 8 张 LinkForty 外部现有表 + Casdoor 外部身份边界。
 
 | 项目 | 内容 |
 | --- | --- |
@@ -101,14 +101,17 @@ V1.3.2 将组织层级、员工责任范围、NFC 载体、载体实际内容、
 
 - operation_logs 只追加；写接口、Webhook、批处理、外部同步和导入均须有明确幂等策略。
 
+- 员工和地址页面物理删除使用 `master_data_delete_commands` 持久化 `Idempotency-Key`、请求摘要和首次成功响应；相同键相同请求回放首次结果，不同请求返回冲突。
+- 物理删除主表记录前必须把最小必要快照追加到对应 deleted_* 表；归档编码和 UID 永不复用。
+
 ## 2.5 V1.3.2 冻结约束对照
 
 以下约束是 `V1.3.2-FREEZE-001` 的数据库验收基线，迁移必须逐项落地；已应用迁移不得回改，修正只能新增 Alembic revision。
 
 | 约束域 | 冻结值 |
 | --- | --- |
-| 表数量 | 银行库固定 8 张业务表 + 1 张横向批量导入任务表：`organization_units`、`employees`、`touchpoint_assets`、`touchpoint_address_pages`、`touchpoint_payloads`、`touchpoint_employee_assignments`、`access_events`、`operation_logs`、`import_batches`。 |
-| 外键与删除 | 不建立本地数据库外键，不使用数据库级级联删除；逻辑引用由 Service 校验并保留历史语义。 |
+| 表数量 | 银行库包含 8 张业务表、1 张横向批量导入任务表、2 张地址页面重新应用任务表和 3 张物理删除归档/幂等表：另含 `deleted_employees`、`deleted_address_pages`、`master_data_delete_commands`。 |
+| 外键与删除 | 不建立本地数据库外键，不使用数据库级级联删除；M2 员工和 M3 地址页面由 Service 在归档同一事务内物理删除主表，其他历史对象保留。 |
 | 枚举 | 组织/员工状态为 `0/1`；资产类型固定 `1=NFC`，资产状态为 `0/1/2/9`；地址页面 `content_type` 为 `1=小程序/2=APP/3=网页`、`status` 为 `0/1`；Payload 类型为 `1/2/3/99`、来源为 `1/2/3/4`、提供方为 `1/2/3/99`、状态为 `0/1/2/3`；绑定状态为 `1/2`；访问关联状态为 `0/1/2/3`；操作结果为 `1/2/3`。 |
 | 标识唯一性 | `asset_id`、`asset_code`、`employee_uid`、`employee_code`、`org_abbr`、`org_code`、`address_code`、`event_id` 全局唯一；`asset_id` 匹配 `^PK[0-9]{11}$`；新员工 ID 匹配 `^[A-Z][A-Z0-9]{1,11}-E-[0-9]{6}$`；非空 `carrier_uid` 唯一；非空 `linkforty_link_id` 全局唯一；`click_id` 不唯一。 |
 | 绑定一致性 | 当前绑定 `assignment_status=1` 必须 `effective_to IS NULL`；已解绑记录必须有 `effective_to > effective_from` 和 `unbind_reason_type`；时间区间使用 PostgreSQL 排他约束防重叠。 |
@@ -128,8 +131,13 @@ V1.3.2 将组织层级、员工责任范围、NFC 载体、载体实际内容、
 | 7 | access_events | M5 | Webhook 访问事件投影和关联结果 |
 | 8 | operation_logs | M1 | 员工和系统操作审计 |
 | 9 | import_batches | 横向能力 | 批量导入幂等批次、异步状态和安全失败报告 |
+| 10 | touchpoint_address_page_reapply_jobs | 横向能力 | 地址页面目标重新应用任务及汇总状态 |
+| 11 | touchpoint_address_page_reapply_items | 横向能力 | 地址页面重新应用的 Payload 明细、重试和补偿结果 |
+| 12 | deleted_employees | M2 横向历史 | 员工主表物理删除后的不可变最小快照 |
+| 13 | deleted_address_pages | M3 横向历史 | 地址页面主表物理删除后的不可变最小快照 |
+| 14 | master_data_delete_commands | 横向能力 | 物理删除命令幂等键、请求摘要和首次结果 |
 
-> 删除范围：V1.3.2 不创建 iam_*、target_resources 或 routing_rules 表；这些对象只在更新日志中作为 V1.2 下线内容保留。`import_batches` 仅存储批处理状态和安全结果，不替代业务表。
+> 删除范围：V1.3.2 不创建 iam_*、target_resources 或 routing_rules 表；这些对象只在更新日志中作为历史下线内容保留。`import_batches` 仅存储批处理状态和安全结果，不替代业务表；地址页面重新应用任务表只保存银行后台任务事实，不保存 LinkForty 外部同步状态。deleted_* 归档表只追加，不进入普通主数据列表。
 
 # 4. 本系统 8 张表详细定义
 
@@ -234,9 +242,10 @@ asset_code 用于业务查询和导入，carrier_uid 用于 NFC 物理盘点，�
 可复用地址页面主数据。`org_id` 是责任组织；地址页面可供同组织及下级资产使用。
 `content_type` 区分小程序、APP 和网页。`url` 是原始/展示值，只做首尾空格清理；
 `target_url` 是进入 LinkForty Core 前使用的目标配置。网页和小程序通常与 `url`
-一致；APP 在提供 `metadata.app` 和 Bridge 基础地址时保存可按 Link ID 解析的
-`app-open.html` 模板，Payload 中保存解析后的实际 Bridge URL。银行业务字段不做通用
-HTTP/HTTPS 格式审查，但 Core 集成会执行内容类型所需的目标校验。
+一致；APP 的 `metadata.app` 保存 Scheme、Payload 和 HTTPS 回退地址，Payload 应用时才按
+真实 Link ID 生成 `app-open.html` Bridge URL。地址页面不保存绑定具体 Link ID 的最终 Bridge
+URL；解析器继续兼容历史占位 Bridge URL。银行业务字段不做通用 HTTP/HTTPS 格式审查，但
+Core 集成会执行内容类型所需的目标校验。
 
 | 字段 | 类型 | 可空 | 默认值 | 约束/说明 |
 | --- | --- | --- | --- | --- |
@@ -256,10 +265,49 @@ HTTP/HTTPS 格式审查，但 Core 集成会执行内容类型所需的目标校
 | updated_at | TIMESTAMPTZ | 否 | NOW() | 修改时间 |
 
 地址页面仅修改 `address_name`、`description` 或无关展示元数据时，不触发 Core 更新。
-网页目标、小程序 Universal Link、APP Bridge 配置或 `target_url` 变化时，Service 会锁定
-关联 Payload，按 Link ID 去重更新 Core，并同步所有 Payload 的 `target_url` 快照；
-失败时使用旧目标补偿。`payload_value` 始终不变。停用不会删除历史 Payload、改写 NFC
-或自动切换目标；被 Payload 使用的地址页面不得物理删除。
+网页目标、小程序 Universal Link、APP Bridge 配置或 `target_url` 变化时，Service 先只提交
+页面主数据和审计；提交后创建重新应用任务，Worker 按 Payload 独立锁定、校验并更新 Core
+目标快照，失败时使用旧目标补偿。`payload_value` 始终不变。停用不会删除历史 Payload、
+改写 NFC 或自动切换目标；被 Payload 使用的地址页面可以在停用、任务检查和归档成功后物理删除，但 Payload 引用、`target_url`、`payload_value` 和历史任务均不得修改；历史展示从归档快照解析。
+
+### 4.5.1 物理删除归档和幂等命令
+
+物理删除只针对已停用员工和地址页面。主表删除前，在同一事务内分别追加
+`deleted_employees` 或 `deleted_address_pages` 快照、`master_data_delete_commands`
+命令记录和 `operation_logs` 成功审计，最后执行主表 DELETE。失败时整个事务回滚；普通列表
+只查询主表，归档数据不作为可管理主数据。
+
+### deleted_employees
+
+| 字段 | 类型 | 可空 | 说明 |
+| --- | --- | --- | --- |
+| original_employee_id | BIGINT | 否 | 被删除员工原始主键，唯一 |
+| employee_code / employee_uid | VARCHAR(64) | 否 | 原始业务编码和展示 UID，唯一且永久占用 |
+| org_id / org_code | BIGINT/VARCHAR(64) | 否 | 删除时组织快照 |
+| snapshot | JSONB | 否 | 最小必要员工和组织快照对象 |
+| deleted_by_employee_id / reason / trace_id | BIGINT/VARCHAR | 否 | 操作人、原因和链路标识 |
+| deleted_at | TIMESTAMPTZ | 否 | 删除时间 |
+
+### deleted_address_pages
+
+| 字段 | 类型 | 可空 | 说明 |
+| --- | --- | --- | --- |
+| original_address_page_id | BIGINT | 否 | 被删除地址页面原始主键，唯一 |
+| address_code | VARCHAR(64) | 否 | 原始地址编码，唯一且永久占用 |
+| org_id / org_code | BIGINT/VARCHAR(64) | 否 | 删除时责任组织快照 |
+| snapshot | JSONB | 否 | 页面名称、URL、目标、类型、说明和 metadata 快照 |
+| deleted_by_employee_id / reason / trace_id | BIGINT/VARCHAR | 否 | 操作人、原因和链路标识 |
+| deleted_at | TIMESTAMPTZ | 否 | 删除时间 |
+
+### master_data_delete_commands
+
+| 字段 | 类型 | 可空 | 说明 |
+| --- | --- | --- | --- |
+| resource_type / resource_id | VARCHAR(32)/BIGINT | 否 | `employee` 或 `address_page` 及原始 ID，组合唯一 |
+| idempotency_key | VARCHAR(128) | 否 | 全局物理删除命令键，唯一 |
+| request_hash | VARCHAR(64) | 否 | 规范化请求摘要，用于重试冲突判断 |
+| result_data | JSONB | 否 | 首次成功响应摘要，至少含 resourceId、resourceType、deleted、traceId、deletedAt |
+| org_id / org_code / deleted_by_employee_id / reason / trace_id / deleted_at | — | 否 | 数据范围、操作人、原因、链路和完成时间 |
 
 ## 4.6 touchpoint_employee_assignments
 
@@ -351,7 +399,43 @@ HTTP/HTTPS 格式审查，但 Core 集成会执行内容类型所需的目标校
 | failure_report | BYTEA | 是 | — | UTF-8 BOM CSV 失败报告 |
 | created_at / updated_at | TIMESTAMPTZ | 否 | NOW() | 创建和更新时间 |
 
-## 4.10 V1.3.2 数据关系图
+## 4.10 touchpoint_address_page_reapply_jobs
+
+地址页面目标配置变更后，在地址页面本地事务提交后创建的银行后台异步任务。该表不表示
+LinkForty 的同步状态；外部调用结果仍由 Payload Service、`operation_logs` 和 `trace_id`
+记录。
+
+| 字段 | 类型 | 可空 | 说明 |
+| --- | --- | --- | --- |
+| id | BIGINT | 否 | 任务 ID；API 以字符串传输 |
+| address_page_id | BIGINT | 否 | 地址页面逻辑引用 |
+| page_config_hash | VARCHAR(64) | 否 | 目标相关配置快照 hash |
+| trigger_type | VARCHAR(32) | 否 | `address_page_update` / `manual_retry` |
+| requested_by_employee_id | BIGINT | 否 | 请求员工快照 |
+| requested_org_id | BIGINT | 否 | 请求组织快照 |
+| status | VARCHAR(16) | 否 | `queued` / `running` / `completed` / `partial` / `failed` |
+| total_count / success_count / failed_count | INTEGER | 否 | 任务明细统计 |
+| trace_id | VARCHAR(128) | 否 | 任务链路追踪 ID |
+| actor_context | JSONB | 否 | 仅保存非秘密权限/组织范围快照 |
+| created_at / started_at / finished_at | TIMESTAMPTZ | 否 | 任务时间 |
+
+## 4.11 touchpoint_address_page_reapply_items
+
+重新应用任务的 Payload 明细。每条明细独立处理、重试和补偿，不向
+`touchpoint_payloads` 增加外部同步状态。
+
+| 字段 | 类型 | 可空 | 说明 |
+| --- | --- | --- | --- |
+| id | BIGINT | 否 | 明细 ID |
+| job_id | BIGINT | 否 | 所属任务 |
+| payload_id | BIGINT | 否 | 待处理 Payload |
+| status | VARCHAR(16) | 否 | `queued` / `running` / `succeeded` / `failed` |
+| attempt_count | INTEGER | 否 | 尝试次数 |
+| linkforty_link_id | UUID | 是 | 成功处理后的外部逻辑引用快照 |
+| error_code / error_message | VARCHAR | 是 | 脱敏错误摘要 |
+| created_at / started_at / finished_at | TIMESTAMPTZ | 否/是 | 明细时间 |
+
+## 4.12 V1.3.2 数据关系图
 
 参见 [V1.3.2 数据关系图](./erd.md)。V1.3.2 DOCX 中内嵌的图示仍标注为 V1.3.1，不作为 Markdown 主文档内容迁移。
 
@@ -540,7 +624,7 @@ LinkForty 的 8 张现有表属于外部系统物理模型，本节仅用于说�
 - LinkForty 的 click_events 或 Webhook 事件通过 event_id、click_id 等逻辑字段进入 access_events。
 
 - touchpoint_payloads 不定义 external_sync_status；M3 负责 LinkForty 调用和外部同步编排，Worker 执行重试与补偿，成功、失败和补偿结果由 M1 通过 operation_logs 与 trace_id 审计。V1.3.2 不再存在 旧 M6 publish_status、version_no 或 last_published_at。
-- 目标切换通过 LinkForty API 更新同一个 `links.id`；网页和小程序使用直接目标，APP 使用 `card-switch-demo` 的 `app-open.html` Bridge。Core 与银行数据库无法形成单一事务，采用预读快照、Core 更新、银行落库和失败补偿实现最终一致。
+- 目标切换通过 LinkForty API 更新同一个 `links.id`；网页和小程序使用直接目标，APP 使用公开 `app-open.html` Bridge。地址页面目标变更通过银行后台重新应用任务逐个更新 Payload；Core 与银行数据库无法形成单一事务，采用预读快照、Core 更新、银行落库和失败补偿实现最终一致。
 
 - 目标资源和路由规则不再作为银行后台到 LinkForty 的中间对象。
 
@@ -605,7 +689,7 @@ V1.3.2 删除配置状态、目标资源类型、路由冲突和路由发布相�
 | Repository | 数据库访问 | SQLAlchemy 2.x 查询、事务、索引和约束；不承载 Casdoor 或 LinkForty 业务。 |
 | Integration Adapter | 外部调用 | Casdoor OIDC/JWT Claim、LinkForty API、Webhook/NFC 适配和重试。 |
 | Worker / Celery | 异步任务 | 外部调用、事件重试、批量导入、补偿和结果审计；不得在银行业务表中补建 LinkForty 专属同步状态字段。 |
-| Alembic | 数据库演进 | V1.3.2 通过新迁移创建 8 张银行业务表及横向 `import_batches` 任务表；本次以 `0008_display_identifiers` 增量增加组织缩写、员工展示 ID、约束和历史回填；禁止直接删除已部署环境旧表。 |
+| Alembic | 数据库演进 | V1.3.2 通过迁移创建银行核心业务表、横向任务表和物理删除归档/幂等表；`0010_physical_delete_archives` 新增三张归档/命令表，禁止直接删除已部署环境旧表。 |
 
 # 9. V1.3.2 更新日志
 
@@ -623,5 +707,6 @@ V1.3.2 删除配置状态、目标资源类型、路由冲突和路由发布相�
 | V1.3.2 | 2026-09-14 | M3 增加 `touchpoint_address_pages`，支持组织范围、内容类型、`target_url`、地址标识和启停；`touchpoint_payloads` 增加可空 `address_page_id`，实际内容不强制 HTTP/HTTPS 格式。 |
 | V1.3.2 | 2026-09-14 | M3 为 `touchpoint_assets` 增加服务端生成的 `asset_id` 卡ID；保留数值内部主键和跨表关联，标准资产导出增加卡ID。 |
 | V1.3.2 | 2026-09-15 | M2 增加服务端生成的 `organization_units.org_abbr` 和 `employees.employee_uid`，保留 `employee_code` 作为 Casdoor 登录工号；M3 地址页面新建编码按内容类型自动生成。 |
+| V1.3.2 | 2026-09-15 | M2/M3 增加已停用员工和地址页面的高风险物理删除接口；主表真实 DELETE，使用 deleted_* 快照和 `master_data_delete_commands` 保留历史、永久占用编码并支持幂等回放。 |
 
 > 历史版本：V1.2 原文档保留为历史基线。

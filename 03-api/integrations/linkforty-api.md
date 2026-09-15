@@ -80,9 +80,45 @@ Nginx 只作为受控网络边界，不改变请求方法、请求体或 `Idempo
 
 ## M3 地址页面目标切换
 
-银行后台入口为 `POST /api/v1/touchpoint-payloads/{id}/switch-address-page`，页面编辑目标时由 M3 对所有关联 Payload 传播。网页（`content_type=3`）和小程序（`content_type=1`）直接使用目标；小程序的目标必须是公开 HTTPS Universal Link，业务库不要求通用 URL 格式，但 Core 校验失败必须原样归类为失败。APP（`content_type=2`）由银行侧使用 `metadata.app` 和 `TOUCHPOINT_APP_BRIDGE_BASE_URL` 生成 `app-open.html` URL；不得把 APP Scheme 直接提交给 Core。
+银行后台入口为 `POST /api/v1/touchpoint-payloads/{id}/switch-address-page`。地址页面
+`PATCH /api/v1/touchpoint-address-pages/{id}` 只更新银行地址页面和审计；目标配置发生变化时，
+事务提交后创建地址页面重新应用任务，再由 Worker 对任务明细逐条调用同一应用 Service。
+网页（`content_type=3`）和小程序（`content_type=1`）直接使用目标；小程序的目标必须是公开
+HTTPS Universal Link，业务库不要求通用 URL 格式，但 Core 校验失败必须原样归类为失败。APP
+（`content_type=2`）由银行侧使用 `metadata.app` 和 `TOUCHPOINT_APP_BRIDGE_BASE_URL`
+生成 `app-open.html` URL；不得把 APP Scheme 直接提交给 Core。地址页面表不保存绑定具体 Link
+ID 的最终 Bridge URL，历史占位 Bridge URL 仅在解析器中兼容。
 
-目标切换始终保留 NFC 实际写入的 `payload_value` 和 `linkforty_link_id`。更新前通过 `GET /api/links/{id}` 校验 Core 目标与银行 `target_url` 快照一致；多 Payload 传播按 Link ID 去重。Core 更新成功后才落银行快照，银行事务失败、后续 Core 更新失败或批量失败时使用旧目标补偿，并通过 `trace_id` 和 `operation_logs` 记录成功、失败、冲突与补偿结果。Core 与银行库不组成分布式事务，因此该流程提供补偿意义上的最终一致，而非原子事务。
+目标切换始终保留 NFC 实际写入的 `payload_value` 和 `linkforty_link_id`。更新前通过 `GET /api/links/{id}` 校验 Core 目标与银行 `target_url` 快照一致；每个 Payload 独立处理，不使用客户端提供的资产或 Link ID。Core 更新成功后才落银行快照，银行事务失败、后续 Core 更新失败或批量失败时使用旧目标补偿，并通过 `trace_id` 和 `operation_logs` 记录成功、失败、冲突与补偿结果。Core 与银行库不组成分布式事务，因此该流程提供补偿意义上的最终一致，而非原子事务。
+
+### 新建 Payload 选择地址页面
+
+`POST /api/v1/touchpoint-assets/{assetId}/payloads` 只接收路径中的资产 ID、`payloadType`、
+`payloadSource`、`providerType`、`addressPageId` 和非敏感 metadata。选择地址页面时不接收
+`linkfortyLinkId`，也不要求客户端生成 `payloadValue`。银行侧先使用占位 `linkId` 创建 LinkForty
+Link，取得真实 UUID 后通过同一个 `PUT` 替换为最终目标；LinkForty 返回的短链作为新的
+`payload_value` 保存。创建 Link 后银行本地落库失败时只通过 LinkForty API 删除新 Link。
+
+### App Bridge 与公开中间页
+
+`TOUCHPOINT_APP_BRIDGE_BASE_URL` 必须是公开 HTTPS 静态站点上的 `app-open.html` 绝对地址，
+例如 `https://links.example.com/app-open.html`。银行后端不执行 `app.js` 或 `app-open.js`，
+只在 `app_bridge.py` 中按既有协议生成 URL；浏览器/移动端打开该静态页后才执行中间页逻辑。
+生成的查询参数为：
+
+| Bridge 参数 | 来源 |
+| --- | --- |
+| `iosScheme` | `metadata.app.iosScheme` |
+| `androidScheme` | `metadata.app.androidScheme` |
+| `harmonyScheme` | `metadata.app.harmonyScheme` |
+| `appPayload` | `metadata.app.appPayload` |
+| `linkId` | LinkForty 返回的真实 Link UUID |
+| `defaultPage` | `metadata.app.webFallbackUrl` |
+
+新建 Link 时允许短暂使用 `__LINK_ID__` 占位目标，取得真实 UUID 后必须 PUT 回同一个 Link；
+后端不会把最终 Bridge URL 写入地址页面主数据。解析器只为历史占位 Bridge URL 提供兼容替换，
+不会执行演示仓库代码。App Scheme、Payload 和回退地址的变更会参与页面配置 hash，并触发
+绑定 Payload 的重新应用任务。
 
 ## 集成规则
 

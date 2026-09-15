@@ -45,6 +45,12 @@ M3/Worker -> M1: 提交调用结果、trace_id 和错误摘要
 M1 -> operation_logs: 记录成功、失败或部分成功
 ```
 
+地址页面目标变化的时序为：PATCH 在第一笔短事务中只写页面主数据和审计；提交后创建
+`touchpoint_address_page_reapply_jobs`/明细并投递稳定 Celery task ID。Worker 逐条重新查询
+Payload、资产、地址页面和组织范围，调用 `apply_address_page_to_payload`。该 Service 在
+本地锁外执行 LinkForty GET/PUT，再以第二笔短事务重新校验页面 hash 和 Payload 关系后落
+`target_url`，失败时执行 API-only 补偿。
+
 `LINKFORTY_BASE_URL` 指向 Nginx 的 `/linkapi` 前缀，而不是 Core 的 `:3200` 地址。
 Nginx 的 `proxy_pass` 末尾 `/` 负责去掉代理前缀：`/linkapi/api/links` → Core
 `/api/links`，`/linkapi/api/analytics/*` → Core `/api/analytics/*`，

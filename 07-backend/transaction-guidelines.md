@@ -68,6 +68,17 @@ async def execute_command(session: AsyncSession, ...) -> Result:
 - 被上层事务调用的Service不得再次开启独立顶层事务；内部方法接收同一Session。
 - Repository仅在需要立即取得约束结果、生成值或后续查询依赖写入结果时调用 flush。
 
+### LinkForty 目标应用的两阶段边界
+
+- 地址页面 PATCH 的第一笔短事务只保存 `touchpoint_address_pages` 和成功审计；目标配置
+  变化后，提交完成再创建重新应用任务和投递 Worker。任务明细按当前页面与调用方组织范围
+  重新查询，不接受客户端资产列表。
+- Payload 目标应用先在短事务中锁定并快照 Payload、资产和地址页面，事务外执行 LinkForty
+  GET/PUT，再以第二笔短事务重新校验页面 hash、Payload 关系、外部 Link ID 和权限后落本地
+  `address_page_id`/`target_url`。禁止在本地锁和事务内执行外部 HTTP。
+- 外部成功而第二笔本地事务失败时恢复旧目标；新建 Link 后本地创建失败时通过 API 删除新
+  Link。补偿失败只记录 `LINKFORTY_COMPENSATION_FAILED`，不伪造本地成功。
+
 ## 4. 本地原子事务
 
 以下操作必须在单一数据库事务中完成：
@@ -77,6 +88,7 @@ async def execute_command(session: AsyncSession, ...) -> Result:
 - M4解绑：结束当前绑定、清空资产和内容当前员工、写操作日志。
 - M4转交：结束旧绑定、新增新绑定、同步资产和内容组织/员工、写操作日志。
 - M5事件落库：写入幂等事件、关联资产/绑定/组织/员工及成功审计。
+- 员工或地址页面物理删除：锁定主表行，校验状态和当前引用/任务，追加 deleted_* 快照、删除命令和成功审计，最后真实 DELETE；任何一步失败整体回滚。
 - 需要全量原子性的批量命令：任一行失败则整批回滚。
 
 规则冲突时不得先提交部分业务状态再返回错误。
@@ -97,6 +109,7 @@ async def execute_command(session: AsyncSession, ...) -> Result:
 - 所有涉及多张资产和员工的批量操作必须按稳定ID顺序加锁，降低死锁风险。
 - 死锁、序列化失败只允许在明确幂等的命令或Worker任务中有限重试，不得无限重试。
 - Redis和内存锁不能替代PostgreSQL唯一约束或事务锁。
+- 物理删除使用 `Idempotency-Key` 唯一约束；员工写入关系的服务必须先锁员工行，地址页面选择/修改和重新应用任务必须在读取页面时使用页面行锁，避免 check-then-delete 竞态。
 
 ## 7. 外部调用与本地事务
 
