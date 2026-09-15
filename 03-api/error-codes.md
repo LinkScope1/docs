@@ -35,6 +35,10 @@
 | `LINKFORTY_UPDATE_FAILED` | 502 | LinkForty Link 目标更新失败 |
 | `LINKFORTY_COMPENSATION_FAILED` | 502 | 外部目标更新后补偿回滚失败，需要人工处理 |
 | `BANK_TRANSACTION_FAILED` | 500 | LinkForty 已更新但银行侧事务提交失败，已尝试补偿外部目标 |
+| `CLIENT_LINK_ID_NOT_ALLOWED` | 422 | 客户端试图指定由后端管理的 LinkForty Link ID |
+| `PAGE_VERSION_CONFLICT` | 409 | 地址页面配置或 Payload 关系已在任务/应用期间变化 |
+| `REAPPLY_TASK_CREATE_FAILED` | 503 | 地址页面已提交，但重新应用任务未能创建，需要运维重试 |
+| `REAPPLY_FAILED` | 502 | 地址页面重新应用任务明细处理失败 |
 
 ## 使用规则
 
@@ -59,6 +63,7 @@
 | `EVENT_RETRY_ENQUEUE_FAILED` | 重试任务在数据库事务完成后入队失败 |
 | `AUDIT_WRITE_FAILED` | 操作审计或失败审计写入失败 |
 | `FINAL_FAILURE_ALREADY_RECORDED` | 终态失败已记录，避免重复写入失败事实 |
+| `REAPPLY_WORKER_FAILED` | 地址页面重新应用 Worker 非预期终止时的明细失败状态 |
 
 这些内部代码仍须通过 `operation_logs`、任务结果或告警保留可追踪性；对外
 错误响应继续使用本文件上方定义的公共代码，例如 `REQUEST_SCHEMA_INVALID`、

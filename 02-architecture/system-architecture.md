@@ -8,7 +8,7 @@ React + TypeScript
 bank-admin-service
 Python + FastAPI
         |
-        +-- PostgreSQL bank_admin schema: 8 V1.3.2 business tables plus import_batches
+        +-- PostgreSQL bank_admin schema: V1.3.2 business tables, import_batches and address-page reapply task tables
         +-- Redis + Celery
         +-- Casdoor
         +-- Nginx `/linkapi/` -> LinkForty API（私有网络 + ACL + HTTPS/TLS；无应用层认证）
@@ -47,4 +47,4 @@ API Router
 
 ## 异步任务
 
-Celery 用于 Webhook 重试、LinkForty 外部调用补偿、预约绑定生效和对账。重试与补偿结果通过 `operation_logs` 和 `trace_id` 追踪，不在 `touchpoint_payloads` 中建立同步状态机；Redis 不能作为唯一事实来源。
+Celery 用于 Webhook 重试、LinkForty 外部调用补偿、地址页面目标重新应用、预约绑定生效和对账。地址页面 PATCH 提交后才创建重新应用任务，任务明细按 Payload 独立处理并使用页面配置 hash 防止旧任务覆盖新目标。重试与补偿结果通过 `operation_logs` 和 `trace_id` 追踪，不在 `touchpoint_payloads` 中建立同步状态机；Redis 不能作为唯一事实来源。

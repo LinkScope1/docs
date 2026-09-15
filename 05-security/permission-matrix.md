@@ -17,7 +17,7 @@ Casdoor 提供角色和功能权限；银行后台不创建本地 IAM 表。后�
 | 查询载体内容 | 允许 | 允许 | 允许 | 允许 | `ASSET_SCOPE` |
 | 管理载体内容 | 允许 | 允许 | 仅本机构/本人责任范围 | 禁止 | `touchpoint.payload.manage` |
 | 查询地址页面 | 允许 | 允许 | 仅本机构/本人责任范围 | 禁止 | `touchpoint.address-page.read` + `ORG_SUBTREE` |
-| 管理地址页面 | 允许 | 允许 | 仅本机构/本人责任范围 | 禁止 | `touchpoint.address-page.manage` + `ORG_SUBTREE`；根组织页面可供下级资产使用；目标传播仍需 Core API 权限和审计 |
+| 管理地址页面 | 允许 | 允许 | 仅本机构/本人责任范围 | 禁止 | `touchpoint.address-page.manage` + `ORG_SUBTREE`；根组织页面可供下级资产使用；目标重新应用任务由后端按页面和资产组织范围生成，仍需 Core API 调用审计 |
 | 在载体内容中选择地址页面或切换目标 | 允许 | 允许 | 资产可管理且地址页面责任组织可使用 | 禁止 | 同时校验 `touchpoint.payload.manage`、`touchpoint.asset.manage`、`touchpoint.address-page.read`；还需有效 `linkforty_link_id` 才能实时切换 |
 | 查询绑定历史 | 允许 | 允许 | 允许 | 允许 | `ASSET_SCOPE` |
 | 绑定/解绑 | 允许 | 允许（同组织 `ORG_SUBTREE`） | 仅同组织 `ORG_SELF` | 禁止 | `touchpoint.assignment.manage` |
@@ -39,6 +39,12 @@ Casdoor 提供角色和功能权限；银行后台不创建本地 IAM 表。后�
 - 权限缺失和数据范围越界分别返回 `PERMISSION_DENIED` 和 `DATA_SCOPE_DENIED`。
 - 员工状态必须为正常、所属组织必须启用，才可获取业务访问上下文。
 - 观察者只读，不能执行管理、绑定、导入、导出或审计查询。
+- 重新应用任务查询使用 `touchpoint.address-page.read`；重试使用 `touchpoint.address-page.manage`。
+  Service 必须重新读取页面组织并验证任务的页面关系、当前 `page_config_hash` 和调用方范围；
+  Worker 不接受客户端资产列表或 Link ID，Payload 应用前再次验证资产、Payload、页面的组织层级关系。
+  地址页面普通查询仍按页面组织范围过滤；资产选择/切换时允许启用的上级组织页面，前提是
+  页面组织是该资产责任组织的祖先、调用方同时具备地址页面读取权限和资产/Payload 管理权限，
+  且不因此授予下级用户修改上级页面的权限。
 
 ## 权限码与前端标识
 

@@ -1,5 +1,7 @@
 # M3：载体内容。org_id和employee_id由资产同步，禁止客户端指定；可选 address_page_id
 # 关联银行地址页面。payload_value 始终是 NFC 实际写入的短链/内容，目标切换时不变。
+# 新建时提交 addressPageId 即由后端创建 LinkForty Link，并使用返回短链作为 payload_value；
+# linkfortyLinkId、targetUrl 和 customCode 不接受客户端提交；目标必须从银行地址页面主数据解析。
 payloads:
   x-canonical-path: /touchpoint-payloads
   get:
@@ -48,7 +50,7 @@ payloadById:
     x-data-scope: ASSET_SCOPE
     x-idempotency: domain_key_object_version
     x-audit: true
-    description: 提交 addressPageId 时复用实时切换 Service，不信任前端 URL；同一 Link 与目标重复请求返回 NO_CHANGE。
+    description: 提交 addressPageId 时复用统一应用 Service，不信任前端 URL 或 Link ID；同一 Link、同一目标和同一地址页面重复请求返回 NO_CHANGE。
 payloadSwitchAddressPage:
   x-canonical-path: /touchpoint-payloads/{id}/switch-address-page
   post:

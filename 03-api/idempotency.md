@@ -18,8 +18,9 @@
 - 数据库唯一约束是并发最终防线。
 - 领域命令重复提交必须返回幂等成功、状态冲突或唯一键冲突中的一种明确结果；不得重复产生业务事实或审计事实。服务端编号创建的重试由事务锁和唯一约束保证不产生重复编号，但未引入通用响应回放。
 - 外部 API 请求按外部契约携带稳定标识；不向不支持的 Core `PUT` 强行添加请求头。
-- 地址页面 PATCH 使用对象级版本/幂等策略；enable/disable 为状态命令，同一目标状态重复提交幂等成功。Payload 地址切换使用 `POST /touchpoint-payloads/{id}/switch-address-page`，同一 Link、同一目标和同一地址页面返回 `NO_CHANGE`，不调用 Core。选中的页面目标必须由 Service 从数据库读取。
-- 地址页面目标传播按 Payload 加锁、按 Link ID 去重；Core 与银行数据库无法单一事务，使用外部状态预校验和补偿更新保证最终一致。银行落库失败也必须补偿 Core。
+- 地址页面 PATCH 使用对象级版本/幂等策略；enable/disable 为状态命令，同一目标状态重复提交幂等成功。目标配置变化在地址页面本地事务提交后创建带 `page_config_hash` 的重新应用任务；展示字段变化不创建任务。Payload 地址切换使用 `POST /touchpoint-payloads/{id}/switch-address-page`，同一 Link、同一目标和同一地址页面返回 `NO_CHANGE`，不调用 Core。选中的页面目标必须由 Service 从数据库读取。
+- 重新应用任务使用稳定的任务 ID 和 `address-page-reapply:{job_id}` Celery task ID；任务明细按 Payload 独立重试，重试前重新校验地址页面版本和组织范围。任务记录是银行后台异步事实，不向 `touchpoint_payloads` 增加外部同步状态。
+- 地址页面目标应用按 Payload 加锁；Core 与银行数据库无法单一事务，使用外部状态预校验和补偿更新保证最终一致。银行落库失败也必须补偿 Core；LinkForty Core 当前不保证 `Idempotency-Key` 的严格 exactly-once，创建重试可能产生重复 Link，属于已记录风险。
 
 ## V1.4 预留
 

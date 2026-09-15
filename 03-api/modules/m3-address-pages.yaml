@@ -1,7 +1,8 @@
 # M3：可复用地址页面主数据，不属于 target_resources 或 routing_rules。
 # url 仅作为展示/原始内容保存，trim 后不做通用 HTTP/HTTPS 审查。
-# target_url 是发送给 LinkForty Core 的目标快照；APP 页面由 metadata
-# 按 card-switch-demo/app-open.html 约定生成 Bridge URL，小程序只接受公开 HTTPS Universal Link。
+# target_url 是地址页面目标配置快照；发送给 LinkForty 的最终目标由 Payload Service
+# 解析。APP 页面由 metadata.app 按 app-open.html 协议生成 Bridge URL，小程序只接受公开
+# HTTPS Universal Link。新建页面不保存绑定具体 Link ID 的最终 Bridge URL。
 # addressCode 由服务端按 MINI/APP/WEB 类型前缀自动生成，普通创建请求不得提交。
 addressPages:
   x-canonical-path: /touchpoint-address-pages
@@ -67,7 +68,34 @@ addressPageById:
     x-data-scope: ORG_SUBTREE
     x-idempotency: domain_key_object_version
     x-audit: true
-    description: addressCode 和 contentType 创建后不可修改；目标配置变化会传播到已关联且未永久失效的 Payload；Core 更新失败通过补偿回滚，展示字段变化不触发 Core。
+    description: addressCode 和 contentType 创建后不可修改；目标配置变化只提交银行地址页面和审计，事务提交后创建异步重新应用任务，按 Payload 复用统一应用流程；Core 更新失败通过补偿回滚，展示字段变化不触发 Core。
+
+addressPageReapplyTask:
+  x-canonical-path: /touchpoint-address-pages/{id}/reapply-tasks/{taskId}
+  get:
+    operationId: getTouchpointAddressPageReapplyTask
+    tags: [touchpoint-address-pages]
+    summary: 查询地址页面目标重新应用任务
+    x-status: reviewed
+    x-owner: API/后端
+    x-permission: touchpoint.address-page.read
+    x-data-scope: ORG_SUBTREE
+    x-idempotency: none
+    x-audit: false
+    responses: {}
+addressPageReapplyTaskRetry:
+  x-canonical-path: /touchpoint-address-pages/{id}/reapply-tasks/{taskId}/retry
+  post:
+    operationId: retryTouchpointAddressPageReapplyTask
+    tags: [touchpoint-address-pages]
+    summary: 重试地址页面重新应用任务中的失败明细
+    x-status: reviewed
+    x-owner: API/后端
+    x-permission: touchpoint.address-page.manage
+    x-data-scope: ORG_SUBTREE
+    x-idempotency: domain_key_task_retry
+    x-audit: true
+    responses: {}
 addressPageEnable:
   x-canonical-path: /touchpoint-address-pages/{id}/enable
   post:

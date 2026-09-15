@@ -68,6 +68,17 @@ async def execute_command(session: AsyncSession, ...) -> Result:
 - 被上层事务调用的Service不得再次开启独立顶层事务；内部方法接收同一Session。
 - Repository仅在需要立即取得约束结果、生成值或后续查询依赖写入结果时调用 flush。
 
+### LinkForty 目标应用的两阶段边界
+
+- 地址页面 PATCH 的第一笔短事务只保存 `touchpoint_address_pages` 和成功审计；目标配置
+  变化后，提交完成再创建重新应用任务和投递 Worker。任务明细按当前页面与调用方组织范围
+  重新查询，不接受客户端资产列表。
+- Payload 目标应用先在短事务中锁定并快照 Payload、资产和地址页面，事务外执行 LinkForty
+  GET/PUT，再以第二笔短事务重新校验页面 hash、Payload 关系、外部 Link ID 和权限后落本地
+  `address_page_id`/`target_url`。禁止在本地锁和事务内执行外部 HTTP。
+- 外部成功而第二笔本地事务失败时恢复旧目标；新建 Link 后本地创建失败时通过 API 删除新
+  Link。补偿失败只记录 `LINKFORTY_COMPENSATION_FAILED`，不伪造本地成功。
+
 ## 4. 本地原子事务
 
 以下操作必须在单一数据库事务中完成：

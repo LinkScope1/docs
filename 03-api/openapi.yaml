@@ -665,6 +665,7 @@ paths:
       operationId: updateTouchpointAddressPage
       x-owner: API/后端
       summary: Update an address page without changing its owner or code
+      description: Display-only fields update the bank page immediately. Target-affecting fields create a reapply task after the local transaction commits; the response includes its task ID and affected payload count. LinkForty is not called while the page row is locked.
       x-permission: touchpoint.address-page.manage
       x-data-scope: ORG_SUBTREE
       x-idempotency: domain_key_object_version
@@ -676,6 +677,53 @@ paths:
         '200': { $ref: '#/components/responses/Success' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /touchpoint-address-pages/{id}/reapply-tasks/{taskId}:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+      - name: taskId
+        in: path
+        required: true
+        schema: { $ref: '#/components/schemas/Id' }
+    get:
+      tags: [touchpoint-address-pages]
+      operationId: getTouchpointAddressPageReapplyTask
+      x-owner: API/后端
+      summary: Get an address page target reapply task
+      x-permission: touchpoint.address-page.read
+      x-data-scope: ORG_SUBTREE
+      x-idempotency: none
+      x-audit: false
+      x-status: reviewed
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /touchpoint-address-pages/{id}/reapply-tasks/{taskId}/retry:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+      - name: taskId
+        in: path
+        required: true
+        schema: { $ref: '#/components/schemas/Id' }
+    post:
+      tags: [touchpoint-address-pages]
+      operationId: retryTouchpointAddressPageReapplyTask
+      x-owner: API/后端
+      summary: Retry failed items of an address page target reapply task
+      x-permission: touchpoint.address-page.manage
+      x-data-scope: ORG_SUBTREE
+      x-idempotency: domain_key_task_retry
+      x-audit: true
+      x-status: reviewed
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
   /touchpoint-address-pages/{id}/enable:
     parameters: [{ $ref: '#/components/parameters/Id' }]
@@ -1864,15 +1912,17 @@ components:
     TouchpointPayloadCreateRequest:
       type: object
       additionalProperties: false
-      required: [assetId, payloadType, payloadValue, payloadSource]
+      description: >-
+        The asset is identified by the path parameter. When addressPageId is
+        supplied, the backend creates the LinkForty Link and uses its returned
+        short link as payloadValue. Clients must not supply linkfortyLinkId.
+      required: [payloadType, payloadSource]
       properties:
-        assetId: { $ref: '#/components/schemas/Id' }
         payloadType: { type: integer, enum: [1, 2, 3, 99] }
-        payloadValue: { type: string, minLength: 1, maxLength: 2048 }
+        payloadValue: { type: string, minLength: 1, maxLength: 2048, description: 'NFC 实际写入值；选择 addressPageId 时由后端生成，可省略。' }
         addressPageId: { $ref: '#/components/schemas/NullableId' }
         payloadSource: { type: integer, enum: [1, 2, 3, 4] }
         providerType: { type: integer, enum: [1, 2, 3, 99], default: 1 }
-        linkfortyLinkId: { type: [string, 'null'], format: uuid }
         metadata: { $ref: '#/components/schemas/Metadata' }
     TouchpointPayloadPatchRequest:
       type: object
@@ -1880,11 +1930,9 @@ components:
       minProperties: 1
       properties:
         payloadValue: { type: string, minLength: 1, maxLength: 2048 }
-        targetUrl: { type: string, minLength: 1, maxLength: 2048, description: 'Legacy direct target command; new clients should use addressPageId or the switch endpoint.' }
         addressPageId: { $ref: '#/components/schemas/NullableId' }
         payloadSource: { type: integer, enum: [1, 2, 3, 4] }
         providerType: { type: integer, enum: [1, 2, 3, 99] }
-        linkfortyLinkId: { type: [string, 'null'], format: uuid }
         metadata: { $ref: '#/components/schemas/Metadata' }
     TouchpointPayloadSwitchAddressPageRequest:
       type: object
@@ -2044,17 +2092,54 @@ components:
         createdAt: { type: [string, 'null'], format: date-time }
         updatedAt: { type: [string, 'null'], format: date-time }
         propagation: { $ref: '#/components/schemas/AddressPagePropagationResult' }
+        reapplyTaskId: { $ref: '#/components/schemas/NullableId' }
+        affectedPayloadCount: { type: integer, minimum: 0 }
     AddressPagePropagationResult:
       type: object
       additionalProperties: false
       required: [mode, coreUpdated, requiresNfcRewrite, affectedPayloadCount, updatedLinkCount]
       properties:
-        mode: { type: string, enum: [NO_CHANGE, LINKFORTY_DIRECT_REALTIME, LINKFORTY_BRIDGE_REALTIME, LINKFORTY_BATCH_REALTIME] }
+        mode: { type: string, enum: [NO_CHANGE, QUEUED, LINKFORTY_DIRECT_REALTIME, LINKFORTY_BRIDGE_REALTIME, LINKFORTY_BATCH_REALTIME] }
         coreUpdated: { type: boolean }
         requiresNfcRewrite: { type: boolean }
         affectedPayloadCount: { type: integer, minimum: 0 }
         updatedLinkCount: { type: integer, minimum: 0 }
         compensationFailed: { type: boolean }
+    TouchpointAddressPageReapplyTask:
+      type: object
+      additionalProperties: false
+      required: [id, addressPageId, pageConfigHash, triggerType, status, totalCount, successCount, failedCount, traceId, items]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        addressPageId: { $ref: '#/components/schemas/Id' }
+        pageConfigHash: { type: string, minLength: 64, maxLength: 64 }
+        triggerType: { type: string, enum: [address_page_update, manual_retry] }
+        status: { type: string, enum: [queued, running, completed, partial, failed] }
+        totalCount: { type: integer, minimum: 0 }
+        successCount: { type: integer, minimum: 0 }
+        failedCount: { type: integer, minimum: 0 }
+        traceId: { type: string, maxLength: 128 }
+        createdAt: { type: [string, 'null'], format: date-time }
+        startedAt: { type: [string, 'null'], format: date-time }
+        finishedAt: { type: [string, 'null'], format: date-time }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/TouchpointAddressPageReapplyItem' }
+    TouchpointAddressPageReapplyItem:
+      type: object
+      additionalProperties: false
+      required: [id, payloadId, status, attemptCount]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        payloadId: { $ref: '#/components/schemas/Id' }
+        status: { type: string, enum: [queued, running, succeeded, failed] }
+        attemptCount: { type: integer, minimum: 0 }
+        linkfortyLinkId: { type: [string, 'null'], format: uuid }
+        errorCode: { type: [string, 'null'], maxLength: 64 }
+        errorMessage: { type: [string, 'null'], maxLength: 1024 }
+        createdAt: { type: [string, 'null'], format: date-time }
+        startedAt: { type: [string, 'null'], format: date-time }
+        finishedAt: { type: [string, 'null'], format: date-time }
     TouchpointAddressPageOption:
       type: object
       additionalProperties: false
