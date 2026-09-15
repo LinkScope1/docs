@@ -49,7 +49,7 @@
 ## 三、系统边界与数据规则
 
 - 银行后台只拥有 8 张银行业务表：`operation_logs`、`organization_units`、`employees`、`touchpoint_assets`、`touchpoint_payloads`、`touchpoint_address_pages`、`touchpoint_employee_assignments`、`access_events`。
-- `touchpoint_address_pages` 的 `org_id` 是责任组织；`address_name` 是管理展示标识；`status` 为 0 停用/1 启用；地址页面被 Payload 使用后不得物理删除，停用不影响既有历史 Payload。
+- `touchpoint_address_pages` 的 `org_id` 是责任组织；`address_name` 是管理展示标识；`status` 为 0 停用/1 启用；地址页面被 Payload 使用后仍可在满足停用和任务校验后物理删除，但不得修改或清空既有 Payload，历史信息由删除归档快照解析。
 - `touchpoint_payloads` 只保存卡内实际内容和必要的 `linkforty_link_id` 逻辑引用，不保存 LinkForty 专属同步状态、同步时间、错误摘要或重试次数。
 - 银行后台对 LinkForty 的写入必须通过 API；读取外部事件只能使用受限只读账号；不得通过 LinkForty 数据库直读 `webhooks.secret`。当前方案允许银行后端配置服务通过受控 Core API 一次性 provisioning Secret；不得记录、前端暴露或输出 Secret。
 - `event_id` 是访问事件全局唯一幂等键，`click_id` 只能作为非唯一逻辑引用；重复 `event_id` 必须幂等成功。

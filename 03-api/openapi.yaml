@@ -378,6 +378,33 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '200': { $ref: '#/components/responses/Success' }
         '409': { $ref: '#/components/responses/Conflict' }
+    delete:
+      tags: [employees]
+      operationId: deleteEmployee
+      x-owner: API/后端
+      summary: Physically delete a disabled employee and retain a tombstone
+      description: >-
+        Requires explicit confirmation and a non-empty reason. The employee row
+        is physically deleted only after the same-transaction lock and guard
+        checks pass; historical bindings, access events, audit logs and the
+        employee snapshot remain traceable through the archive table.
+      x-permission: employee.delete
+      x-data-scope: ORG_SUBTREE
+      x-idempotency: command_key_physical_delete
+      x-audit: true
+      x-status: reviewed
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      requestBody: { $ref: '#/components/requestBodies/MasterDataDelete' }
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/RequestSchemaInvalid' }
+        '500': { $ref: '#/components/responses/InternalError' }
   /employees/{id}/enable:
     parameters: [{ $ref: '#/components/parameters/Id' }]
     post:
@@ -678,6 +705,33 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '409': { $ref: '#/components/responses/Conflict' }
+    delete:
+      tags: [touchpoint-address-pages]
+      operationId: deleteTouchpointAddressPage
+      x-owner: API/后端
+      summary: Physically delete a disabled address page and retain a tombstone
+      description: >-
+        Requires explicit confirmation and a non-empty reason. Queued or
+        running reapply tasks block deletion. Existing Payload references,
+        payload values, NFC data and historical reapply tasks are not changed;
+        no LinkForty deletion call is made.
+      x-permission: touchpoint.address-page.delete
+      x-data-scope: ORG_SUBTREE
+      x-idempotency: command_key_physical_delete
+      x-audit: true
+      x-status: reviewed
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      requestBody: { $ref: '#/components/requestBodies/MasterDataDelete' }
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/RequestSchemaInvalid' }
+        '500': { $ref: '#/components/responses/InternalError' }
   /touchpoint-address-pages/{id}/reapply-tasks/{taskId}:
     parameters:
       - { $ref: '#/components/parameters/Id' }
@@ -1694,6 +1748,11 @@ components:
       in: query
       name: pageSize
       schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    IdempotencyKey:
+      in: header
+      name: Idempotency-Key
+      required: true
+      schema: { type: string, minLength: 1, maxLength: 128 }
   requestBodies:
     OrganizationCreate:
       required: true
@@ -1720,6 +1779,11 @@ components:
       content:
         application/json:
           schema: { $ref: '#/components/schemas/EmployeeTransferRequest' }
+    MasterDataDelete:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/MasterDataDeleteRequest' }
     TouchpointAssetCreate:
       required: true
       content:
@@ -1885,6 +1949,13 @@ components:
       properties:
         targetOrgId: { $ref: '#/components/schemas/Id' }
         reason: { type: [string, 'null'], maxLength: 500 }
+    MasterDataDeleteRequest:
+      type: object
+      additionalProperties: false
+      required: [confirm, reason]
+      properties:
+        confirm: { type: boolean, description: '必须为 true 才允许物理删除。' }
+        reason: { type: string, minLength: 1, maxLength: 500 }
     TouchpointAssetCreateRequest:
       type: object
       additionalProperties: false
@@ -2094,6 +2165,16 @@ components:
         propagation: { $ref: '#/components/schemas/AddressPagePropagationResult' }
         reapplyTaskId: { $ref: '#/components/schemas/NullableId' }
         affectedPayloadCount: { type: integer, minimum: 0 }
+    PhysicalDeleteResult:
+      type: object
+      additionalProperties: false
+      required: [resourceId, resourceType, deleted, traceId, deletedAt]
+      properties:
+        resourceId: { $ref: '#/components/schemas/Id' }
+        resourceType: { type: string, enum: [employee, address_page] }
+        deleted: { type: boolean, const: true }
+        traceId: { type: string, minLength: 1, maxLength: 64 }
+        deletedAt: { type: string, format: date-time }
     AddressPagePropagationResult:
       type: object
       additionalProperties: false
@@ -2437,6 +2518,7 @@ components:
             - { $ref: '#/components/schemas/AuditLogDetail' }
             - { $ref: '#/components/schemas/AnalyticsSummaryData' }
             - { $ref: '#/components/schemas/WebhookAcceptedData' }
+            - { $ref: '#/components/schemas/PhysicalDeleteResult' }
     ErrorDetail:
       type: object
       additionalProperties: false

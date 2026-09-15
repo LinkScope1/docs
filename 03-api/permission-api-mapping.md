@@ -9,6 +9,7 @@ Casdoor 是权限编码唯一来源。以下编码是 V1.3.2 本地冻结契约�
 | `organization.manage` | POST/PATCH/POST command | `/api/v1/organizations/**` | `ORG_SUBTREE` | 是 |
 | `employee.read` | GET | `/api/v1/employees`、`/api/v1/employees/{id}` | `ORG_SUBTREE` | 否 |
 | `employee.manage` | POST/PATCH/POST command | `/api/v1/employees/**` | `ORG_SUBTREE` | 是 |
+| `employee.delete` | DELETE | `/api/v1/employees/{id}` | `ORG_SUBTREE` | 是；仅允许已停用且无当前责任员工 |
 | `employee.transfer` | POST | `/api/v1/employees/{id}/transfer` | `SOURCE_AND_TARGET_ORG` | 是 |
 | `touchpoint.asset.read` | GET | `/api/v1/touchpoint-assets`、`/api/v1/touchpoint-assets/{id}` | `ASSET_SCOPE` | 否 |
 | `touchpoint.asset.manage` | POST/PATCH/POST command | `/api/v1/touchpoint-assets/**` | `ORG_SUBTREE`/`ASSET_SCOPE` | 是 |
@@ -17,6 +18,7 @@ Casdoor 是权限编码唯一来源。以下编码是 V1.3.2 本地冻结契约�
 | `touchpoint.payload.manage` | POST/PATCH/POST command | `/api/v1/touchpoint-payloads/**`、`/api/v1/touchpoint-assets/{assetId}/payloads` | `ASSET_SCOPE` | 是 |
 | `touchpoint.address-page.read` | GET | `/api/v1/touchpoint-address-pages`、`/api/v1/touchpoint-address-pages/{id}`、`/api/v1/touchpoint-address-pages/options`、`/api/v1/touchpoint-address-pages/**` | `ORG_SUBTREE`；选项叠加 `ASSET_SCOPE` | 否 |
 | `touchpoint.address-page.manage` | POST/PATCH/POST command | `/api/v1/touchpoint-address-pages/**` | `ORG_SUBTREE` | 是 |
+| `touchpoint.address-page.delete` | DELETE | `/api/v1/touchpoint-address-pages/{id}` | `ORG_SUBTREE` | 是；仅允许已停用且无排队/执行中重新应用任务 |
 | `touchpoint.assignment.read` | GET | `/api/v1/touchpoint-assignments`、`/api/v1/touchpoint-assignments/{id}` | `ASSET_SCOPE` | 否 |
 | `touchpoint.assignment.manage` | POST | `/api/v1/touchpoint-assignments`、`/api/v1/touchpoint-assignments/{id}/unbind` | `ASSET_SCOPE` | 是 |
 | `touchpoint.assignment.transfer` | POST | `/api/v1/touchpoint-assignments/transfer` | `SOURCE_AND_TARGET_ORG` | 是 |

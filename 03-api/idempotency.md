@@ -6,12 +6,13 @@
 - 资产、组织、员工和 Payload 创建使用业务唯一键；重复键返回冲突或首次业务结果，按接口契约执行。
 - LinkForty 创建接口沿用现有稳定业务幂等策略；目标切换的 Core `PUT` 不添加 Core 尚未声明支持的幂等请求头，使用同 Link ID + 同目标的逻辑幂等。
 - Webhook 使用 `event_id` 全局唯一；`click_id` 只作非唯一逻辑引用。
-- `/imports/validate` 只读校验，不写业务表，不引入通用幂等表。
+- `/imports/validate` 只读校验，不写业务表；物理删除命令使用专用 `master_data_delete_commands`，不作为普通业务写入的通用幂等表。
 - 地址页面普通创建不再接收客户端 `addressCode`：服务端按内容类型前缀在事务级 advisory lock 下分配全局序号，并以唯一约束作为并发最终防线；可信导入更新仍以已有 `addressCode` 匹配，新增导入行可留空并由服务端生成。
 
 ## 规则
 
-- V1.3.2 不新增通用幂等表，也不承诺统一响应回放；接口通过 `x-idempotency` 声明领域键、状态命令键或 `event_id`。
+- 普通 V1.3.2 接口不新增通用幂等表；员工和地址页面物理删除是受控例外，使用 `master_data_delete_commands` 持久化命令和首次成功响应。
+- 物理删除相同 `Idempotency-Key` 且请求摘要一致时回放首次结果，不重复写归档、DELETE 或成功审计；相同键但资源/原因不同返回 `IDEMPOTENCY_KEY_REUSED`。资源已被其他键删除时返回 `RESOURCE_ALREADY_DELETED`。
 - 通用 `Idempotency-Key` 持久化、首次响应回放、TTL、Payload 冲突和并发回放延期 V1.4。
 - Webhook 使用 `event_id` 全局唯一。
 - `click_id` 不得作为唯一键。

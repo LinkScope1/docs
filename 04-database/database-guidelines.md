@@ -21,7 +21,7 @@
 - `access_events` 不分区。
 - 事件幂等键和外部点击引用必须遵循数据字典中的字段约束与索引定义。
 - JSONB 只用于低频扩展属性。
-- V1.3.2 业务库保留 8 张核心业务表，并增加横向 `import_batches` 批量导入任务表和地址页面重新应用任务/明细表；不创建 `iam_*`、`target_resources` 或 `routing_rules`。重新应用任务表属于银行后台横向任务能力，不向 `touchpoint_payloads` 增加外部同步状态字段。
+- V1.3.2 业务库保留 8 张核心业务表，并增加横向 `import_batches`、地址页面重新应用任务/明细表以及员工/地址页面物理删除归档和命令表；不创建 `iam_*`、`target_resources` 或 `routing_rules`。重新应用任务表属于银行后台横向任务能力，不向 `touchpoint_payloads` 增加外部同步状态字段。
 - `touchpoint_address_pages` 的 `org_id`、`content_type`、`address_name`、`status` 和 `target_url` 是显式核心字段；`target_url` 只做非空和长度校验，不限制 HTTP/HTTPS scheme。
 
 ## 表和字段

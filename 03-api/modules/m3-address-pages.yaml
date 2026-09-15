@@ -69,6 +69,19 @@ addressPageById:
     x-idempotency: domain_key_object_version
     x-audit: true
     description: addressCode 和 contentType 创建后不可修改；目标配置变化只提交银行地址页面和审计，事务提交后创建异步重新应用任务，按 Payload 复用统一应用流程；Core 更新失败通过补偿回滚，展示字段变化不触发 Core。
+  delete:
+    operationId: deleteTouchpointAddressPage
+    tags: [touchpoint-address-pages]
+    summary: 物理删除已停用地址页面并保留归档快照
+    x-status: reviewed
+    x-owner: API/后端
+    x-permission: touchpoint.address-page.delete
+    x-data-scope: ORG_SUBTREE
+    x-idempotency: command_key_physical_delete
+    x-audit: true
+    description: >-
+      必须携带 Idempotency-Key 和 confirm=true、非空 reason。queued/running 重新应用任务会阻止删除；Payload、NFC、历史任务和外部 LinkForty 数据不修改。
+    responses: {}
 
 addressPageReapplyTask:
   x-canonical-path: /touchpoint-address-pages/{id}/reapply-tasks/{taskId}
