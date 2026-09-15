@@ -40,6 +40,10 @@ Casdoor 提供角色和功能权限；银行后台不创建本地 IAM 表。后�
 - 物理删除是高风险独立权限；拥有 `employee.manage` 或 `touchpoint.address-page.manage` 不自动获得对应 delete 权限。
 - 请求中的 `orgId`、`employeeId`、筛选条件只能缩小范围，不能扩大范围。
 - 权限缺失和数据范围越界分别返回 `PERMISSION_DENIED` 和 `DATA_SCOPE_DENIED`。
+- 员工列表的 `associatedCardCount` 只有在调用方同时具备 `employee.read`、
+  `touchpoint.assignment.read` 和 `touchpoint.asset.read` 时才按资产范围聚合；
+  缺少后两者时返回 `null`，不得伪装为 `0`。关联卡详情接口除 `employee.read` 外，
+  还必须后端校验后两项读取权限，权限不足返回 `403`。
 - 员工状态必须为正常、所属组织必须启用，才可获取业务访问上下文。
 - 观察者只读，不能执行管理、绑定、导入、导出或审计查询。
 - 重新应用任务查询使用 `touchpoint.address-page.read`；重试使用 `touchpoint.address-page.manage`。

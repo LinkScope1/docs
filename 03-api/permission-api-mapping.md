@@ -7,7 +7,7 @@ Casdoor 是权限编码唯一来源。以下编码是 V1.3.2 本地冻结契约�
 | `authenticated` | GET | `/api/v1/auth/me` | `EMPLOYEE_SELF` | 否 |
 | `organization.read` | GET | `/api/v1/organizations`、`/api/v1/organizations/tree`、`/api/v1/organizations/{id}` | `ORG_SUBTREE` | 否 |
 | `organization.manage` | POST/PATCH/POST command | `/api/v1/organizations/**` | `ORG_SUBTREE` | 是 |
-| `employee.read` | GET | `/api/v1/employees`、`/api/v1/employees/{id}` | `ORG_SUBTREE` | 否 |
+| `employee.read` | GET | `/api/v1/employees`、`/api/v1/employees/{id}`、`/api/v1/employees/{id}/associated-cards` | `ORG_SUBTREE` | 否 |
 | `employee.manage` | POST/PATCH/POST command | `/api/v1/employees/**` | `ORG_SUBTREE` | 是 |
 | `employee.delete` | DELETE | `/api/v1/employees/{id}` | `ORG_SUBTREE` | 是；仅允许已停用且无当前责任员工 |
 | `employee.transfer` | POST | `/api/v1/employees/{id}/transfer` | `SOURCE_AND_TARGET_ORG` | 是 |
@@ -34,6 +34,10 @@ Casdoor 是权限编码唯一来源。以下编码是 V1.3.2 本地冻结契约�
 | `export.read` | GET | `/api/v1/exports/{resource}` | `ORG_SUBTREE`，按资源再收窄为 `ASSET_SCOPE` | 是 |
 | `export.payload-content` | GET | `/api/v1/exports/touchpoint-payloads?mode=content` | 在 `export.read` 数据范围内 | 是 |
 | `audit.read` | GET | `/api/v1/audit-logs`、`/api/v1/audit-logs/{id}` | `ORG_SUBTREE` | 否 |
+
+关联卡详情接口虽然以 `employee.read` 作为路由入口权限，但后端 Service 还必须同时校验
+`touchpoint.assignment.read` 和 `touchpoint.asset.read` 及 `ASSET_SCOPE`；缺少任一权限返回
+`403`。员工列表在缺少这两项关联卡读取权限时将 `associatedCardCount` 返回为 `null`，不表示数量为零。
 
 `system_webhook` 仅表示 LinkForty Webhook 的 HMAC 集成主体，不是 Casdoor 用户权限，也不进入角色矩阵。
 

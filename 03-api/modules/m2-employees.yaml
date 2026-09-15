@@ -82,6 +82,31 @@ employeeById:
       必须携带 Idempotency-Key 和 confirm=true、非空 reason。员工必须已停用且不存在当前绑定、资产/载体内容责任或正在写入关系的任务；历史绑定、访问事件、审计和员工快照不删除。
     responses: {}
 
+employeeAssociatedCards:
+  x-canonical-path: /employees/{id}/associated-cards
+  get:
+    operationId: listEmployeeAssociatedCards
+    tags: [employees]
+    summary: 查询员工当前关联卡
+    x-status: reviewed
+    x-owner: API/后端
+    x-permission: employee.read
+    x-data-scope: ORG_SUBTREE
+    x-idempotency: none
+    x-audit: false
+    description: >-
+      In addition to employee.read, the backend requires
+      touchpoint.assignment.read and touchpoint.asset.read. Missing permissions
+      return 403; they are never represented as a zero count. Item fields use
+      the database mappings touchpoint_assets.asset_id, carrier_uid,
+      supplier_batch_no, asset_status and
+      touchpoint_employee_assignments.assignment_status; addressPages use
+      touchpoint_address_pages fields through Payload.address_page_id.
+    parameters:
+      - { $ref: '#/components/parameters/Page' }
+      - { $ref: '#/components/parameters/PageSize' }
+    responses: {}
+
 employeeEnable:
   x-canonical-path: /employees/{id}/enable
   post:

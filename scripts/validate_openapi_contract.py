@@ -118,7 +118,7 @@ def parse_mapping_rows() -> list[dict[str, Any]]:
                 "methods": methods,
                 "paths": paths,
                 "scopes": scopes,
-                "audit": cells[4] == "是",
+                "audit": cells[4].startswith("是"),
             }
         )
     return rows
@@ -197,8 +197,8 @@ def check_modules(document: dict[str, Any], errors: list[str]) -> None:
                         errors.append(
                             f"{path.relative_to(ROOT)}:{key}:{method}: {field} differs from main OpenAPI"
                         )
-    if mirror_count != 52:
-        errors.append(f"modules: expected 52 mirrored operations, found {mirror_count}")
+    if mirror_count != 55:
+        errors.append(f"modules: expected 55 mirrored operations, found {mirror_count}")
 
     m5 = load_yaml(MODULE_DIR / "m5-access-events.yaml")
     m5_expectations = {
@@ -228,8 +228,8 @@ def check_document(document: dict[str, Any], errors: list[str]) -> None:
     if [server.get("url") for server in document.get("servers", [])] != ["/api/v1"]:
         errors.append("openapi.yaml: server must be exactly /api/v1")
     ops = operations(document)
-    if len(ops) != 63:
-        errors.append(f"openapi.yaml: expected 63 operations, found {len(ops)}")
+    if len(ops) != 66:
+        errors.append(f"openapi.yaml: expected 66 operations, found {len(ops)}")
     operation_ids: dict[str, tuple[str, str]] = {}
     for path, method, operation in ops:
         operation_id = operation.get("operationId")
@@ -253,6 +253,7 @@ def check_document(document: dict[str, Any], errors: list[str]) -> None:
             or idempotency == "assignment_command"
             or idempotency == "server_generated_prefix_sequence"
             or idempotency.startswith("domain_key_")
+            or idempotency.startswith("command_key_")
         ):
             errors.append(f"{method.upper()} {path}: invalid x-idempotency")
         if operation.get("x-owner") in (None, ""):
@@ -411,7 +412,7 @@ def main() -> int:
         print("OpenAPI contract validation failed:")
         print("\n".join(f"- {error}" for error in errors))
         return 1
-    print("OpenAPI contract validation passed (63 operations, 52 module mirrors).")
+    print("OpenAPI contract validation passed (66 operations, 55 module mirrors).")
     return 0
 
 
