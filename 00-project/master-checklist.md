@@ -62,7 +62,7 @@
 - [x] 确认 Python 后端和前端真实代码目录：`bank-touchpoint-backend/`、`bank-touchpoint-frontend/`；后端已有局部 M1～M5 代码落点，前端 M1～M5 当前仍为工程骨架
 - [x] 确认 MVP 范围和不纳入项
 - [x] 确认 M1～M5 负责人以及工作包 A、B 的主负责人
-- [ ] 完成 Casdoor 真实环境 PoC，并确认 `employee_code` Claim（延期至 V1.4；V1.3.2 保留开发/测试 Mock）
+- [ ] 完成 Casdoor 真实环境 PoC，并确认 `employee_code` Claim（延期至 V1.4；V1.3.2 保留开发/测试 Mock；`employee_uid` 仅为本地展示 ID）
 - [x] 完成 LinkForty API PoC
 - [x] 获取并验证真实 Webhook 样例（本地真实投递、验证和负责人正式确认已完成）
 - [x] 确认 NFC/NDEF Mock 方案（真实设备、SDK、写卡和读回核验延期至 V1.4）
@@ -137,4 +137,4 @@
 | LinkForty API 契约 | LinkForty 负责人 | 待指定 | 本地创建/查询和健康检查可用；同 Key 重复请求产生两个 Link，作为 V1.3.2 已知风险；安装/App 聚合统计本版本不纳入，正式字段、TLS/ACL 和只读证据按对应版本边界处理 |
 | Webhook 签名和事件样例 | LinkForty 负责人 | 待指定 | 本地真实样例已验证；负责人正式确认已完成 |
 | NFC 设备和 NDEF 方案 | 硬件/业务 | V1.4 | 延期至 V1.4；真实外部证据待补，V1.3.2 使用 Mock |
-| 数据库部署和只读账号 | 数据库/运维 | 待指定 | 代码 head 为 Alembic `0006_touchpoint_address_pages`；本次未连接 PostgreSQL/Redis/Celery，Worker、迁移、运行权限和生产证据待确认；LinkForty 数据库只读账号延期至 V1.4，V1.3.2 统计只调用 API |
+| 数据库部署和只读账号 | 数据库/运维 | 待指定 | 代码 head 为 Alembic `0008_display_identifiers`；本次未连接 PostgreSQL/Redis/Celery，Worker、迁移、运行权限和生产证据待确认；LinkForty 数据库只读账号延期至 V1.4，V1.3.2 统计只调用 API |

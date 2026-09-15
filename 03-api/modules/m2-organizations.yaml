@@ -1,4 +1,5 @@
 # M2：组织管理。状态变化必须使用enable/disable命令接口。
+# M2：组织管理。orgAbbr 由服务端依据组织名称生成，创建后保持稳定，客户端无需提交。
 organizations:
   x-canonical-path: /organizations
   get:
@@ -37,6 +38,7 @@ organizations:
     x-data-scope: ORG_SUBTREE
     x-idempotency: domain_key_parent_org_name
     x-audit: true
+    description: orgAbbr 由后端生成并在响应中返回，组织改名不重新计算。
     responses: {}
 
 organizationTree:
@@ -77,6 +79,7 @@ organizationById:
     x-data-scope: ORG_SUBTREE
     x-idempotency: domain_key_object_version
     x-audit: true
+    description: orgAbbr 不属于可修改字段；组织改名不会重新计算已有缩写。
     responses: {}
 
 organizationEnable:

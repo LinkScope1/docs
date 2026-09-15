@@ -1,4 +1,5 @@
-# M2：员工管理。员工调动不得通过普通PATCH直接修改org_id。
+# M2：员工管理。employeeCode 是工号及 Casdoor 登录映射字段；employeeUid 是服务端生成的只读员工ID。
+# 员工调动不得通过普通PATCH直接修改org_id。
 employees:
   x-canonical-path: /employees
   get:
@@ -21,6 +22,9 @@ employees:
         name: employeeCode
         schema: { type: string, maxLength: 64 }
       - in: query
+        name: employeeUid
+        schema: { type: string, maxLength: 64 }
+      - in: query
         name: employeeName
         schema: { type: string, maxLength: 100 }
       - in: query
@@ -37,6 +41,7 @@ employees:
     x-data-scope: ORG_SUBTREE
     x-idempotency: domain_key_employee_code
     x-audit: true
+    description: employeeCode 仍由 HR/Casdoor/管理员提供且必填；employeeUid 由后端生成，客户端不得传入。
     responses: {}
 
 employeeById:
