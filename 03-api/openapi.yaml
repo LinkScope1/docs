@@ -2705,14 +2705,18 @@ components:
       type: object
       additionalProperties: false
       required:
-        [id, traceId, orgId, employeeId, operationType, objectType, objectId,
+        [id, traceId, orgId, employeeId, employeeCode, employeeName,
+         operationType, operationTypeLabel, objectType, objectId,
          operationResult, operationSummary, errorCode, operationTime]
       properties:
         id: { $ref: '#/components/schemas/Id' }
         traceId: { type: string, maxLength: 64 }
         orgId: { $ref: '#/components/schemas/NullableId' }
         employeeId: { $ref: '#/components/schemas/NullableId' }
+        employeeCode: { type: [string, 'null'], maxLength: 64, description: '操作员工编码；系统任务或无可解析员工记录时为空。' }
+        employeeName: { type: [string, 'null'], maxLength: 100, description: '操作员工姓名；读取当前员工主数据或物理删除归档，不表示操作发生时的姓名快照。' }
         operationType: { type: integer }
+        operationTypeLabel: { type: string, maxLength: 64, description: '用于展示的操作类型标签；结合现有类型编号、对象类型和摘要处理历史编号复用，未知编号返回其他操作标签。' }
         objectType: { type: integer }
         objectId: { $ref: '#/components/schemas/NullableId' }
         operationResult: { type: integer, enum: [1, 2, 3] }
@@ -2723,7 +2727,8 @@ components:
       type: object
       additionalProperties: false
       required:
-        [id, traceId, orgId, employeeId, operationType, objectType, objectId,
+        [id, traceId, orgId, employeeId, employeeCode, employeeName,
+         operationType, operationTypeLabel, objectType, objectId,
          operationResult, operationSummary, errorCode, operationTime,
          externalObjectId, operationDetail, beforeData, afterData, errorMessage,
          userAgent, createdAt]
@@ -2732,7 +2737,10 @@ components:
         traceId: { type: string, maxLength: 64 }
         orgId: { $ref: '#/components/schemas/NullableId' }
         employeeId: { $ref: '#/components/schemas/NullableId' }
+        employeeCode: { type: [string, 'null'], maxLength: 64, description: '操作员工编码；系统任务或无可解析员工记录时为空。' }
+        employeeName: { type: [string, 'null'], maxLength: 100, description: '操作员工姓名；读取当前员工主数据或物理删除归档，不表示操作发生时的姓名快照。' }
         operationType: { type: integer }
+        operationTypeLabel: { type: string, maxLength: 64, description: '用于展示的操作类型标签；结合现有类型编号、对象类型和摘要处理历史编号复用，未知编号返回其他操作标签。' }
         objectType: { type: integer }
         objectId: { $ref: '#/components/schemas/NullableId' }
         operationResult: { type: integer, enum: [1, 2, 3] }

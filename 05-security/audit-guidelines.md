@@ -32,3 +32,7 @@
 - `operation_time`
 
 审计日志只追加，普通业务用户不可修改或删除。
+
+审计查询响应可以根据 `employee_id` 在读取时解析 `employee_code` 和 `employee_name`；员工已物理删除时，使用 `deleted_employees` 的归档快照。姓名不复制到 `operation_logs`，该展示不保证还原操作发生时的姓名。审计查询须通过 `audit.read`，审计日志导出须通过 `export.read`，两者都必须遵守已授权数据范围。
+
+`operationTypeLabel` 是展示字段，不是持久化列。由于现有调用点对部分 `operation_type` 编号存在复用，标签须结合对象类型和安全摘要生成；未知编号必须显示明确回退值。不要仅凭数值编号在前端重新解释操作语义。
