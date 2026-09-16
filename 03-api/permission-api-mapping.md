@@ -11,26 +11,27 @@ Casdoor 是权限编码唯一来源。以下编码是 V1.3.2 本地冻结契约�
 | `employee.manage` | POST/PATCH/POST command | `/api/v1/employees/**` | `ORG_SUBTREE` | 是 |
 | `employee.delete` | DELETE | `/api/v1/employees/{id}` | `ORG_SUBTREE` | 是；仅允许已停用且无当前责任员工 |
 | `employee.transfer` | POST | `/api/v1/employees/{id}/transfer` | `SOURCE_AND_TARGET_ORG` | 是 |
-| `touchpoint.asset.read` | GET | `/api/v1/touchpoint-assets`、`/api/v1/touchpoint-assets/{id}` | `ASSET_SCOPE` | 否 |
-| `touchpoint.asset.manage` | POST/PATCH/POST command | `/api/v1/touchpoint-assets/**` | `ORG_SUBTREE`/`ASSET_SCOPE` | 是 |
+| `touchpoint.asset.read` | GET | `/api/v1/touchpoint-assets`、`/api/v1/touchpoint-assets/{id}`、`/api/v1/touchpoint-assets/statistics` | `ASSET_SCOPE` | 否 |
+| `touchpoint.asset.manage` | POST/PATCH/POST command | `/api/v1/touchpoint-assets/**`、`/api/v1/touchpoint-assets/{assetId}/configuration`、`/api/v1/touchpoint-assets/batch-configure` | `ORG_SUBTREE`/`ASSET_SCOPE` | 是 |
 | `touchpoint.asset.scrap` | POST | `/api/v1/touchpoint-assets/{id}/scrap` | `ASSET_SCOPE` | 是 |
 | `touchpoint.payload.read` | GET | `/api/v1/touchpoint-payloads`、`/api/v1/touchpoint-payloads/{id}`、`/api/v1/touchpoint-assets/{assetId}/payloads` | `ASSET_SCOPE` | 否 |
 | `touchpoint.payload.manage` | POST/PATCH/POST command | `/api/v1/touchpoint-payloads/**`、`/api/v1/touchpoint-assets/{assetId}/payloads` | `ASSET_SCOPE` | 是 |
+| `touchpoint.payload.manage` | POST | `/api/v1/touchpoint-assets/batch-configure`、`/api/v1/touchpoint-assets/{assetId}/configuration`（请求中包含 addressPageId 时） | `ASSET_SCOPE` | 是 |
 | `touchpoint.address-page.read` | GET | `/api/v1/touchpoint-address-pages`、`/api/v1/touchpoint-address-pages/{id}`、`/api/v1/touchpoint-address-pages/options`、`/api/v1/touchpoint-address-pages/**` | `ORG_SUBTREE`；选项叠加 `ASSET_SCOPE` | 否 |
 | `touchpoint.address-page.manage` | POST/PATCH/POST command | `/api/v1/touchpoint-address-pages/**` | `ORG_SUBTREE` | 是 |
 | `touchpoint.address-page.delete` | DELETE | `/api/v1/touchpoint-address-pages/{id}` | `ORG_SUBTREE` | 是；仅允许已停用且无排队/执行中重新应用任务 |
 | `touchpoint.assignment.read` | GET | `/api/v1/touchpoint-assignments`、`/api/v1/touchpoint-assignments/{id}` | `ASSET_SCOPE` | 否 |
 | `touchpoint.assignment.manage` | POST | `/api/v1/touchpoint-assignments`、`/api/v1/touchpoint-assignments/{id}/unbind` | `ASSET_SCOPE` | 是 |
 | `touchpoint.assignment.transfer` | POST | `/api/v1/touchpoint-assignments/transfer` | `SOURCE_AND_TARGET_ORG` | 是 |
+| `touchpoint.assignment.manage` | POST | `/api/v1/touchpoint-assets/batch-bind`、`/api/v1/touchpoint-assets/batch-unbind`、`/api/v1/touchpoint-assets/batch-configure`（请求中包含 employeeId 时） | `ASSET_SCOPE` | 是 |
 | `access-event.read` | GET | `/api/v1/access-events`、`/api/v1/access-events/{id}` | `ORG_SUBTREE`/`EMPLOYEE_SELF` | 否 |
 | `analytics.read` | GET | `/api/v1/analytics/summary` | `ORG_SUBTREE` | 否 |
 | `import.validate` | POST | `/api/v1/imports/validate` | `ORG_SUBTREE`，按模板资源再收窄 | 是 |
-| `import.validate` | GET | `/api/v1/imports/templates/{templateType}`、`/api/v1/imports/templates/employees` | `ORG_SUBTREE` | 否 |
+| `import.validate` | GET | `/api/v1/imports/templates/{templateType}`、`/api/v1/imports/templates/employees`、`/api/v1/imports/templates/assets`、`/api/v1/imports/templates/payloads`、`/api/v1/imports/templates/assignments` | `ORG_SUBTREE` | 否 |
 | `import.validate` | POST | `/api/v1/imports/execute` | `ORG_SUBTREE`，执行时叠加业务管理权限 | 是 |
 | `import.validate` | GET | `/api/v1/imports/{batchId}`、`/api/v1/imports/{batchId}/failure-report` | `EMPLOYEE_SELF`；全局管理员可查看 | 否 |
+| `touchpoint.asset.read` | GET | `/api/v1/bulk-operations/{batchId}` | `EMPLOYEE_SELF`；任务创建者或全局管理员 | 否 |
 | `employee.manage` | POST | `/api/v1/imports/employees/execute` | `ORG_SUBTREE` | 是 |
-| `import.validate` | GET | `/api/v1/imports/templates/organizations` | `ORG_SUBTREE` | 否 |
-| `organization.manage` | POST | `/api/v1/imports/organizations/execute` | `ORG_SUBTREE` | 是 |
 | `export.read` | GET | `/api/v1/exports/{resource}` | `ORG_SUBTREE`，按资源再收窄为 `ASSET_SCOPE` | 是 |
 | `export.payload-content` | GET | `/api/v1/exports/touchpoint-payloads?mode=content` | 在 `export.read` 数据范围内 | 是 |
 | `audit.read` | GET | `/api/v1/audit-logs`、`/api/v1/audit-logs/{id}` | `ORG_SUBTREE` | 否 |
@@ -52,4 +53,4 @@ Casdoor 是权限编码唯一来源。以下编码是 V1.3.2 本地冻结契约�
 - `ASSET_SCOPE`：资源 `org_id` 在授权范围内；员工角色额外限制为本人责任资产或本机构库存资产。
 - `SOURCE_AND_TARGET_ORG`：来源和目标组织均在授权范围内，且调用方具备 Transfer 权限。
 
-三类业务导入统一使用 `/api/v1/imports/validate` 和 `/api/v1/imports/execute`；超过 1,000 行由 Celery 异步执行，使用 `batchId` 查询结果。普通载体内容导出不含原始内容值，原值导出必须额外具备 `export.payload-content` 权限并二次确认。统计不拥有本地表，导出不创建对象存储或下载 Token。
+卡片、载体内容、地址页面和员工四类主数据导入统一使用 `/api/v1/imports/validate` 和 `/api/v1/imports/execute`；超过 1,000 行由 Celery 异步执行，使用 `batchId` 查询结果。组织导入/导出不属于当前公开批量能力。普通载体内容导出不含原始内容值，原值导出必须额外具备 `export.payload-content` 权限并二次确认。统计不拥有本地表，导出不创建对象存储或下载 Token。

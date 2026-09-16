@@ -152,7 +152,7 @@ V1.3.2 的正式范围为 8 张银行核心业务表、1 张横向导入任务�
 
 **数据所有权：**拥有 touchpoint_assets 和 touchpoint_payloads。
 
-M3 同时拥有 `touchpoint_address_pages`。地址页面是银行后台可复用的内容主数据，不是 `target_resources` 或 `routing_rules`；其 `content_type` 固定为 1 小程序、2 APP、3 网页。`url` 是原始/展示值，只做首尾空格清理；`target_url` 是目标配置，进入 Core 前由 Service 按内容类型解析。小程序要求公开 HTTPS Universal Link，APP 使用 `card-switch-demo` 的 `app-open.html` Bridge，网页直接使用目标 URL。
+M3 同时拥有 `touchpoint_address_pages`。地址页面是银行后台可复用的内容主数据，不是 `target_resources` 或 `routing_rules`；其 `content_type` 固定为 1 小程序、2 APP、3 网页。`url` 是原始/展示值，只做首尾空格清理；`target_url` 是目标配置，进入 Core 前由 Service 按内容类型解析。小程序要求公开 HTTPS Universal Link，APP 的回退地址允许 HTTP/HTTPS、Bridge 使用公开 HTTPS 的 `card-switch-demo` `app-open.html`，网页直接使用目标 URL。
 
 **输入：**asset_code、asset_type、carrier_uid、责任 org_id/employee_id、资产状态，以及 Payload 类型、值、来源、提供方和外部链接标识。
 
