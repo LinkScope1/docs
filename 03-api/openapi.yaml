@@ -1114,14 +1114,17 @@ paths:
       tags: [touchpoint-payloads]
       operationId: switchTouchpointPayloadAddressPage
       x-owner: API/后端
-      summary: Switch an existing NFC short link to a reusable address page
+      summary: Bind or switch an NFC short link to a reusable address page
       description: >-
-        The bank backend reads the enabled address page, validates the asset
-        data scope and LinkForty snapshot, updates the same Core Link through
-        its API, and keeps payloadValue and linkfortyLinkId unchanged. NFC is
-        not rewritten. APP pages resolve to the card-switch-demo bridge URL;
-        mini-program pages require a public HTTPS Universal Link and call Core
-        directly without a bridge.
+        The bank backend reads the enabled address page and validates the asset
+        data scope. For an unlinked initial Payload it sends the persisted
+        shortCode as Core customCode and creates a Link through the Core API.
+        The Link is active only when the asset is enabled, the Payload is
+        enabled, providerType is LinkForty, and a Link ID exists; otherwise it
+        remains inactive. A custom-code collision is reported; an automatic
+        candidate is regenerated and retried. For an existing Link the same
+        Link is updated and NFC payloadValue is preserved. Clients cannot send
+        an arbitrary targetUrl or LinkForty Link ID.
       x-permission: touchpoint.payload.manage
       x-required-permissions: [touchpoint.payload.manage, touchpoint.address-page.read]
       x-data-scope: ASSET_SCOPE
@@ -2217,7 +2220,7 @@ components:
     TouchpointAssetCreateRequest:
       type: object
       additionalProperties: false
-      description: assetId is server-generated after creation and must not be submitted by the client.
+      description: assetId is server-generated after creation and must not be submitted by the client. Creation also writes exactly one unbound initial Payload and returns its preset shortCode.
       required: [assetCode, orgId]
       properties:
         assetCode: { type: string, minLength: 1, maxLength: 64 }
@@ -2228,6 +2231,7 @@ components:
         supplierBatchNo: { type: [string, 'null'], maxLength: 64 }
         metadata: { $ref: '#/components/schemas/Metadata' }
         description: { type: [string, 'null'], maxLength: 500 }
+        customCode: { type: [string, 'null'], maxLength: 20, description: '可选预设短码；严格复用 Core，仅限制最大 20 位，不限制最小位数、字符或大小写；空字符串按自动生成处理。' }
     TouchpointAssetPatchRequest:
       type: object
       additionalProperties: false
@@ -2288,8 +2292,11 @@ components:
       additionalProperties: false
       description: >-
         The asset is identified by the path parameter. When addressPageId is
-        supplied, the backend creates the LinkForty Link and uses its returned
-        short link as payloadValue. Clients must not supply linkfortyLinkId.
+        supplied for an additional Payload, the backend creates the LinkForty
+        Link and uses its returned short link as payloadValue. The initial
+        Payload created with an asset stores a bank-generated or custom
+        shortCode locally and waits for the address-page binding. Clients must
+        not supply linkfortyLinkId or an arbitrary targetUrl.
       required: [payloadType, payloadSource]
       properties:
         payloadType: { type: integer, enum: [1, 2, 3, 99] }
@@ -2503,13 +2510,15 @@ components:
     AssetPageBinding:
       type: object
       additionalProperties: false
-      required: [payloadId, addressPageId, addressCode, addressName, contentType, targetUrl, shortLink, payloadStatus, linkfortyLinkId]
+      required: [payloadId, addressPageId, addressCode, addressName, contentType, shortCode, shortCodeSource, targetUrl, shortLink, payloadStatus, linkfortyLinkId]
       properties:
         payloadId: { $ref: '#/components/schemas/Id' }
         addressPageId: { $ref: '#/components/schemas/NullableId' }
         addressCode: { type: [string, 'null'] }
         addressName: { type: [string, 'null'] }
         contentType: { type: [integer, 'null'], enum: [1, 2, 3, null] }
+        shortCode: { type: [string, 'null'], maxLength: 20 }
+        shortCodeSource: { type: [integer, 'null'], enum: [1, 2, null] }
         targetUrl: { type: [string, 'null'], maxLength: 2048 }
         shortLink: { type: [string, 'null'] }
         payloadStatus: { type: integer, enum: [0, 1, 2, 3] }
@@ -2527,14 +2536,16 @@ components:
     TouchpointPayload:
       type: object
       additionalProperties: false
-      required: [id, assetId, payloadType, payloadValue, payloadSource, providerType, status, addressPageId, addressCode, addressName, targetUrl]
+      required: [id, assetId, payloadType, payloadValue, shortCode, shortCodeSource, payloadSource, providerType, status, addressPageId, addressCode, addressName, targetUrl]
       properties:
         id: { $ref: '#/components/schemas/Id' }
         assetId: { $ref: '#/components/schemas/Id' }
         orgId: { $ref: '#/components/schemas/Id' }
         employeeId: { $ref: '#/components/schemas/NullableId' }
         payloadType: { type: integer }
-        payloadValue: { type: string }
+        payloadValue: { type: [string, 'null'] }
+        shortCode: { type: [string, 'null'], maxLength: 20 }
+        shortCodeSource: { type: [integer, 'null'], enum: [1, 2, null] }
         addressPageId: { $ref: '#/components/schemas/NullableId' }
         addressCode: { type: [string, 'null'] }
         addressName: { type: [string, 'null'] }

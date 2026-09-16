@@ -224,7 +224,9 @@ asset_code 用于业务查询和导入，carrier_uid 用于 NFC 物理盘点，�
 | org_id | BIGINT | 否 | — | 从载体同步的数据责任组织 |
 | employee_id | BIGINT | 是 | — | 从载体同步的直接责任员工 |
 | payload_type | SMALLINT | 否 | 1 | 1 短链 / 2 URL / 3 文本 / 99 其他 |
-| payload_value | VARCHAR(2048) | 否 | — | 卡内实际写入内容，不是最终目标 |
+| payload_value | VARCHAR(2048) | 是 | — | 卡内实际写入内容，不是最终目标；资产创建的初始 Payload 在未绑定地址页面前为空 |
+| short_code | VARCHAR(20) | 是 | — | 资产创建时预设的 LinkForty 短码；未绑定页面时只作为银行本地预留值，绑定后作为 Core customCode；历史/非短链 Payload 可空 |
+| short_code_source | SMALLINT | 是 | — | 1 系统自动生成（与 Core nanoid(8) 规则一致） / 2 人工自定义；历史/非短链 Payload 可空 |
 | address_page_id | BIGINT | 是 | — | 可复用地址页面逻辑引用；选择时由 Service 校验启用状态和组织范围 |
 | target_url | VARCHAR(2048) | 是 | — | LinkForty Core 目标快照；网页/小程序为实际目标，APP 为按 Link ID 解析后的 Bridge URL；手工 URL 类型内容时可由 payload_value 得出 |
 | payload_source | SMALLINT | 否 | — | 1 供应商预写 / 2 本系统 / 3 外部导入 / 4 人工录入 |
@@ -237,7 +239,7 @@ asset_code 用于业务查询和导入，carrier_uid 用于 NFC 物理盘点，�
 | created_at | TIMESTAMPTZ | 否 | NOW() | 创建时间 |
 | updated_at | TIMESTAMPTZ | 否 | NOW() | 修改时间 |
 
-> 外部同步：linkforty_link_id 仅为 LinkForty 逻辑引用；touchpoint_payloads 不保存 LinkForty 专属同步状态，外部调用结果由 operation_logs 和 trace_id 审计。
+> 外部同步：linkforty_link_id 仅为 LinkForty 逻辑引用；touchpoint_payloads 不保存 LinkForty 专属同步状态，外部调用结果由 operation_logs 和 trace_id 审计。`short_code` 是银行侧预设/回写的业务字段，不代表 Core 已创建 Link；只有 `address_page_id` 绑定成功后，银行后台才通过 Core API 创建 Link。Link 仅在所属资产和 Payload 均启用、`provider_type=1` 且 Link ID 非空时 active。
 
 ## 4.5 touchpoint_address_pages
 
@@ -744,5 +746,6 @@ V1.3.2 删除配置状态、目标资源类型、路由冲突和路由发布相�
 | V1.3.2 | 2026-09-15 | M2 增加服务端生成的 `organization_units.org_abbr` 和 `employees.employee_uid`，保留 `employee_code` 作为 Casdoor 登录工号；M3 地址页面新建编码按内容类型自动生成。 |
 | V1.3.2 | 2026-09-15 | M2/M3 增加已停用员工和地址页面的高风险物理删除接口；主表真实 DELETE，使用 deleted_* 快照和 `master_data_delete_commands` 保留历史、永久占用编码并支持幂等回放。 |
 | V1.3.2 | 2026-09-16 | 横向能力增加 `bulk_operation_batches` / `bulk_operation_items`；地址页面统一模板增加 APP Scheme、APP Payload 和 APP 回退地址，组织导入/导出公开能力移除；资产详情/列表增加绑定信息和本地短链快照；导入批次增加请求指纹。 |
+| V1.3.2 | 2026-09-16 | M3 明确 LinkForty Link 仅在资产、Payload、提供方和 Link ID 均满足条件时 active；状态通过 API 同步，不新增外部同步状态字段。 |
 
 > 历史版本：V1.2 原文档保留为历史基线。

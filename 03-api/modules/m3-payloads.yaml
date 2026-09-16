@@ -1,7 +1,8 @@
 # M3：载体内容。org_id和employee_id由资产同步，禁止客户端指定；可选 address_page_id
-# 关联银行地址页面。payload_value 始终是 NFC 实际写入的短链/内容，目标切换时不变。
-# 新建时提交 addressPageId 即由后端创建 LinkForty Link，并使用返回短链作为 payload_value；
-# linkfortyLinkId、targetUrl 和 customCode 不接受客户端提交；目标必须从银行地址页面主数据解析。
+# 关联银行地址页面。payload_value 是 NFC 实际写入的短链/内容，初始 Payload 未绑定页面时可为空。
+# 资产创建时先在本地 Payload 中预设 short_code；首次绑定地址页面时由后端创建 LinkForty Link，
+# 仅当资产和 Payload 均启用且提供方为 LinkForty 时才激活；
+# Payload 接口不接受 linkfortyLinkId、targetUrl 和 customCode；目标必须从银行地址页面主数据解析。
 payloads:
   x-canonical-path: /touchpoint-payloads
   get:
@@ -56,7 +57,7 @@ payloadSwitchAddressPage:
   post:
     operationId: switchTouchpointPayloadAddressPage
     tags: [touchpoint-payloads]
-    summary: 不重新写 NFC，切换同一短链的地址页面目标
+    summary: 首次绑定或切换地址页面目标
     x-status: reviewed
     x-owner: API/后端
     x-permission: touchpoint.payload.manage
@@ -64,6 +65,7 @@ payloadSwitchAddressPage:
     x-data-scope: ASSET_SCOPE
     x-idempotency: domain_key_link_target
     x-audit: true
+    description: 未绑定 Link 的初始 Payload 使用其预设 shortCode 调用 Core 创建 Link；只有 asset_status=1、Payload status=1、providerType=1 且 Link ID 非空时才激活，否则保持 inactive。已有 Link 的 Payload 复用原 Link，不重新写 NFC。客户端只能提交已存在的 addressPageId，不能提交任意 targetUrl、LinkForty Link ID 或 customCode。
     responses: {}
 
 payloadEnable:

@@ -95,9 +95,15 @@ ID 的最终 Bridge URL，历史占位 Bridge URL 仅在解析器中兼容。
 
 `POST /api/v1/touchpoint-assets/{assetId}/payloads` 只接收路径中的资产 ID、`payloadType`、
 `payloadSource`、`providerType`、`addressPageId` 和非敏感 metadata。选择地址页面时不接收
-`linkfortyLinkId`，也不要求客户端生成 `payloadValue`。银行侧先使用占位 `linkId` 创建 LinkForty
-Link，取得真实 UUID 后通过同一个 `PUT` 替换为最终目标；LinkForty 返回的短链作为新的
-`payload_value` 保存。创建 Link 后银行本地落库失败时只通过 LinkForty API 删除新 Link。
+`linkfortyLinkId`，也不要求客户端生成 `payloadValue`。资产创建时系统先在唯一初始 Payload
+中生成/保存 `short_code`，但不调用 Core；首次绑定通过
+`POST /api/v1/touchpoint-payloads/{id}/switch-address-page` 读取已存在的银行地址页面，使用
+该预设值作为 Core `customCode` 创建 Link。新 Link 立即经 Core API 设为 inactive；仅当资产状态为
+`1`、Payload 状态为 `1`、提供方为 LinkForty 且 `linkforty_link_id` 已存在时才设为 active。
+Core 若因短码冲突返回了不同短码，自定义值直接报错；自动值生成新短码重试。
+客户端不能提交任意 `targetUrl`。
+
+当前 Core `POST /api/links` 的创建 schema 不接受 `isActive`，数据库默认新 Link 为 active；银行适配器在创建成功后立即通过 `PUT /api/links/{id}` 设为 inactive，再完成目标配置。因 Core 不支持创建时指定 inactive，创建请求与该次停用 API 生效之间存在短暂窗口；彻底消除此窗口需要 Core API 增加创建时 inactive 能力，不属于银行后台改动范围。
 
 ### App Bridge 与公开中间页
 
