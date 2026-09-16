@@ -42,6 +42,7 @@
 
 - 绑定、解绑和转交不隐式改变 asset_status；如业务同时要求启停，必须在同一显式命令中校验并记录。
 - 永久作废只终止后续业务使用，不删除载体、内容、绑定、事件或操作日志。
+- LinkForty Link 的派生 active 条件为 `asset_status=1 AND touchpoint_payloads.status=1 AND provider_type=1 AND linkforty_link_id IS NOT NULL`；状态转换必须经 LinkForty API 同步，任一条件不满足时 Link 必须 inactive。
 
 ## 4. M3 载体内容状态
 
@@ -137,4 +138,5 @@ operation_logs 没有可变状态机：
 - 同一资产只能有一条当前有效绑定，历史绑定只追加、不可删除、不可恢复。
 - `access_events.asset_id` 必须非空；签名、`event_id` 或本地资产解析失败时不得写入访问事件表。
 - `linkforty_link_id` 非空时全局唯一；一个外部 Link 不得关联多个载体内容记录。
+- LinkForty Link 只有在所属资产与 Payload 均启用、提供方为 LinkForty 且外部 Link ID 存在时才 active；创建绑定 Link 后按该谓词同步。
 - `operation_logs` 只追加；成功审计和业务变更同事务，失败审计使用独立短事务补写。

@@ -13,6 +13,9 @@
 | `VALIDATION_ERROR` | 400 | 业务参数组合或规则校验失败 |
 | `REQUEST_SCHEMA_INVALID` | 422 | 字段缺失、类型或格式校验失败 |
 | `DUPLICATE_CODE` | 409 | 业务编码重复 |
+| `RESOURCE_CONFLICT` | 409 | 资源唯一性或数据库约束冲突 |
+| `SHORT_CODE_CONFLICT` | 409 | LinkForty 返回的短码与自定义预设不一致，要求重新输入 |
+| `SHORT_CODE_GENERATION_FAILED` | 409 | 自动短码在有限重试内未能生成可用值 |
 | `STATE_CONFLICT` | 409 | 当前状态不允许执行该操作 |
 | `ASSIGNMENT_CONFLICT` | 409 | 绑定时间重叠或当前绑定冲突 |
 | `WEBHOOK_SIGNATURE_INVALID` | 401 | Webhook 签名错误 |

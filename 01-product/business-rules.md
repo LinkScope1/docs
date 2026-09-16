@@ -35,6 +35,7 @@
 - 只有启用地址页面出现在资产下拉选项中；页面停用不解绑历史 Payload、不改写 NFC；目标配置修改先提交地址页面主数据和审计，再由异步任务复用统一应用流程重新应用到历史绑定 Payload，保持 `payload_value` 不变。
 - 已停用地址页面可通过独立 `touchpoint.address-page.delete` 高风险权限物理删除；删除前锁定页面并阻止 queued/running 重新应用任务，归档快照、删除命令和审计与主表 DELETE 在同一事务中完成。既有 Payload、NFC、LinkForty 状态和历史任务不修改，历史查询通过归档快照解析。
 - 地址页面 `content_type=1` 的小程序目标必须是公开 HTTPS Universal Link；`content_type=2` 的 App 配置保存在 `metadata.app`，由银行后台按公开 `app-open.html` Bridge 协议生成目标；`content_type=3` 的网页直接使用 `target_url`。
+- LinkForty Link 仅当 `asset_status=1`、`touchpoint_payloads.status=1`、`provider_type=1` 且 `linkforty_link_id` 非空时允许 active；任一条件不满足都必须 inactive。首次绑定创建 Link 后按该谓词同步，资产或 Payload 状态变更通过 LinkForty API 同步，不在 Payload 中增加外部同步状态字段。
 - `linkforty_link_id` 仅为 LinkForty 逻辑引用；Payload 不保存 LinkForty 专属同步状态、同步时间、错误摘要或重试次数。
 
 ## M4 绑定

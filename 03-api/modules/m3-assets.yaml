@@ -15,7 +15,7 @@ assets:
   post:
     operationId: createTouchpointAsset
     tags: [touchpoint-assets]
-    summary: 创建库存资产
+    summary: 创建库存资产及一条初始 Payload
     x-status: reviewed
     x-owner: API/后端
     x-permission: touchpoint.asset.manage
