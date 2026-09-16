@@ -366,7 +366,7 @@ Core 集成会执行内容类型所需的目标校验。
 | trace_id | VARCHAR(64) | 否 | — | 请求或批次追踪号 |
 | org_id | BIGINT | 是 | — | 本次操作数据范围 |
 | employee_id | BIGINT | 是 | — | 操作员工；系统任务可空 |
-| operation_type | SMALLINT | 否 | — | 1 登录 / 2 创建 / 3 修改 / 4 启停 / 5 绑定 / 6 解绑 / 7 调拨 / 8 导入 / 9 导出 / 10 外部同步 / 99 其他 |
+| operation_type | SMALLINT | 否 | — | 既有操作分类编号；基线编号见下方说明。当前代码对部分编号存在复用，展示时使用审计 API 的 `operationTypeLabel`，不得仅凭编号推断。 |
 | object_type | SMALLINT | 否 | — | 1 组织 / 2 员工 / 3 载体 / 4 内容 / 5 绑定 / 6 事件 / 7 导入 / 9 地址页面 / 99 其他 |
 | object_id | BIGINT | 是 | — | 本系统对象 ID |
 | external_object_id | UUID | 是 | — | 外部对象 ID |
@@ -382,6 +382,8 @@ Core 集成会执行内容类型所需的目标校验。
 | user_agent | VARCHAR(512) | 是 | — | 客户端 |
 | operation_time | TIMESTAMPTZ | 否 | NOW() | 操作时间 |
 | created_at | TIMESTAMPTZ | 否 | NOW() | 写入时间 |
+
+`operation_type` 基线编号为：1 登录、2 创建、3 修改、4 启停、5 绑定、6 解绑、7 调拨、8 导入、9 导出、10 外部同步、99 其他。当前代码另使用 12 导入校验、13 导入执行、14～19 地址页面和员工删除操作；同时可见类型 1 用于创建、类型 2 用于配置变更、类型 3 用于启用、类型 5 用于资产/内容作废、类型 9 用于批量操作等复用情形。审计 API 的 `operationTypeLabel` 根据类型、对象和摘要兼容展示；历史记录不回填、不修改。该分类复用与统一写入编号仍待单独收敛。
 
 ## 4.9 import_batches
 
