@@ -4,7 +4,7 @@
 > **逻辑关系**：逻辑外键、引用校验和删除规则以 [V1.3.2 数据关系与逻辑外键规则](./erd.md) 为准。
 > **状态转换**：各状态字段的允许转换、前置条件和终态规则以 [V1.3.2 状态转换规则](./state-machines.md) 为准。
 
-> 版本定位：V1.3.2 正式模型：8 张银行核心业务表 + 1 张批量导入任务表 + 2 张地址页面重新应用任务表 + 3 张物理删除归档/幂等表 + 8 张 LinkForty 外部现有表 + Casdoor 外部身份边界。
+> 版本定位：V1.3.2 正式模型：8 张银行核心业务表 + 1 张批量导入任务表 + 2 张地址页面重新应用任务表 + 2 张资产批量操作任务表 + 3 张物理删除归档/幂等表 + 8 张 LinkForty 外部现有表 + Casdoor 外部身份边界。
 
 | 项目 | 内容 |
 | --- | --- |
@@ -71,7 +71,7 @@ V1.3.2 将组织层级、员工责任范围、NFC 载体、载体实际内容、
 
 - 祖先和下级组织通过前缀查询，不保存 parent_org_id，不新增 org_level。
 
-- 普通组织新增由服务端在父组织行锁事务中生成下一个直接子级编码；服务端负责校验编码格式、前缀关系和重复编码，数据库负责格式检查和唯一约束。组织导入等历史兼容接口可保留显式编码。
+- 普通组织新增由服务端在父组织行锁事务中生成下一个直接子级编码；服务端负责校验编码格式、前缀关系和重复编码，数据库负责格式检查和唯一约束。组织不通过当前公开导入/导出能力处理；历史迁移工具若需显式编码必须单独审批。
 
 - `org_abbr` 由服务端依据组织名称生成大写拼音首字母缩写，长度 2～12 位且全局唯一；同名缩写通过数字后缀消解冲突。创建后不再变更，作为员工展示 ID 的命名空间。
 
@@ -110,7 +110,7 @@ V1.3.2 将组织层级、员工责任范围、NFC 载体、载体实际内容、
 
 | 约束域 | 冻结值 |
 | --- | --- |
-| 表数量 | 银行库包含 8 张业务表、1 张横向批量导入任务表、2 张地址页面重新应用任务表和 3 张物理删除归档/幂等表：另含 `deleted_employees`、`deleted_address_pages`、`master_data_delete_commands`。 |
+| 表数量 | 银行库包含 8 张业务表、1 张横向批量导入任务表、2 张地址页面重新应用任务表、2 张资产批量操作任务表和 3 张物理删除归档/幂等表：另含 `deleted_employees`、`deleted_address_pages`、`master_data_delete_commands`。 |
 | 外键与删除 | 不建立本地数据库外键，不使用数据库级级联删除；M2 员工和 M3 地址页面由 Service 在归档同一事务内物理删除主表，其他历史对象保留。 |
 | 枚举 | 组织/员工状态为 `0/1`；资产类型固定 `1=NFC`，资产状态为 `0/1/2/9`；地址页面 `content_type` 为 `1=小程序/2=APP/3=网页`、`status` 为 `0/1`；Payload 类型为 `1/2/3/99`、来源为 `1/2/3/4`、提供方为 `1/2/3/99`、状态为 `0/1/2/3`；绑定状态为 `1/2`；访问关联状态为 `0/1/2/3`；操作结果为 `1/2/3`。 |
 | 标识唯一性 | `asset_id`、`asset_code`、`employee_uid`、`employee_code`、`org_abbr`、`org_code`、`address_code`、`event_id` 全局唯一；`asset_id` 匹配 `^PK[0-9]{11}$`；新员工 ID 匹配 `^[A-Z][A-Z0-9]{1,11}-E-[0-9]{6}$`；非空 `carrier_uid` 唯一；非空 `linkforty_link_id` 全局唯一；`click_id` 不唯一。 |
@@ -136,10 +136,12 @@ V1.3.2 将组织层级、员工责任范围、NFC 载体、载体实际内容、
 | 12 | deleted_employees | M2 横向历史 | 员工主表物理删除后的不可变最小快照 |
 | 13 | deleted_address_pages | M3 横向历史 | 地址页面主表物理删除后的不可变最小快照 |
 | 14 | master_data_delete_commands | 横向能力 | 物理删除命令幂等键、请求摘要和首次结果 |
+| 15 | bulk_operation_batches | 横向能力 | 资产绑定、解绑、页面配置批量任务及幂等状态 |
+| 16 | bulk_operation_items | 横向能力 | 批量任务中的资产明细、重试次数和逐项结果 |
 
-> 删除范围：V1.3.2 不创建 iam_*、target_resources 或 routing_rules 表；这些对象只在更新日志中作为历史下线内容保留。`import_batches` 仅存储批处理状态和安全结果，不替代业务表；地址页面重新应用任务表只保存银行后台任务事实，不保存 LinkForty 外部同步状态。deleted_* 归档表只追加，不进入普通主数据列表。
+> 删除范围：V1.3.2 不创建 iam_*、target_resources 或 routing_rules 表；这些对象只在更新日志中作为历史下线内容保留。`import_batches` 和 `bulk_operation_*` 仅存储任务状态、幂等键及安全结果，不替代业务表；地址页面重新应用任务表只保存银行后台任务事实，不保存 LinkForty 外部同步状态。deleted_* 归档表只追加，不进入普通主数据列表。
 
-# 4. 本系统 8 张表详细定义
+# 4. 本系统表详细定义
 
 ## 4.1 organization_units
 
@@ -242,7 +244,7 @@ asset_code 用于业务查询和导入，carrier_uid 用于 NFC 物理盘点，�
 可复用地址页面主数据。`org_id` 是责任组织；地址页面可供同组织及下级资产使用。
 `content_type` 区分小程序、APP 和网页。`url` 是原始/展示值，只做首尾空格清理；
 `target_url` 是进入 LinkForty Core 前使用的目标配置。网页和小程序通常与 `url`
-一致；APP 的 `metadata.app` 保存 Scheme、Payload 和 HTTPS 回退地址，Payload 应用时才按
+一致；APP 的 `metadata.app` 保存 Scheme、Payload 和 HTTP/HTTPS 回退地址，Payload 应用时才按
 真实 Link ID 生成 `app-open.html` Bridge URL。地址页面不保存绑定具体 Link ID 的最终 Bridge
 URL；解析器继续兼容历史占位 Bridge URL。银行业务字段不做通用 HTTP/HTTPS 格式审查，但
 Core 集成会执行内容类型所需的目标校验。
@@ -253,7 +255,7 @@ Core 集成会执行内容类型所需的目标校验。
 | address_code | VARCHAR(64) | 否 | 服务端生成 | 全局唯一；新建按内容类型使用 `MINI`/`APP`/`WEB` 前缀和六位序号；填写已有编码时用于导入幂等更新 |
 | address_name | VARCHAR(128) | 否 | — | 页面显示名称/地址标识 |
 | url | VARCHAR(2048) | 否 | — | 原始/管理页面展示值；首尾空格清理，仅校验非空和长度 |
-| target_url | VARCHAR(2048) | 否 | — | Core 目标配置；仅校验非空和长度，不做通用 HTTP/HTTPS 格式审查；APP 可为 Bridge 模板 |
+| target_url | VARCHAR(2048) | 否 | — | Core 目标配置；网页/小程序使用实际内容或 URL，APP 使用 `APP回退地址` 作为最终回退目标；APP Bridge 由服务端按既有拼接规则生成 |
 | content_type | SMALLINT | 否 | 3 | 1 小程序 / 2 APP / 3 网页 |
 | org_id | BIGINT | 否 | — | 责任组织，逻辑引用 `organization_units.id` |
 | status | SMALLINT | 否 | 1 | 0 停用 / 1 启用 |
@@ -386,9 +388,10 @@ Core 集成会执行内容类型所需的目标校验。
 | 字段 | 类型 | 可空 | 默认值 | 约束/说明 |
 | --- | --- | --- | --- | --- |
 | id | BIGINT | 否 | 雪花算法 | PK；API 以字符串传输 |
-| template_type | VARCHAR(32) | 否 | — | `asset` / `payload` / `employee` / `address_page` |
+| template_type | VARCHAR(32) | 否 | — | `asset` / `payload` / `employee` / `address_page`；组织不在公开导入能力内 |
 | status | VARCHAR(16) | 否 | — | `queued` / `running` / `completed` / `failed` |
 | idempotency_key | VARCHAR(128) | 否 | — | 全局唯一；同键重放返回原批次 |
+| request_hash | VARCHAR(64) | 是 | — | 新批次为模板类型 + 文件内容的 SHA-256；同键不同请求返回冲突。历史批次可为空 |
 | created_by_employee_id | BIGINT | 否 | — | 创建者；用于批次结果访问控制 |
 | org_id | BIGINT | 否 | — | 创建者组织快照 |
 | filename | VARCHAR(255) | 是 | — | 原始文件名，不记录文件内容 |
@@ -435,7 +438,37 @@ LinkForty 的同步状态；外部调用结果仍由 Payload Service、`operatio
 | error_code / error_message | VARCHAR | 是 | 脱敏错误摘要 |
 | created_at / started_at / finished_at | TIMESTAMPTZ | 否/是 | 明细时间 |
 
-## 4.12 V1.3.2 数据关系图
+## 4.12 bulk_operation_batches
+
+资产绑定、解绑和地址页面配置的持久化批量任务。小批量由 API 同步执行，大批量由 Celery Worker 执行；任务记录同时承担幂等重放和操作审计关联，不保存 LinkForty 专属同步状态。
+
+| 字段 | 类型 | 可空 | 说明 |
+| --- | --- | --- | --- |
+| id | BIGINT | 否 | 批次 ID；API 以字符串传输 |
+| operation_type | VARCHAR(16) | 否 | `bind` / `unbind` / `configure` |
+| status | VARCHAR(16) | 否 | `queued` / `running` / `completed` / `partial` / `failed` |
+| idempotency_key | VARCHAR(128) | 否 | 全局唯一；相同请求重放原批次，不同请求返回冲突 |
+| created_by_employee_id / org_id | BIGINT | 否 | 创建人和组织快照 |
+| request_data / actor_context | JSONB | 否 | 请求参数和非秘密权限上下文快照；assetIds 在请求数据中保存 |
+| total / succeeded / failed | INTEGER | 否 | 批次统计 |
+| result_data | JSONB | 是 | 安全摘要，不记录 Token 或完整个人信息 |
+| created_at / started_at / finished_at | TIMESTAMPTZ | 否/是 | 任务时间 |
+
+## 4.13 bulk_operation_items
+
+批量任务的资产级明细。每项独立事务执行，失败项不回滚其他项，可由任务重试重新处理。
+
+| 字段 | 类型 | 可空 | 说明 |
+| --- | --- | --- | --- |
+| id | BIGINT | 否 | 明细 ID；API 以字符串传输 |
+| batch_id / asset_id | BIGINT | 否 | 批次和资产逻辑引用；同批次同资产唯一 |
+| status | VARCHAR(16) | 否 | `queued` / `running` / `succeeded` / `failed` |
+| attempt_count | INTEGER | 否 | 执行尝试次数 |
+| error_code / error_message | VARCHAR(64)/VARCHAR(1024) | 是 | 脱敏错误摘要 |
+| result_data | JSONB | 是 | 当前资产的安全处理结果 |
+| created_at / started_at / finished_at | TIMESTAMPTZ | 否/是 | 明细时间 |
+
+## 4.14 V1.3.2 数据关系图
 
 参见 [V1.3.2 数据关系图](./erd.md)。V1.3.2 DOCX 中内嵌的图示仍标注为 V1.3.1，不作为 Markdown 主文档内容迁移。
 
@@ -662,9 +695,9 @@ V1.3.2 的跨系统数据流以 Casdoor 的身份声明、本地员工主数据�
 
 V1.3.2 删除配置状态、目标资源类型、路由冲突和路由发布相关枚举。
 
-## 7.2 文档导入预留方案
+## 7.2 导入、导出和批量操作方案
 
-- 预留三类模板：载体内容批量修改、载体与员工绑定关系批量修改、载体与载体内容关系批量修改。
+- 公开主数据导入模板为卡片、载体内容、员工和地址页面；组织导入已移除。APP、网页和小程序共用地址页面统一模板，APP 专用列按内容类型条件校验。
 
 - 稳定匹配键：组织使用 org_code，员工使用 employee_code，载体优先使用 asset_code，可辅助 carrier_uid；员工 `employee_uid` 仅作为展示字段，不替代 Casdoor 或导入工号匹配。
 
@@ -678,7 +711,9 @@ V1.3.2 删除配置状态、目标资源类型、路由冲突和路由发布相�
 
 - 导入支持预校验、幂等键、逐行校验结果和失败原因；每批导入写入 operation_logs。
 
-- 本版本创建 `import_batches` 批次表承载异步状态、幂等键和安全结果；不创建导入明细表，逐行结果以安全 JSON/失败 CSV 保存。
+- 本版本创建 `import_batches` 批次表承载异步状态、幂等键和安全结果；资产批量绑定/解绑/页面配置使用 `bulk_operation_batches` 与 `bulk_operation_items`，逐项结果以安全 JSON 保存，不创建 LinkForty 同步状态列。
+- 1,000 条以内同步执行，超过 1,000 条持久化任务后由 Celery Worker 执行；所有批量写操作必须携带幂等键，重复请求不得重复创建绑定或外部短链。
+- 资产导出补充绑定员工、绑定地址页面和本地 LinkForty 短链接快照；导出过程不现场调用 LinkForty。
 
 # 8. Python/FastAPI 与外部系统实施约定
 
@@ -689,7 +724,7 @@ V1.3.2 删除配置状态、目标资源类型、路由冲突和路由发布相�
 | Repository | 数据库访问 | SQLAlchemy 2.x 查询、事务、索引和约束；不承载 Casdoor 或 LinkForty 业务。 |
 | Integration Adapter | 外部调用 | Casdoor OIDC/JWT Claim、LinkForty API、Webhook/NFC 适配和重试。 |
 | Worker / Celery | 异步任务 | 外部调用、事件重试、批量导入、补偿和结果审计；不得在银行业务表中补建 LinkForty 专属同步状态字段。 |
-| Alembic | 数据库演进 | V1.3.2 通过迁移创建银行核心业务表、横向任务表和物理删除归档/幂等表；`0010_physical_delete_archives` 新增三张归档/命令表，禁止直接删除已部署环境旧表。 |
+| Alembic | 数据库演进 | V1.3.2 通过迁移创建银行核心业务表、横向任务表和物理删除归档/幂等表；`0010_add_physical_delete_archives` 新增三张归档/命令表，`0011_bulk_operations_and_import_templates` 新增资产批量任务表并开放地址页面导入，`0012_import_batch_request_hash` 增加导入请求指纹；禁止直接删除已部署环境旧表。 |
 
 # 9. V1.3.2 更新日志
 
@@ -708,5 +743,6 @@ V1.3.2 删除配置状态、目标资源类型、路由冲突和路由发布相�
 | V1.3.2 | 2026-09-14 | M3 为 `touchpoint_assets` 增加服务端生成的 `asset_id` 卡ID；保留数值内部主键和跨表关联，标准资产导出增加卡ID。 |
 | V1.3.2 | 2026-09-15 | M2 增加服务端生成的 `organization_units.org_abbr` 和 `employees.employee_uid`，保留 `employee_code` 作为 Casdoor 登录工号；M3 地址页面新建编码按内容类型自动生成。 |
 | V1.3.2 | 2026-09-15 | M2/M3 增加已停用员工和地址页面的高风险物理删除接口；主表真实 DELETE，使用 deleted_* 快照和 `master_data_delete_commands` 保留历史、永久占用编码并支持幂等回放。 |
+| V1.3.2 | 2026-09-16 | 横向能力增加 `bulk_operation_batches` / `bulk_operation_items`；地址页面统一模板增加 APP Scheme、APP Payload 和 APP 回退地址，组织导入/导出公开能力移除；资产详情/列表增加绑定信息和本地短链快照；导入批次增加请求指纹。 |
 
 > 历史版本：V1.2 原文档保留为历史基线。

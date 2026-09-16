@@ -540,6 +540,26 @@ paths:
           name: employeeId
           required: false
           schema: { $ref: '#/components/schemas/Id' }
+        - in: query
+          name: employeeName
+          required: false
+          schema: { type: string, maxLength: 100 }
+        - in: query
+          name: carrierUid
+          required: false
+          schema: { type: string, maxLength: 128 }
+        - in: query
+          name: supplierBatchNo
+          required: false
+          schema: { type: string, maxLength: 64 }
+        - in: query
+          name: createdFrom
+          required: false
+          schema: { type: string, format: date-time }
+        - in: query
+          name: createdTo
+          required: false
+          schema: { type: string, format: date-time }
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -561,6 +581,167 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '201': { $ref: '#/components/responses/Success' }
         '409': { $ref: '#/components/responses/Conflict' }
+
+  /touchpoint-assets/statistics:
+    get:
+      tags: [touchpoint-assets]
+      operationId: getTouchpointAssetStatistics
+      x-owner: API/后端
+      summary: Get asset counts for the current filters and data scope
+      x-permission: touchpoint.asset.read
+      x-data-scope: ASSET_SCOPE
+      x-idempotency: none
+      x-audit: false
+      x-status: reviewed
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { in: query, name: assetStatus, required: false, schema: { type: string, enum: ['0', '1', '2', '9'] } }
+        - { in: query, name: assetCode, required: false, schema: { type: string, maxLength: 64 } }
+        - { in: query, name: assetId, required: false, schema: { type: string, maxLength: 13 } }
+        - { in: query, name: orgCodePrefix, required: false, schema: { type: string, maxLength: 64 } }
+        - { in: query, name: employeeId, required: false, schema: { $ref: '#/components/schemas/Id' } }
+        - { in: query, name: employeeName, required: false, schema: { type: string, maxLength: 100 } }
+        - { in: query, name: carrierUid, required: false, schema: { type: string, maxLength: 128 } }
+        - { in: query, name: supplierBatchNo, required: false, schema: { type: string, maxLength: 64 } }
+        - { in: query, name: createdFrom, required: false, schema: { type: string, format: date-time } }
+        - { in: query, name: createdTo, required: false, schema: { type: string, format: date-time } }
+      description: >-
+        Returns total stock, enabled/disabled bound and unbound counts, and
+        scrapped count. It uses the same filters as the asset list and does not
+        create a statistics table.
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /touchpoint-assets/batch-bind:
+    post:
+      tags: [touchpoint-assets]
+      operationId: batchBindTouchpointAssets
+      x-owner: API/后端
+      summary: Bind one employee to selected assets
+      x-permission: touchpoint.assignment.manage
+      x-data-scope: ASSET_SCOPE
+      x-idempotency: Idempotency-Key
+      x-audit: true
+      x-status: reviewed
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 128 }
+      requestBody: { $ref: '#/components/requestBodies/BatchBind' }
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '202': { $ref: '#/components/responses/Success' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/DataSourceUnavailable' }
+
+  /touchpoint-assets/batch-unbind:
+    post:
+      tags: [touchpoint-assets]
+      operationId: batchUnbindTouchpointAssets
+      x-owner: API/后端
+      summary: Unbind selected assets
+      x-permission: touchpoint.assignment.manage
+      x-data-scope: ASSET_SCOPE
+      x-idempotency: Idempotency-Key
+      x-audit: true
+      x-status: reviewed
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 128 }
+      requestBody: { $ref: '#/components/requestBodies/BatchUnbind' }
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '202': { $ref: '#/components/responses/Success' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/DataSourceUnavailable' }
+
+  /touchpoint-assets/batch-configure:
+    post:
+      tags: [touchpoint-assets]
+      operationId: batchConfigureTouchpointAssets
+      x-owner: API/后端
+      summary: Configure an address page and optionally an employee for selected assets
+      x-permission: touchpoint.payload.manage
+      x-data-scope: ASSET_SCOPE
+      x-idempotency: Idempotency-Key
+      x-audit: true
+      x-status: reviewed
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 128 }
+      requestBody: { $ref: '#/components/requestBodies/BatchConfigure' }
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '202': { $ref: '#/components/responses/Success' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/DataSourceUnavailable' }
+
+  /touchpoint-assets/{assetId}/configuration:
+    patch:
+      tags: [touchpoint-assets]
+      operationId: configureTouchpointAsset
+      x-owner: API/后端
+      summary: Edit the employee and/or address page bound to one asset
+      x-permission: touchpoint.asset.manage
+      x-data-scope: ASSET_SCOPE
+      x-idempotency: Idempotency-Key
+      x-audit: true
+      x-status: reviewed
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - in: path
+          name: assetId
+          required: true
+          schema: { $ref: '#/components/schemas/Id' }
+        - in: header
+          name: Idempotency-Key
+          required: false
+          description: Optional; when omitted, the server derives a stable key from assetId and the canonical request body.
+          schema: { type: string, maxLength: 128 }
+      requestBody: { $ref: '#/components/requestBodies/AssetConfiguration' }
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '202': { $ref: '#/components/responses/Success' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /bulk-operations/{batchId}:
+    get:
+      tags: [touchpoint-assets]
+      operationId: getBulkOperation
+      x-owner: API/后端
+      summary: Get a selected-asset operation and item results
+      x-permission: touchpoint.asset.read
+      x-data-scope: EMPLOYEE_SELF
+      x-idempotency: none
+      x-audit: false
+      x-status: reviewed
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - in: path
+          name: batchId
+          required: true
+          schema: { $ref: '#/components/schemas/Id' }
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /touchpoint-assets/{id}:
     parameters: [{ $ref: '#/components/parameters/Id' }]
@@ -1304,10 +1485,9 @@ paths:
         templates use complete, fixed Chinese headers and Chinese enum values.
         Headers with missing, duplicate or unknown columns are rejected. Rows
         omitted from the CSV are ignored and never imply deletion, disabling or
-        unbinding. Assignment and organization templates remain compatibility
-        endpoints; the unified execution endpoint is for cards, payloads and
-        employees and address pages. The import execution endpoint is used after this read-only
-        validation step.
+        unbinding. Organization import is not a public capability. APP address
+        rows require at least one platform Scheme, a non-empty opaque APP Payload,
+        a valid HTTP/HTTPS fallback address, and an empty 实际内容 column.
       x-permission: import.validate
       x-data-scope: ORG_SUBTREE
       x-idempotency: none
@@ -1323,7 +1503,7 @@ paths:
               required: [file, templateType]
               properties:
                 file: { type: string, format: binary }
-                templateType: { type: string, enum: [asset, payload, employee, assignment, asset_payload_relation, organization, address_page] }
+                templateType: { type: string, enum: [asset, payload, employee, address_page] }
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '200': { $ref: '#/components/responses/Success' }
@@ -1387,6 +1567,66 @@ paths:
         '422': { $ref: '#/components/responses/RequestSchemaInvalid' }
         '503': { $ref: '#/components/responses/DataSourceUnavailable' }
 
+  /imports/templates/assignments:
+    get:
+      tags: [imports]
+      operationId: downloadAssignmentImportTemplate
+      x-owner: API/后端/导入
+      summary: Download the employee-assignment lifecycle CSV template
+      description: >-
+        Returns a UTF-8 BOM CSV with the fixed technical header
+        assetCode,targetEmployeeCode,operation,reason. operation is bind,
+        unbind or transfer; targetEmployeeCode is required for bind/transfer
+        and blank for unbind; reason is required for unbind/transfer and is
+        limited to 500 characters. Organization import/export is not included.
+      x-permission: import.validate
+      x-data-scope: ORG_SUBTREE
+      x-idempotency: none
+      x-audit: false
+      x-status: reviewed
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200':
+          description: UTF-8 BOM CSV template
+          content:
+            text/csv: { schema: { type: string, format: binary } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /imports/assignments/execute:
+    post:
+      tags: [imports]
+      operationId: executeAssignmentImport
+      x-owner: API/后端/导入
+      summary: Execute the employee-assignment lifecycle CSV
+      description: >-
+        Synchronously executes at most 1,000 assignment rows. Each row is
+        committed independently and the response contains a Base64 UTF-8 BOM
+        failure report when any row fails. Missing rows never imply unbind.
+      x-permission: touchpoint.assignment.manage
+      x-data-scope: ASSET_SCOPE
+      x-idempotency: none
+      x-audit: true
+      x-status: reviewed
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '413': { $ref: '#/components/responses/ImportFileTooLarge' }
+        '415': { $ref: '#/components/responses/ImportFileTypeInvalid' }
+        '422': { $ref: '#/components/responses/RequestSchemaInvalid' }
+
   /imports/templates/{templateType}:
     get:
       tags: [imports]
@@ -1394,10 +1634,13 @@ paths:
       x-owner: API/后端/导入
       summary: Download a Chinese CSV import template
       description: >-
-        Returns a UTF-8 BOM CSV with an exact fixed header. Supported templateType
-        values are asset, payload and employee. All headers and enum values in
-        these templates are concise Chinese labels. The address_page template uses
-        地址编码,地址标识,URL,实际内容,组织编码,内容类型,说明 and missing rows never disable data.
+        Returns a UTF-8 BOM CSV with an exact fixed header. Canonical templateType
+        values are asset, payload, employee and address_page; plural aliases are
+        accepted for download compatibility. All headers and enum
+        values in these templates are concise Chinese labels. The address_page
+        template is one unified 12-column template for APP, web and mini-program
+        rows: 地址编码,地址标识,URL,实际内容,组织编码,内容类型,APP iOS Scheme,
+        APP Android Scheme,APP Harmony Scheme,APP Payload,APP回退地址,说明.
       x-permission: import.validate
       x-data-scope: ORG_SUBTREE
       x-idempotency: none
@@ -1408,7 +1651,7 @@ paths:
         - in: path
           name: templateType
           required: true
-          schema: { type: string, enum: [asset, payload, employee, address_page] }
+          schema: { type: string, enum: [asset, assets, payload, payloads, employee, employees, address_page, address_pages] }
       responses:
         '200':
           description: UTF-8 BOM CSV template
@@ -1544,72 +1787,6 @@ paths:
         '415': { $ref: '#/components/responses/ImportFileTypeInvalid' }
         '422': { $ref: '#/components/responses/RequestSchemaInvalid' }
 
-  /imports/templates/organizations:
-    get:
-      tags: [imports]
-      operationId: downloadOrganizationImportTemplate
-      x-owner: API/后端/导入
-      summary: Download the organization master-data CSV template
-      description: >-
-        Downloads a UTF-8 BOM CSV named 组织导入模板.csv. The fixed Chinese
-        headers are 组织编码、组织名称、排序号、网点编码、门店号、联系人、联系电话、状态、备注.
-        The two sample rows must be replaced or deleted before upload.
-      x-permission: import.validate
-      x-data-scope: ORG_SUBTREE
-      x-idempotency: none
-      x-audit: false
-      x-status: reviewed
-      security: [{ sessionCookie: [] }]
-      responses:
-        '200':
-          description: UTF-8 BOM CSV template
-          headers:
-            X-Request-ID: { $ref: '#/components/headers/RequestId' }
-          content:
-            text/csv: { schema: { type: string, format: binary } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-
-  /imports/organizations/execute:
-    post:
-      tags: [imports]
-      operationId: executeOrganizationImport
-      x-owner: API/后端/导入
-      summary: Execute a small organization master-data CSV import
-      description: >-
-        Synchronously creates or updates at most 1,000 organization rows matched
-        by organization code. Optional blank fields do not clear an existing
-        organization. Each row commits independently.
-      x-permission: organization.manage
-      x-data-scope: ORG_SUBTREE
-      x-idempotency: none
-      x-audit: true
-      x-status: reviewed
-      security: [{ sessionCookie: [] }]
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              required: [file]
-              properties:
-                file: { type: string, format: binary }
-      responses:
-        '200':
-          description: Import execution summary; individual rows can fail.
-          headers:
-            X-Request-ID: { $ref: '#/components/headers/RequestId' }
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/OrganizationImportExecutionSuccess' }
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '413': { $ref: '#/components/responses/ImportFileTooLarge' }
-        '415': { $ref: '#/components/responses/ImportFileTypeInvalid' }
-        '422': { $ref: '#/components/responses/RequestSchemaInvalid' }
-
   /exports/{resource}:
     get:
       tags: [exports]
@@ -1618,10 +1795,11 @@ paths:
       summary: Export a whitelisted resource within the caller scope and page filters
       description: >-
         Exports the intersection of the caller's data scope and the page filter
-        parameters. Card, employee and payload exports use concise Chinese
-        headers and Chinese enum values. Ordinary payload exports omit payloadValue;
-        mode=content includes it only with the export.payload-content permission
-        and a second confirmation in the client. Results are UTF-8 CSV with BOM.
+        parameters. Asset exports include the current bound employee, bound address
+        page and the locally stored LinkForty short-link snapshot. Address-page
+        exports include the unified APP fields. Ordinary payload exports omit
+        payloadValue; mode=content includes it only with the export.payload-content
+        permission and a second confirmation in the client. Results are UTF-8 CSV with BOM.
       x-permission: export.read
       x-data-scope: ORG_SUBTREE
       x-idempotency: none
@@ -1634,7 +1812,7 @@ paths:
           required: true
           schema:
             type: string
-            enum: [organizations, employees, touchpoint-assets, touchpoint-payloads, touchpoint-address-pages, assignments, access-events, audit-logs, analytics]
+            enum: [employees, touchpoint-assets, touchpoint-payloads, touchpoint-address-pages, assignments, access-events, audit-logs, analytics]
         - in: query
           name: mode
           required: false
@@ -1680,6 +1858,23 @@ paths:
           name: assetStatus
           required: false
           schema: { type: string, enum: ['0', '1', '2', '9'] }
+        - in: query
+          name: supplierBatchNo
+          required: false
+          schema: { type: string, maxLength: 64 }
+        - in: query
+          name: assetIds
+          required: false
+          description: Comma-separated, unique positive BIGINT IDs; filters assets only.
+          schema: { type: string, maxLength: 1000000 }
+        - in: query
+          name: createdFrom
+          required: false
+          schema: { type: string, format: date-time }
+        - in: query
+          name: createdTo
+          required: false
+          schema: { type: string, format: date-time }
         - in: query
           name: payloadSource
           required: false
@@ -1877,6 +2072,26 @@ components:
       content:
         application/json:
           schema: { $ref: '#/components/schemas/AssignmentTransferRequest' }
+    BatchBind:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/BatchBindRequest' }
+    BatchUnbind:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/BatchUnbindRequest' }
+    BatchConfigure:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/BatchConfigureRequest' }
+    AssetConfiguration:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/AssetConfigurationRequest' }
   securitySchemes:
     sessionCookie:
       type: apiKey
@@ -2023,6 +2238,51 @@ components:
         supplierBatchNo: { type: [string, 'null'], maxLength: 64 }
         metadata: { $ref: '#/components/schemas/Metadata' }
         description: { type: [string, 'null'], maxLength: 500 }
+    BatchAssetIds:
+      type: array
+      minItems: 1
+      maxItems: 100000
+      uniqueItems: true
+      items: { $ref: '#/components/schemas/Id' }
+    BatchBindRequest:
+      type: object
+      additionalProperties: false
+      required: [assetIds, employeeId]
+      properties:
+        assetIds: { $ref: '#/components/schemas/BatchAssetIds' }
+        employeeId: { $ref: '#/components/schemas/Id' }
+        idempotencyKey: { type: [string, 'null'], maxLength: 128 }
+    BatchUnbindRequest:
+      type: object
+      additionalProperties: false
+      required: [assetIds]
+      properties:
+        assetIds: { $ref: '#/components/schemas/BatchAssetIds' }
+        reasonType: { type: integer, minimum: 1, default: 1 }
+        reason: { type: [string, 'null'], maxLength: 500 }
+        idempotencyKey: { type: [string, 'null'], maxLength: 128 }
+    BatchConfigureRequest:
+      type: object
+      additionalProperties: false
+      required: [assetIds, addressPageId]
+      properties:
+        assetIds: { $ref: '#/components/schemas/BatchAssetIds' }
+        addressPageId: { $ref: '#/components/schemas/NullableId' }
+        employeeId: { $ref: '#/components/schemas/NullableId' }
+        idempotencyKey: { type: [string, 'null'], maxLength: 128 }
+    AssetConfigurationRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      description: >-
+        Include employeeId and/or addressPageId to replace or clear the current
+        binding. An explicit JSON null clears that relation; at least one of
+        these two fields must be present.
+      properties:
+        employeeId: { $ref: '#/components/schemas/NullableId' }
+        addressPageId: { $ref: '#/components/schemas/NullableId' }
+        reasonType: { type: integer, minimum: 1, default: 1 }
+        reason: { type: [string, 'null'], maxLength: 500 }
     TouchpointPayloadCreateRequest:
       type: object
       additionalProperties: false
@@ -2226,6 +2486,44 @@ components:
         supplierBatchNo: { type: [string, 'null'] }
         metadata: { $ref: '#/components/schemas/Metadata' }
         description: { type: [string, 'null'] }
+        shortLink: { type: [string, 'null'], description: '本地保存的当前有效 LinkForty 短链快照。' }
+        boundEmployee: { $ref: '#/components/schemas/AssetEmployeeBinding' }
+        boundPages:
+          type: array
+          items: { $ref: '#/components/schemas/AssetPageBinding' }
+    AssetEmployeeBinding:
+      type: object
+      additionalProperties: false
+      required: [id, employeeCode, employeeName, orgId]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        employeeCode: { type: string, maxLength: 64 }
+        employeeName: { type: string, maxLength: 100 }
+        orgId: { $ref: '#/components/schemas/Id' }
+    AssetPageBinding:
+      type: object
+      additionalProperties: false
+      required: [payloadId, addressPageId, addressCode, addressName, contentType, targetUrl, shortLink, payloadStatus, linkfortyLinkId]
+      properties:
+        payloadId: { $ref: '#/components/schemas/Id' }
+        addressPageId: { $ref: '#/components/schemas/NullableId' }
+        addressCode: { type: [string, 'null'] }
+        addressName: { type: [string, 'null'] }
+        contentType: { type: [integer, 'null'], enum: [1, 2, 3, null] }
+        targetUrl: { type: [string, 'null'], maxLength: 2048 }
+        shortLink: { type: [string, 'null'] }
+        payloadStatus: { type: integer, enum: [0, 1, 2, 3] }
+        linkfortyLinkId: { type: [string, 'null'], format: uuid }
+    AssetStatistics:
+      type: object
+      additionalProperties: false
+      required: [totalStock, unbound, bound, disabled, scrapped]
+      properties:
+        totalStock: { type: integer, minimum: 0 }
+        unbound: { type: integer, minimum: 0 }
+        bound: { type: integer, minimum: 0 }
+        disabled: { type: integer, minimum: 0 }
+        scrapped: { type: integer, minimum: 0 }
     TouchpointPayload:
       type: object
       additionalProperties: false
@@ -2519,47 +2817,6 @@ components:
       properties:
         requestId: { type: string }
         data: { $ref: '#/components/schemas/EmployeeImportExecutionData' }
-    OrganizationImportRowResult:
-      type: object
-      additionalProperties: false
-      required: [rowNumber, status]
-      properties:
-        rowNumber: { type: integer, minimum: 2 }
-        operation: { type: [string, 'null'], enum: [create, update, 'null'] }
-        status: { type: string, enum: [success, failed] }
-        errorCode: { type: [string, 'null'] }
-        message: { type: [string, 'null'] }
-    OrganizationImportFailureReport:
-      type: object
-      additionalProperties: false
-      required: [filename, contentType, encoding, content]
-      properties:
-        filename: { type: string, const: 组织导入失败报告.csv }
-        contentType: { type: string, const: text/csv;charset=utf-8 }
-        encoding: { type: string, const: base64 }
-        content: { type: string }
-    OrganizationImportExecutionData:
-      type: object
-      additionalProperties: false
-      required: [total, succeeded, failed, failureReport, rows]
-      properties:
-        total: { type: integer, minimum: 0 }
-        succeeded: { type: integer, minimum: 0 }
-        failed: { type: integer, minimum: 0 }
-        failureReport:
-          oneOf:
-            - { $ref: '#/components/schemas/OrganizationImportFailureReport' }
-            - { type: 'null' }
-        rows:
-          type: array
-          items: { $ref: '#/components/schemas/OrganizationImportRowResult' }
-    OrganizationImportExecutionSuccess:
-      type: object
-      additionalProperties: false
-      required: [requestId, data]
-      properties:
-        requestId: { type: string }
-        data: { $ref: '#/components/schemas/OrganizationImportExecutionData' }
     UnifiedImportRowResult:
       type: object
       additionalProperties: false
@@ -2613,6 +2870,43 @@ components:
       properties:
         requestId: { type: string }
         data: { $ref: '#/components/schemas/ImportBatchData' }
+    BulkOperationItem:
+      type: object
+      additionalProperties: false
+      required: [itemId, assetId, status, attemptCount]
+      properties:
+        itemId: { $ref: '#/components/schemas/Id' }
+        assetId: { $ref: '#/components/schemas/Id' }
+        status: { type: string, enum: [queued, running, succeeded, failed] }
+        attemptCount: { type: integer, minimum: 0 }
+        errorCode: { type: [string, 'null'] }
+        message: { type: [string, 'null'] }
+        result: { type: [object, 'null'], additionalProperties: true }
+    BulkOperationData:
+      type: object
+      additionalProperties: false
+      required: [batchId, operationType, status, total, succeeded, failed, items]
+      properties:
+        batchId: { $ref: '#/components/schemas/Id' }
+        operationType: { type: string, enum: [bind, unbind, configure] }
+        status: { type: string, enum: [queued, running, completed, partial, failed] }
+        total: { type: integer, minimum: 0 }
+        succeeded: { type: integer, minimum: 0 }
+        failed: { type: integer, minimum: 0 }
+        createdAt: { type: [string, 'null'], format: date-time }
+        startedAt: { type: [string, 'null'], format: date-time }
+        finishedAt: { type: [string, 'null'], format: date-time }
+        result: { type: [object, 'null'], additionalProperties: true }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/BulkOperationItem' }
+    BulkOperationSuccess:
+      type: object
+      additionalProperties: false
+      required: [requestId, data]
+      properties:
+        requestId: { type: string }
+        data: { $ref: '#/components/schemas/BulkOperationData' }
     SuccessEnvelope:
       type: object
       required: [requestId, data]

@@ -86,7 +86,7 @@ V1.3.2 的银行业务关系均为应用层逻辑外键，不创建数据库 FOR
 - 员工只属于一个直接组织，employees.org_id 是员工责任范围根。
 - 资产绑定员工后，touchpoint_assets.employee_id 等于当前绑定员工，touchpoint_assets.org_id 等于该员工的 org_id。
 - 载体内容的 org_id、employee_id 必须与所属资产一致，由 M3 Service 同步维护。
-- 地址页面的 `org_id` 是责任组织；`content_type` 为 1 小程序、2 APP、3 网页；`url` 只做首尾空格清理。网页/小程序 `target_url` 是直接 Core 目标，小程序必须为公开 HTTPS Universal Link；APP 由 `metadata` 解析为 `app-open.html` Bridge。Payload 通过可空 `address_page_id` 逻辑关联，并保存实际 Core 目标快照。
+- 地址页面的 `org_id` 是责任组织；`content_type` 为 1 小程序、2 APP、3 网页；`url` 只做首尾空格清理。网页/小程序 `target_url` 是直接 Core 目标，小程序必须为公开 HTTPS Universal Link；APP 回退地址允许 HTTP/HTTPS，Bridge 由 `metadata` 解析为公开 HTTPS 的 `app-open.html`。Payload 通过可空 `address_page_id` 逻辑关联，并保存实际 Core 目标快照。
 - M4 绑定、解绑和转交必须在同一事务内更新绑定记录、资产责任范围和全部所属内容责任范围。
 - 前端传入的组织或员工 ID 只能缩小查询条件，不能扩大访问上下文的数据范围。
 

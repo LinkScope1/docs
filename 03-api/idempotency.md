@@ -7,6 +7,7 @@
 - LinkForty 创建接口沿用现有稳定业务幂等策略；目标切换的 Core `PUT` 不添加 Core 尚未声明支持的幂等请求头，使用同 Link ID + 同目标的逻辑幂等。
 - Webhook 使用 `event_id` 全局唯一；`click_id` 只作非唯一逻辑引用。
 - `/imports/validate` 只读校验，不写业务表；物理删除命令使用专用 `master_data_delete_commands`，不作为普通业务写入的通用幂等表。
+- `/imports/execute` 使用 `import_batches.idempotency_key` 和 `request_hash`；相同模板、相同文件重放原批次，同一键对应不同模板或文件返回 `IDEMPOTENCY_CONFLICT`。
 - 地址页面普通创建不再接收客户端 `addressCode`：服务端按内容类型前缀在事务级 advisory lock 下分配全局序号，并以唯一约束作为并发最终防线；可信导入更新仍以已有 `addressCode` 匹配，新增导入行可留空并由服务端生成。
 
 ## 规则

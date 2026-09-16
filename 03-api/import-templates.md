@@ -1,73 +1,86 @@
-# 中文 CSV 导入模板规范
+# CSV 导入模板规范
 
-四类业务导入统一使用 UTF-8 CSV（兼容 UTF-8 BOM）。API JSON 字段仍使用
-camelCase；CSV 表头和枚举值使用简洁中文。表头必须完整、顺序一致，不允许缺列、
-重复列或未知列。
+批量导入是横向能力，模板按业务对象分别定义。当前公开主数据模板不包含组织；组织主数据仍由组织管理接口维护。所有 CSV 均使用 UTF-8（兼容 UTF-8 BOM），表头必须完整、顺序固定，不允许缺列、重复列或未知列。
 
-通用限制：
+通用规则：
 
-- 文件不超过 10 MiB，数据行不超过 100,000 行。
-- 预校验接口为 `POST /api/v1/imports/validate`，不写业务表、不调用外部系统。
-- 执行为 `POST /api/v1/imports/execute`，必须携带 `Idempotency-Key`。
-- 不超过 1,000 行同步执行；超过 1,000 行创建 Celery 批次，返回 `202` 和 `batchId`。
-- 批次状态查询：`GET /api/v1/imports/{batchId}`；失败报告：
-  `GET /api/v1/imports/{batchId}/failure-report`。
-- 每行独立事务；同文件稳定键重复报错，文件重复执行按稳定键更新，不产生重复数据。
-- 缺少数据行不代表删除、停用或解绑。绑定关系必须使用专门生命周期接口。
+- 文件最大 10 MiB，最多 100,000 条数据行。
+- 预校验：`POST /api/v1/imports/validate`。只读，不写业务表，不调用 LinkForty。
+- 执行：`POST /api/v1/imports/execute`，必须携带 `Idempotency-Key`；1,000 行以内同步，超过 1,000 行落库后由 Celery 异步执行并返回 `202` 与 `batchId`。
+- 批次查询：`GET /api/v1/imports/{batchId}`；失败报告：`GET /api/v1/imports/{batchId}/failure-report`。
+- 每行独立事务；同一文件的稳定键重复报错。重复使用相同幂等键返回原批次，不会因文件缺行删除、停用或解绑数据。
+- 导入不承担员工绑定生命周期；绑定、解绑、转交使用绑定接口或批量绑定接口。
+
+## 模板与字段约束
+
+| 模板 | 下载类型 | 稳定键 | 必填字段 | 可空字段 |
+| --- | --- | --- | --- | --- |
+| 卡片 | `asset` | 卡片编码 | 卡片编码、责任组织编码 | 物理 UID、状态、供应商编码、供应商批次、备注 |
+| 载体内容 | `payload` | 内容 ID；新增时为卡片编码/物理 UID + 内容类型 + 内容值 | 内容类型、内容值、内容来源；卡片编码和物理 UID 至少一个 | 内容 ID、提供方、内容状态、卡片编码或物理 UID（二选一仍至少一个） |
+| 员工 | `employee` | 员工编号 | 员工编号、姓名、组织编码 | 手机号、状态、备注 |
+| 地址页面 | `address_page` | 地址编码；新建时留空并由服务端生成 | 地址标识、URL、组织编码、内容类型 | 实际内容、APP 专用字段、说明；APP 行按下方条件必填 |
 
 ## 卡片
 
-下载：`GET /api/v1/imports/templates/asset`。
+下载：`GET /api/v1/imports/templates/assets` 或统一别名 `.../templates/asset`。
 
-~~~csv
+```csv
 卡片编码,物理UID,责任组织编码,状态,供应商编码,供应商批次,备注
-~~~
+```
 
-状态值：`库存`、`启用`、`停用`、`作废`。卡片编码是稳定唯一键；物理 UID
-非空时全局不得重复。责任组织必须存在、启用并处于当前用户数据范围内。
-导入不包含责任员工字段，绑定、解绑、转交必须走绑定生命周期功能。
+卡片类型固定为 NFC。状态值为 `库存`、`启用`、`停用`、`作废`。卡片编码是稳定唯一键；物理 UID 填写时全局不得重复。责任组织必须存在、启用并在操作者数据范围内。卡片模板不允许提交责任员工。
 
 ## 载体内容
 
-下载：`GET /api/v1/imports/templates/payload`。
+下载：`GET /api/v1/imports/templates/payloads` 或 `.../templates/payload`。
 
-~~~csv
+```csv
 内容ID,内容类型,内容值,内容来源,提供方,内容状态,卡片编码,物理UID
-~~~
+```
 
-新增时内容 ID 留空；修改时使用内容 ID。内容类型支持`短链`、`网址`、`文本`、
-`其他`；内容来源支持`供应商预写`、`本系统`、`外部导入`、`人工录入`；内容状态
-支持`待登记`、`有效`、`停用`、`失效`。卡片编码和物理 UID 至少提供一个，同时
-提供时必须指向同一张卡片。组织和责任员工从卡片继承。
-
-旧 `targetUrl/customCode` 格式不再作为业务模型；如需迁移，先转换为本模板的
-`内容类型/内容值/内容来源`。
-
-## 可复用地址页面
-
-下载：`GET /api/v1/imports/templates/address_page`。
-
-~~~csv
-地址编码,地址标识,URL,实际内容,组织编码,内容类型,说明
-~~~
-
-地址编码列可留空：留空的新行由服务端按内容类型自动生成，全局序号由事务级锁保护；填写已有地址编码时按该编码更新可编辑字段，责任组织不可变。地址标识、URL 和组织编码必填，实际内容可选，缺省时取 URL；内容类型支持
-`小程序`、`APP`、`网页`，留空按网页处理。`URL` 和地址页面实际内容只做非空及长度校验，
-不要求 HTTP/HTTPS scheme。地址编码和内容类型创建后不可修改；CSV 缺少的地址页面不会被删除、停用或归档。
+内容类型为 `短链`、`网址`、`文本`、`其他`；内容来源为 `供应商预写`、`本系统`、`外部导入`、`人工录入`；内容状态为 `待登记`、`有效`、`停用`、`失效`。新增时内容 ID 可空，修改时使用已有内容 ID。卡片编码和物理 UID 至少填写一个，同时填写时必须指向同一张卡片。普通导入不允许用名称模糊匹配。
 
 ## 员工
 
-下载：`GET /api/v1/imports/templates/employee`。
+下载：`GET /api/v1/imports/templates/employees`。
 
-~~~csv
+```csv
 员工编号,姓名,组织编码,手机号,状态,备注
-~~~
+```
 
-员工编号是稳定唯一键；组织编码必须匹配启用组织且在当前数据范围内。状态支持
-`正常`、`停用`。手机号入库加密，失败报告不回显完整手机号。
+员工编号、姓名、组织编码不可为空；手机号、状态、备注可空。状态为 `正常` 或 `停用`；新员工状态省略时按正常创建，已有员工省略时保留原值。手机号填写时必须为 11 位中国大陆手机号，入库加密，失败报告不回显完整号码。Casdoor 同步任务不在本期导入闭环内，后续另行实现。
+
+## 地址页面（统一 APP/网页/小程序模板）
+
+下载：`GET /api/v1/imports/templates/address_pages` 或统一别名 `.../templates/address_page`。APP、网页和小程序共用下面这一份固定模板：
+
+```csv
+地址编码,地址标识,URL,实际内容,组织编码,内容类型,APP iOS Scheme,APP Android Scheme,APP Harmony Scheme,APP Payload,APP回退地址,说明
+```
+
+字段规则：
+
+- `地址编码`：新建时必须留空，服务端按内容类型生成；填写时只能匹配已有地址页面并更新可编辑字段，编码和责任组织不可修改。
+- `地址标识`、`URL`、`组织编码`、`内容类型`：所有类型均不可为空。内容类型只能为 `网页`、`小程序`、`APP`。
+- `实际内容`：网页/小程序可空；APP 行必须为空。网页/小程序实际内容为空时按 URL 作为目标。
+- `APP iOS Scheme`、`APP Android Scheme`、`APP Harmony Scheme`：仅 APP 行使用，至少填写一个平台 Scheme。
+- `APP Payload`：仅 APP 行使用，不可为空，最大 4,096 字符；只做非空和长度校验，不解析、不改写其内容。
+- `APP回退地址`：仅 APP 行使用，不可为空，允许 HTTP 或 HTTPS 绝对地址。它是 APP 行统一目标配置；APP 行不使用“实际内容”。
+- 网页/小程序行的所有 APP 专用列必须为空；APP 行的实际内容必须为空。
+- `说明`：可空，最大 500 字符；URL、实际内容和 APP 回退地址最大 2,048 字符，平台 Scheme 最大 128 字符。
+
+APP 页面最终目标继续使用既有拼接规则：由服务端用真实 LinkForty Link ID 生成 Bridge URL，并将 APP Payload 与平台 Scheme 作为不透明参数传入；模板中的 APP 回退地址只允许作为回退目标配置，不改变原有 Bridge 拼接规则。
+
+## 绑定与批量配置
+
+员工绑定不是主数据导入字段。专用生命周期导入模板下载为 `GET /api/v1/imports/templates/assignments`，执行为 `POST /api/v1/imports/assignments/execute`，固定表头为：
+
+```csv
+assetCode,targetEmployeeCode,operation,reason
+```
+
+`assetCode` 不可为空；`operation` 只能为 `bind`、`unbind`、`transfer`；`bind`/`transfer` 时 `targetEmployeeCode` 不可为空，`unbind` 时必须为空；`unbind`/`transfer` 时 `reason` 不可为空，最多 500 字符。该专用接口同步最多 1,000 行，失败按行返回。新建系统优先使用 `POST /api/v1/touchpoint-assets/batch-bind`、`batch-unbind`、`batch-configure`，批量接口以内部 BIGINT ID 字符串传输，资产列表不得重复；每个请求必须提供幂等键。`batch-configure` 的 `addressPageId` 必须显式传入，可使用 `null` 清空页面绑定；`employeeId` 同样可使用显式 `null` 清空员工绑定。批量配置页面时由服务端校验页面启用状态、组织层级、资产数据范围及 LinkForty 外部调用结果。
 
 ## 安全边界
 
-预校验和失败报告不得回显或写入日志的内容包括原始`内容值`、完整手机号、Token、
-密码、Webhook Secret 和数据库凭证。普通内容导出不包含`内容值`，受控原值导出
-需要额外权限 `export.payload-content` 和二次确认。
+预校验、失败报告和日志不得回显原始内容值、完整手机号、Token、密码、Webhook Secret 或数据库凭证。普通载体内容导出不包含原始内容值；受控原值导出需额外权限 `export.payload-content` 和二次确认。
