@@ -1484,13 +1484,16 @@ paths:
       x-owner: API/后端/导入
       summary: Validate an import file without writing business tables
       description: >-
-        Synchronous, read-only CSV pre-validation. The card, payload, address-page and employee
-        templates use complete, fixed Chinese headers and Chinese enum values.
+        Synchronous, read-only pre-validation. Card, payload and employee imports use CSV;
+        address-page imports accept CSV or the downloaded XLSX template. All templates use
+        complete, fixed headers and Chinese enum values.
         Headers with missing, duplicate or unknown columns are rejected. Rows
-        omitted from the CSV are ignored and never imply deletion, disabling or
+        omitted from the uploaded file are ignored and never imply deletion, disabling or
         unbinding. Organization import is not a public capability. APP address
         rows require at least one platform Scheme, a non-empty opaque APP Payload,
-        a valid HTTP/HTTPS fallback address, and an empty 实际内容 column.
+        and a valid HTTP/HTTPS fallback address. Address-page organization is derived from
+        the authenticated importing employee; the address-page template is create-only.
+        For mini-program rows, URL is the target and must be an HTTPS Universal Link.
       x-permission: import.validate
       x-data-scope: ORG_SUBTREE
       x-idempotency: none
@@ -1521,9 +1524,9 @@ paths:
       tags: [imports]
       operationId: executeUnifiedImport
       x-owner: API/后端/导入
-      summary: Execute a card, payload, address page or employee CSV import
+      summary: Execute a card, payload, address page or employee import
       description: >-
-        Requires a pre-validated UTF-8 CSV and an Idempotency-Key. At most 1,000
+        Requires a pre-validated CSV (or address-page XLSX) and an Idempotency-Key. At most 1,000
         rows execute synchronously; larger files create a Celery batch and return
         202. Each row is committed independently. Repeating the same key returns
         the existing batch and missing rows never delete, disable, unbind or
@@ -1635,15 +1638,16 @@ paths:
       tags: [imports]
       operationId: downloadUnifiedImportTemplate
       x-owner: API/后端/导入
-      summary: Download a Chinese CSV import template
+      summary: Download a Chinese import template
       description: >-
-        Returns a UTF-8 BOM CSV with an exact fixed header. Canonical templateType
-        values are asset, payload, employee and address_page; plural aliases are
-        accepted for download compatibility. All headers and enum
-        values in these templates are concise Chinese labels. The address_page
-        template is one unified 12-column template for APP, web and mini-program
-        rows: 地址编码,地址标识,URL,实际内容,组织编码,内容类型,APP iOS Scheme,
-        APP Android Scheme,APP Harmony Scheme,APP Payload,APP回退地址,说明.
+        Asset, payload and employee templates are UTF-8 BOM CSV. The address_page template is
+        XLSX with a 跳转类型 dropdown (小程序, APP, 网页), shared by APP, web and mini-program
+        rows. Its exact headers are 地址标识,URL,跳转类型,APP iOS Scheme,APP Android Scheme,
+        APP Harmony Scheme,APP Payload,APP回退地址,说明. Address-page imports only create rows;
+        the server generates addressCode and derives orgId from the authenticated employee.
+        A mini-program URL must be an HTTPS Universal Link; APP rows use APP回退地址 as their target.
+        Canonical templateType values are asset, payload, employee and address_page; plural
+        aliases are accepted for download compatibility.
       x-permission: import.validate
       x-data-scope: ORG_SUBTREE
       x-idempotency: none
@@ -1657,9 +1661,11 @@ paths:
           schema: { type: string, enum: [asset, assets, payload, payloads, employee, employees, address_page, address_pages] }
       responses:
         '200':
-          description: UTF-8 BOM CSV template
+          description: CSV template, or the address_page XLSX template with dropdown validation.
           content:
             text/csv: { schema: { type: string, format: binary } }
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '422': { $ref: '#/components/responses/RequestSchemaInvalid' }
@@ -1725,13 +1731,12 @@ paths:
       summary: Download the employee master-data CSV template
       description: >-
         Downloads a UTF-8 BOM CSV named 员工导入模板.csv with the fixed Chinese
-        header 员工编号,姓名,组织编码,手机号,状态,备注.
-        员工编号, 姓名 and 组织编码 are required. 手机号、状态 and 备注 are
-        optional; status accepts 正常 or 停用. When omitted, a new employee is
-        created as 正常 and an existing employee keeps its current status.
-        The template writes its phone sample in the Excel text-literal form
-        ="13800001234"; the importer safely restores that form to a phone
-        number. The two sample rows must be replaced or deleted before upload.
+        header 姓名,工号,组织编码,联系方式,状态. 姓名、工号、组织编码 are required;
+        联系方式 and 状态 are optional. 工号 maps to employees.employee_code and the
+        Casdoor employee_code claim, not the generated employee_uid. 联系方式 maps to
+        the existing phone field and, when supplied, must be an 11-digit mainland China
+        mobile number. Status accepts 启用 or 禁用. When omitted, a new employee is
+        created as enabled and an existing employee keeps its current status.
       x-permission: import.validate
       x-data-scope: ORG_SUBTREE
       x-idempotency: none
