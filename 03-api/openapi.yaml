@@ -666,8 +666,14 @@ paths:
       tags: [touchpoint-assets]
       operationId: batchConfigureTouchpointAssets
       x-owner: API/后端
-      summary: Configure an address page and optionally an employee for selected assets
+      summary: Configure employee and address page per selected asset
       x-permission: touchpoint.payload.manage
+      x-required-permissions: [touchpoint.asset.manage]
+      x-conditional-permissions:
+        employeeId: touchpoint.assignment.manage
+        addressPageId:
+          always: touchpoint.payload.manage
+          whenNonNull: touchpoint.address-page.read
       x-data-scope: ASSET_SCOPE
       x-idempotency: Idempotency-Key
       x-audit: true
@@ -683,6 +689,7 @@ paths:
         '200': { $ref: '#/components/responses/Success' }
         '202': { $ref: '#/components/responses/Success' }
         '400': { $ref: '#/components/responses/BadRequest' }
+        '422': { $ref: '#/components/responses/ValidationError' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '409': { $ref: '#/components/responses/Conflict' }
         '503': { $ref: '#/components/responses/DataSourceUnavailable' }
@@ -694,6 +701,11 @@ paths:
       x-owner: API/后端
       summary: Edit the employee and/or address page bound to one asset
       x-permission: touchpoint.asset.manage
+      x-conditional-permissions:
+        employeeId: touchpoint.assignment.manage
+        addressPageId:
+          always: touchpoint.payload.manage
+          whenNonNull: touchpoint.address-page.read
       x-data-scope: ASSET_SCOPE
       x-idempotency: Idempotency-Key
       x-audit: true
@@ -2285,14 +2297,54 @@ components:
         reasonType: { type: integer, minimum: 1, default: 1 }
         reason: { type: [string, 'null'], maxLength: 500 }
         idempotencyKey: { type: [string, 'null'], maxLength: 128 }
+    BatchConfigureItem:
+      type: object
+      additionalProperties: false
+      minProperties: 2
+      required: [assetId]
+      description: >-
+        One asset's changes. At least one of employeeId and addressPageId must
+        be explicitly present. Omitted fields remain unchanged; JSON null
+        clears the corresponding relation.
+      anyOf:
+        - required: [employeeId]
+        - required: [addressPageId]
+      properties:
+        assetId: { $ref: '#/components/schemas/Id' }
+        employeeId: { $ref: '#/components/schemas/NullableId' }
+        addressPageId: { $ref: '#/components/schemas/NullableId' }
+        reasonType: { type: integer, minimum: 1, default: 1 }
+        reason: { type: [string, 'null'], maxLength: 500 }
     BatchConfigureRequest:
       type: object
       additionalProperties: false
-      required: [assetIds, addressPageId]
+      description: >-
+        Use exactly one request mode. The legacy assetIds mode applies one
+        addressPageId and optional employeeId to every selected asset. The
+        items mode supplies independent changes per asset. IDs are positive
+        BIGINT decimal strings; clients must not submit targetUrl, LinkForty
+        IDs, or display labels. The Idempotency-Key header and request body
+        are normalized together for batch replay/conflict detection.
+      oneOf:
+        - required: [assetIds, addressPageId]
+          not:
+            required: [items]
+        - required: [items]
+          not:
+            anyOf:
+              - required: [assetIds]
+              - required: [employeeId]
+              - required: [addressPageId]
       properties:
         assetIds: { $ref: '#/components/schemas/BatchAssetIds' }
         addressPageId: { $ref: '#/components/schemas/NullableId' }
         employeeId: { $ref: '#/components/schemas/NullableId' }
+        items:
+          type: array
+          minItems: 1
+          maxItems: 100000
+          uniqueItems: true
+          items: { $ref: '#/components/schemas/BatchConfigureItem' }
         idempotencyKey: { type: [string, 'null'], maxLength: 128 }
     AssetConfigurationRequest:
       type: object
@@ -2997,7 +3049,7 @@ components:
       properties:
         itemId: { $ref: '#/components/schemas/Id' }
         assetId: { $ref: '#/components/schemas/Id' }
-        status: { type: string, enum: [queued, running, succeeded, failed] }
+        status: { type: string, enum: [queued, running, succeeded, partial, failed] }
         attemptCount: { type: integer, minimum: 0 }
         errorCode: { type: [string, 'null'] }
         message: { type: [string, 'null'] }
