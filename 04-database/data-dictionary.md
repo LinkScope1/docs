@@ -403,6 +403,10 @@ Core 集成会执行内容类型所需的目标校验。
 | total / succeeded / failed | INTEGER | 否 | 0 | 批次统计 |
 | result_data | JSONB | 是 | — | 安全行结果，不包含原始内容值或完整手机号 |
 | failure_report | BYTEA | 是 | — | UTF-8 BOM CSV 失败报告 |
+| failure_stage | VARCHAR(32) | 是 | — | 批次级失败阶段：`enqueue` / `execution` |
+| error_code | VARCHAR(64) | 是 | — | 批次级稳定错误码；失败批次必填，历史失败批次读取时回退 `INTERNAL_ERROR` |
+| error_message | VARCHAR(1024) | 是 | — | 面向页面的安全提示，不保存底层异常详情、原始文件值或凭证 |
+| started_at / finished_at | TIMESTAMPTZ | 是 | — | 批次开始和完成/失败时间 |
 | created_at / updated_at | TIMESTAMPTZ | 否 | NOW() | 创建和更新时间 |
 
 ## 4.10 touchpoint_address_page_reapply_jobs

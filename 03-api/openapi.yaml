@@ -1508,7 +1508,13 @@ paths:
                 templateType: { type: string, enum: [asset, payload, employee, address_page] }
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '200': { $ref: '#/components/responses/Success' }
+        '200':
+          description: Pre-validation completed; row errors are returned in the JSON body.
+          headers:
+            X-Request-ID: { $ref: '#/components/headers/RequestId' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ImportValidationSuccess' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '413': { $ref: '#/components/responses/ImportFileTooLarge' }
@@ -1532,6 +1538,10 @@ paths:
         deduplication: submitting them again with a new key creates new assets.
         Missing rows never delete, disable, unbind or transfer existing data.
         Payload values are never included in ordinary failure reports or logs.
+        Every successful execution response includes a completion summary and a
+        directly renderable failures array. A terminal batch failure includes a
+        safe error object with stage, errorCode and message; it may not have a
+        failure-report file.
       x-permission: import.validate
       x-data-scope: ORG_SUBTREE
       x-idempotency: domain_key_import_batch
@@ -1764,7 +1774,8 @@ paths:
         committed independently: a failed row does not roll back successful
         rows. An existing employee must remain in the same organization;
         organization changes must use the employee transfer API. The response
-        includes a Base64 UTF-8 BOM failure-report CSV only when failures exist.
+        includes a completion summary, a directly renderable failures array and
+        a Base64 UTF-8 BOM failure-report CSV only when failures exist.
       x-permission: employee.manage
       x-data-scope: ORG_SUBTREE
       x-idempotency: none
@@ -1909,7 +1920,13 @@ paths:
         '200':
           description: UTF-8 CSV export
           headers:
-            X-Request-ID: { schema: { type: string } }
+            X-Request-ID: { $ref: '#/components/headers/RequestId' }
+            X-Export-Status: { $ref: '#/components/headers/ExportStatus' }
+            X-Export-Outcome: { $ref: '#/components/headers/ExportOutcome' }
+            X-Export-Message-Code: { $ref: '#/components/headers/ExportMessageCode' }
+            X-Export-Total: { $ref: '#/components/headers/ExportCount' }
+            X-Export-Succeeded: { $ref: '#/components/headers/ExportCount' }
+            X-Export-Failed: { $ref: '#/components/headers/ExportCount' }
           content:
             text/csv: { schema: { type: string, format: binary } }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -2794,6 +2811,70 @@ components:
         filtered by AccessContext. The bank backend does not read the LinkForty
         database; an unsupported required source returns
         DATA_SOURCE_UNAVAILABLE with no data and no partial response.
+    ImportCompletion:
+      type: object
+      additionalProperties: false
+      required: [status, outcome, messageCode, message, total, succeeded, failed]
+      properties:
+        status: { type: string, enum: [queued, running, completed, failed] }
+        outcome: { type: string, enum: [processing, success, partial_failed, failed] }
+        messageCode: { type: string, enum: [IMPORT_QUEUED, IMPORT_RUNNING, IMPORT_COMPLETED, IMPORT_PARTIAL_FAILED, IMPORT_BATCH_FAILED, IMPORT_VALIDATION_COMPLETED, IMPORT_VALIDATION_FAILED] }
+        message: { type: string }
+        total: { type: integer, minimum: 0 }
+        succeeded: { type: integer, minimum: 0 }
+        failed: { type: integer, minimum: 0 }
+    ImportBatchError:
+      type: object
+      additionalProperties: false
+      required: [stage, errorCode, message]
+      properties:
+        stage: { type: string, enum: [enqueue, execution] }
+        errorCode: { type: string }
+        message: { type: string }
+    ImportValidationError:
+      type: object
+      additionalProperties: false
+      required: [rowNumber, field, type]
+      properties:
+        rowNumber: { type: integer, minimum: 2 }
+        field: { type: string }
+        type: { type: string }
+        message: { type: [string, 'null'] }
+    ImportValidationRow:
+      type: object
+      additionalProperties: false
+      required: [rowNumber, status, operation, stableKey, errors]
+      properties:
+        rowNumber: { type: integer, minimum: 2 }
+        status: { type: string, enum: [valid, error] }
+        operation: { type: [string, 'null'], enum: [create, update, skip, 'null'] }
+        stableKey: { type: [string, 'null'] }
+        errors:
+          type: array
+          items: { $ref: '#/components/schemas/ImportValidationError' }
+    ImportValidationData:
+      type: object
+      additionalProperties: false
+      required: [templateType, total, valid, invalid, completion, expectedCreate, expectedUpdate, expectedSkip, rows]
+      properties:
+        templateType: { type: string, enum: [asset, payload, employee, address_page] }
+        total: { type: integer, minimum: 0 }
+        valid: { type: integer, minimum: 0 }
+        invalid: { type: integer, minimum: 0 }
+        completion: { $ref: '#/components/schemas/ImportCompletion' }
+        expectedCreate: { type: integer, minimum: 0 }
+        expectedUpdate: { type: integer, minimum: 0 }
+        expectedSkip: { type: integer, minimum: 0 }
+        rows:
+          type: array
+          items: { $ref: '#/components/schemas/ImportValidationRow' }
+    ImportValidationSuccess:
+      type: object
+      additionalProperties: false
+      required: [requestId, data]
+      properties:
+        requestId: { type: string }
+        data: { $ref: '#/components/schemas/ImportValidationData' }
     EmployeeImportRowResult:
       type: object
       additionalProperties: false
@@ -2820,16 +2901,21 @@ components:
     EmployeeImportExecutionData:
       type: object
       additionalProperties: false
-      required: [total, succeeded, failed, failureReport, rows]
+      required: [status, total, succeeded, failed, completion, failureReport, rows, failures]
       properties:
+        status: { type: string, const: completed }
         total: { type: integer, minimum: 0 }
         succeeded: { type: integer, minimum: 0 }
         failed: { type: integer, minimum: 0 }
+        completion: { $ref: '#/components/schemas/ImportCompletion' }
         failureReport:
           oneOf:
             - { $ref: '#/components/schemas/ImportFailureReport' }
             - { type: 'null' }
         rows:
+          type: array
+          items: { $ref: '#/components/schemas/EmployeeImportRowResult' }
+        failures:
           type: array
           items: { $ref: '#/components/schemas/EmployeeImportRowResult' }
     EmployeeImportExecutionSuccess:
@@ -2852,18 +2938,22 @@ components:
     UnifiedImportExecutionData:
       type: object
       additionalProperties: false
-      required: [batchId, status, total, succeeded, failed, failureReport, rows]
+      required: [batchId, status, total, succeeded, failed, completion, failureReport, rows, failures]
       properties:
         batchId: { $ref: '#/components/schemas/Id' }
         status: { type: string, enum: [completed, failed] }
         total: { type: integer, minimum: 0 }
         succeeded: { type: integer, minimum: 0 }
         failed: { type: integer, minimum: 0 }
+        completion: { $ref: '#/components/schemas/ImportCompletion' }
         failureReport:
           oneOf:
             - { $ref: '#/components/schemas/ImportFailureReport' }
             - { type: 'null' }
         rows:
+          type: array
+          items: { $ref: '#/components/schemas/UnifiedImportRowResult' }
+        failures:
           type: array
           items: { $ref: '#/components/schemas/UnifiedImportRowResult' }
     ImportExecutionSuccess:
@@ -2876,7 +2966,7 @@ components:
     ImportBatchData:
       type: object
       additionalProperties: false
-      required: [batchId, templateType, status, total, succeeded, failed]
+      required: [batchId, templateType, status, total, succeeded, failed, completion, failures]
       properties:
         batchId: { $ref: '#/components/schemas/Id' }
         templateType: { type: string, enum: [asset, payload, employee, address_page] }
@@ -2884,6 +2974,14 @@ components:
         total: { type: integer, minimum: 0 }
         succeeded: { type: integer, minimum: 0 }
         failed: { type: integer, minimum: 0 }
+        completion: { $ref: '#/components/schemas/ImportCompletion' }
+        failures:
+          type: array
+          items: { $ref: '#/components/schemas/UnifiedImportRowResult' }
+        error:
+          oneOf:
+            - { $ref: '#/components/schemas/ImportBatchError' }
+            - { type: 'null' }
         result: { type: object, additionalProperties: true }
     ImportBatchSuccess:
       type: object
@@ -3159,3 +3257,15 @@ components:
     RequestId:
       description: Correlation ID; exactly matches the response body's `requestId`.
       schema: { type: string, minLength: 1, maxLength: 128 }
+    ExportStatus:
+      description: Export processing status; present on successful CSV responses.
+      schema: { type: string, const: completed }
+    ExportOutcome:
+      description: Export result classification.
+      schema: { type: string, const: success }
+    ExportMessageCode:
+      description: Stable completion message code for the export dialog.
+      schema: { type: string, const: EXPORT_COMPLETED }
+    ExportCount:
+      description: Non-negative number of exported data rows.
+      schema: { type: string, pattern: '^(0|[1-9][0-9]*)$' }

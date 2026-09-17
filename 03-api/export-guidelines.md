@@ -2,6 +2,19 @@
 
 导出是横向能力，组织不作为可导出资源。接口为 `GET /api/v1/exports/{resource}`，结果始终是“当前用户数据范围 ∩ 查询筛选条件”，筛选只能收窄范围。CSV 使用 UTF-8 BOM，最多 100,000 行、10 MiB；超限返回 `413 EXPORT_LIMIT_EXCEEDED`，不得静默截断。成功和失败均写入 M1 操作审计。
 
+成功响应仍为 CSV 文件流，并额外返回以下 ASCII 响应头。前端读取这些响应头后即可展示完成窗口，不需要改变现有 Blob 下载逻辑：
+
+| 响应头 | 示例 | 含义 |
+| --- | --- | --- |
+| `X-Export-Status` | `completed` | 导出流程已完成 |
+| `X-Export-Outcome` | `success` | 本次导出结果 |
+| `X-Export-Message-Code` | `EXPORT_COMPLETED` | 稳定提示码 |
+| `X-Export-Total` | `125` | CSV 数据行数 |
+| `X-Export-Succeeded` | `125` | 成功导出行数 |
+| `X-Export-Failed` | `0` | 导出失败行数；当前同步导出成功时固定为 0 |
+
+后端通过 CORS `Access-Control-Expose-Headers` 暴露上述响应头。导出失败时不返回伪造的 CSV，继续使用统一 JSON 错误结构中的 `requestId`、`error.code` 和 `error.message`，前端应在窗口中显示错误。
+
 ## 支持资源与表头
 
 | 资源 | 固定表头 |

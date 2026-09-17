@@ -25,6 +25,8 @@
 | `DATA_SOURCE_UNAVAILABLE` | 503 | 数据源暂时不可用 |
 | `EXPORT_NOT_ALLOWED` | 403 | 当前人员无导出权限 |
 | `EXPORT_LIMIT_EXCEEDED` | 413 | 同步导出超过 10 MiB 或 100,000 行限制 |
+| `IMPORT_TASK_UNAVAILABLE` | 503 | 异步导入任务无法入队 |
+| `IMPORT_SOURCE_MISSING` | 500 | 导入批次源文件不可用 |
 | `NOT_IMPLEMENTED` | 501 | 已定义但尚未实现的工程占位能力 |
 | `INTERNAL_ERROR` | 500 | 未预期的系统错误 |
 | `LINKFORTY_LINK_REQUIRED` | 409 | Payload 没有关联可用于实时切换的 LinkForty Link ID |
