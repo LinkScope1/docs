@@ -32,7 +32,7 @@ V1.3.2 将组织层级、员工责任范围、NFC 载体、载体实际内容、
 | --- | --- | --- |
 | 组织 | organization_units | 以 org_code 前缀表达组织层级和数据范围根节点 |
 | 员工 | employees | 维护 Casdoor 登录工号、独立员工展示 ID、员工名称和直接所属组织 |
-| 触点资产 | touchpoint_assets | 维护 NFC 载体卡ID、业务编码、物理 UID 和当前责任 |
+| 触点资产 | touchpoint_assets | 维护 NFC 载体卡ID、物理 UID 和当前责任 |
 | 地址页面 | touchpoint_address_pages | 维护可复用地址页面、责任组织、内容类型、展示值、实际内容和状态 |
 | 载体内容 | touchpoint_payloads | 记录卡内实际写入内容及 LinkForty 逻辑引用；不持久化专属外部同步状态 |
 | 员工绑定 | touchpoint_employee_assignments | 追加保存载体与员工的当前及历史绑定 |
@@ -87,7 +87,7 @@ V1.3.2 将组织层级、员工责任范围、NFC 载体、载体实际内容、
 
 ## 2.4 幂等、唯一性和审计
 
-- `asset_id`、`asset_code`、`employee_uid`、`employee_code`、`org_abbr`、`org_code`、`address_code` 和 `event_id` 全局唯一；非空 carrier_uid 唯一。
+- 资产业务卡ID `touchpoint_assets.asset_id`、`employee_uid`、`employee_code`、`org_abbr`、`org_code`、`address_code` 和 `event_id` 全局唯一；非空 `carrier_uid` 唯一。
 
 - asset_id 是服务端生成的卡ID，格式为 `PKYYYYMMDDNNN`，业务日期按 `Asia/Shanghai` 计算，每日从 `001` 到 `999` 全局递增；内部数值 `id` 和各跨表 `asset_id` 逻辑引用不改变。
 
@@ -113,7 +113,7 @@ V1.3.2 将组织层级、员工责任范围、NFC 载体、载体实际内容、
 | 表数量 | 银行库包含 8 张业务表、1 张横向批量导入任务表、2 张地址页面重新应用任务表、2 张资产批量操作任务表和 3 张物理删除归档/幂等表：另含 `deleted_employees`、`deleted_address_pages`、`master_data_delete_commands`。 |
 | 外键与删除 | 不建立本地数据库外键，不使用数据库级级联删除；M2 员工和 M3 地址页面由 Service 在归档同一事务内物理删除主表，其他历史对象保留。 |
 | 枚举 | 组织/员工状态为 `0/1`；资产类型固定 `1=NFC`，资产状态为 `0/1/2/9`；地址页面 `content_type` 为 `1=小程序/2=APP/3=网页`、`status` 为 `0/1`；Payload 类型为 `1/2/3/99`、来源为 `1/2/3/4`、提供方为 `1/2/3/99`、状态为 `0/1/2/3`；绑定状态为 `1/2`；访问关联状态为 `0/1/2/3`；操作结果为 `1/2/3`。 |
-| 标识唯一性 | `asset_id`、`asset_code`、`employee_uid`、`employee_code`、`org_abbr`、`org_code`、`address_code`、`event_id` 全局唯一；`asset_id` 匹配 `^PK[0-9]{11}$`；新员工 ID 匹配 `^[A-Z][A-Z0-9]{1,11}-E-[0-9]{6}$`；非空 `carrier_uid` 唯一；非空 `linkforty_link_id` 全局唯一；`click_id` 不唯一。 |
+| 标识唯一性 | 资产业务卡ID `touchpoint_assets.asset_id`、`employee_uid`、`employee_code`、`org_abbr`、`org_code`、`address_code`、`event_id` 全局唯一；`touchpoint_assets.asset_id` 匹配 `^PK[0-9]{11}$`；新员工 ID 匹配 `^[A-Z][A-Z0-9]{1,11}-E-[0-9]{6}$`；非空 `carrier_uid` 唯一；非空 `linkforty_link_id` 全局唯一；`click_id` 不唯一。 |
 | 绑定一致性 | 当前绑定 `assignment_status=1` 必须 `effective_to IS NULL`；已解绑记录必须有 `effective_to > effective_from` 和 `unbind_reason_type`；时间区间使用 PostgreSQL 排他约束防重叠。 |
 | 事件语义 | `access_events.asset_id` 非空；无法唯一解析本地资产时拒绝写入事件表，只保留安全审计和补偿记录。 |
 | 审计 | `operation_logs` 只追加，禁止 UPDATE/DELETE；不得保存 Token、JWT、密码、Webhook Secret 或未脱敏个人信息。 |
@@ -192,13 +192,12 @@ V1.3.2 将组织层级、员工责任范围、NFC 载体、载体实际内容、
 
 ## 4.3 touchpoint_assets
 
-asset_code 用于业务查询和导入，carrier_uid 用于 NFC 物理盘点，两者不能互相替代。
+`asset_id` 是唯一资产业务标识（卡ID），由服务端按中国业务日期生成；内部数值 `id` 继续作为本地关系表和资源路径使用的主键。`carrier_uid` 用于 NFC 物理盘点，不承担业务卡ID语义。
 
 | 字段 | 类型 | 可空 | 默认值 | 约束/说明 |
 | --- | --- | --- | --- | --- |
 | id | BIGINT | 否 | 雪花算法 | PK |
 | asset_id | VARCHAR(13) | 否 | 服务端生成 | 卡ID，唯一；格式 `^PK[0-9]{11}$`；按 Asia/Shanghai 业务日从 `001` 递增至 `999` |
-| asset_code | VARCHAR(64) | 否 | — | 载体业务编码，唯一；导入稳定匹配键 |
 | asset_type | SMALLINT | 否 | 1 | 1 NFC；一期固定使用 NFC |
 | carrier_uid | VARCHAR(128) | 是 | — | NFC 物理 UID；非空时唯一 |
 | org_id | BIGINT | 否 | — | 当前数据责任组织 |
@@ -703,13 +702,13 @@ V1.3.2 删除配置状态、目标资源类型、路由冲突和路由发布相�
 
 - 公开主数据导入模板为卡片、载体内容、员工和地址页面；组织导入已移除。APP、网页和小程序共用地址页面统一模板，APP 专用列按内容类型条件校验。
 
-- 稳定匹配键：组织使用 org_code，员工使用 employee_code，载体优先使用 asset_code，可辅助 carrier_uid；员工 `employee_uid` 仅作为展示字段，不替代 Casdoor 或导入工号匹配。
+- 资产导入只新增，不匹配或更新既有资产；模板不含资产编码或卡ID，卡ID由服务端生成。非空 `carrier_uid` 仍受唯一约束，重复 UID 拒绝新增。
 
-- 载体导入不得提交或覆盖 asset_id；导入创建的新载体仍由 M3 Service 按 Asia/Shanghai 业务日自动生成卡ID。
+- 组织仍使用 `org_code`，员工仍使用 `employee_code`；员工 `employee_uid` 仅作为展示字段，不替代 Casdoor 或导入工号匹配。
 
-- 载体内容使用 asset_code + payload_type 或明确内容记录 ID 作为匹配键。
+- 载体内容、绑定导入通过业务 `cardId`（即 `touchpoint_assets.asset_id`）精确定位资产，再解析为数值内部 `id` 写入关联字段；Payload、绑定和事件等其他资源的 `asset_id` 数值语义不变。
 
-- 写入策略为更新并新增：匹配到既有记录则更新，匹配不到且必填字段完整则创建。
+- 写入策略按模板区分：卡片和地址页面只新增；员工按工号、载体内容按内容 ID 匹配后更新，未命中且字段有效时创建。卡片导入不匹配或更新既有资产；无物理 UID 的资产没有资产级去重保证，新的导入幂等键会创建新卡。
 
 - 文档缺少某行不推导删除、停用或解绑；解绑和转交必须使用模板显式 `operation` 类型。
 
@@ -728,7 +727,7 @@ V1.3.2 删除配置状态、目标资源类型、路由冲突和路由发布相�
 | Repository | 数据库访问 | SQLAlchemy 2.x 查询、事务、索引和约束；不承载 Casdoor 或 LinkForty 业务。 |
 | Integration Adapter | 外部调用 | Casdoor OIDC/JWT Claim、LinkForty API、Webhook/NFC 适配和重试。 |
 | Worker / Celery | 异步任务 | 外部调用、事件重试、批量导入、补偿和结果审计；不得在银行业务表中补建 LinkForty 专属同步状态字段。 |
-| Alembic | 数据库演进 | V1.3.2 通过迁移创建银行核心业务表、横向任务表和物理删除归档/幂等表；`0010_add_physical_delete_archives` 新增三张归档/命令表，`0011_bulk_operations_and_import_templates` 新增资产批量任务表并开放地址页面导入，`0012_import_batch_request_hash` 增加导入请求指纹；禁止直接删除已部署环境旧表。 |
+| Alembic | 数据库演进 | V1.3.2 通过迁移创建银行核心业务表、横向任务表和物理删除归档/幂等表；`0010_add_physical_delete_archives` 新增三张归档/命令表，`0011_bulk_operations_and_import_templates` 新增资产批量任务表并开放地址页面导入，`0012_import_batch_request_hash` 增加导入请求指纹，`0014_drop_touchpoint_asset_code` 删除旧资产编码列并将服务端 Card ID 作为唯一业务标识。已应用 migration 不得回改。 |
 
 # 9. V1.3.2 更新日志
 
@@ -749,5 +748,6 @@ V1.3.2 删除配置状态、目标资源类型、路由冲突和路由发布相�
 | V1.3.2 | 2026-09-15 | M2/M3 增加已停用员工和地址页面的高风险物理删除接口；主表真实 DELETE，使用 deleted_* 快照和 `master_data_delete_commands` 保留历史、永久占用编码并支持幂等回放。 |
 | V1.3.2 | 2026-09-16 | 横向能力增加 `bulk_operation_batches` / `bulk_operation_items`；地址页面统一模板增加 APP Scheme、APP Payload 和 APP 回退地址，组织导入/导出公开能力移除；资产详情/列表增加绑定信息和本地短链快照；导入批次增加请求指纹。 |
 | V1.3.2 | 2026-09-16 | M3 明确 LinkForty Link 仅在资产、Payload、提供方和 Link ID 均满足条件时 active；状态通过 API 同步，不新增外部同步状态字段。 |
+| V1.3.2 | 2026-09-16 | M3 直接切换为单一资产业务卡ID：删除 `asset_code` 列及其查询、创建、导入匹配和重复校验语义；资产导入改为只新增，模板不包含资产编码/卡ID；Payload 与绑定导入通过卡ID定位资产，其他表继续使用数值内部 `id` 关联。 |
 
 > 历史版本：V1.2 原文档保留为历史基线。

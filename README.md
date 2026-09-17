@@ -8,6 +8,8 @@
 - [数据物理模型与数据字典 V1.3.2](./04-database/data-dictionary.md)
 - [项目目录建设与说明 V2.0](./00-project/project-directory-guide.md)
 - [ADR-004：M3 可复用地址页面主数据](./adr/ADR-004-reusable-address-pages.md)
+- [ADR-005：触点资产卡ID与内部主键兼容（已由 ADR-006 取代）](./adr/ADR-005-touchpoint-asset-card-id.md)
+- [ADR-006：触点资产单一业务卡ID直接切换](./adr/ADR-006-touchpoint-asset-single-business-id.md)
 
 以上三份 Markdown 是可编辑主版本来源。现有对应 DOCX 保留为只读历史/发布归档，不与 Markdown 双向手工维护；如需 DOCX，按 Markdown 主版本导出。
 

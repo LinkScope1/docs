@@ -7,8 +7,8 @@
 | 资源 | 固定表头 |
 | --- | --- |
 | 员工 | 员工编号、员工ID、姓名、组织编码、脱敏手机号、状态、备注 |
-| 卡片 | 卡ID、卡片编码、物理UID、责任组织编码、状态、供应商编码、供应商批次、绑定员工编号、绑定员工姓名、绑定地址编码、绑定地址标识、LinkForty短链接、备注 |
-| 载体内容 | 内容ID、内容类型、内容来源、提供方、内容状态、卡片编码、物理UID |
+| 卡片 | 卡ID、物理UID、责任组织编码、状态、供应商编码、供应商批次、绑定员工编号、绑定员工姓名、绑定地址编码、绑定地址标识、LinkForty短链接、备注 |
+| 载体内容 | 内容ID、内容类型、内容来源、提供方、内容状态、卡ID、物理UID |
 | 地址页面 | 地址ID、地址编码、地址标识、URL、内容类型、目标地址、组织编码、状态、APP iOS Scheme、APP Android Scheme、APP Harmony Scheme、APP Payload、APP回退地址、说明 |
 
 另支持绑定历史、访问事件、操作审计等受控资源；其字段以 API 白名单为准。普通导出不提供组织资源。
@@ -17,7 +17,7 @@
 
 卡片导出会带出当前绑定员工、当前有效 Payload 关联的地址页面，以及本地已落库的 LinkForty 短链接快照。没有有效绑定、页面或短链快照时对应单元格为空；导出过程不现场调用 LinkForty，也不从外部平台表读取数据。
 
-资产筛选支持 `assetCode`、`carrierUid`、`orgCode`、`employeeId`、`employeeName`、`assetStatus`、`supplierBatchNo`、`assetIds`、`createdFrom`、`createdTo`。`assetIds` 是逗号分隔的正数 BIGINT 字符串，日期必须带时区。
+资产筛选支持 `cardId`、`carrierUid`、`orgCode`、`employeeId`、`employeeName`、`assetStatus`、`supplierBatchNo`、`assetIds`、`createdFrom`、`createdTo`。`cardId` 按卡ID前缀匹配；`assetIds` 是逗号分隔的正数 BIGINT 字符串内部主键，日期必须带时区。
 
 ## 地址页面导出
 

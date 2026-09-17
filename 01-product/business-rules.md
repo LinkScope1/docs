@@ -24,7 +24,7 @@
 ## M3 触点载体和内容
 
 - MVP 只支持 NFC。
-- `asset_code` 唯一；非空 `carrier_uid` 不得重复。
+- `touchpoint_assets.asset_id` 是唯一资产业务标识，由服务端生成，格式为 `PKYYYYMMDDNNN`；按 `Asia/Shanghai` 业务日期每日全局从 `001` 递增至 `999`。内部数值 `id` 保持为关系表和路径参数的主键；非空 `carrier_uid` 不得重复。
 - 资产库存时 `employee_id` 可以为空；绑定、解绑、转交必须同步资产和内容的责任范围。
 - 资产不再保存 `config_status`、投放 `location_code` 或 `door_no`。
 - Payload 的 `payload_value` 保存卡内实际内容；若关联地址页面，`address_page_id` 和 `target_url`
@@ -57,8 +57,9 @@
 
 - 公开主数据导入支持卡片、载体内容、员工和可复用地址页面四类模板；组织导入不属于公开能力。
 - 员工绑定、解绑和转交使用独立生命周期模板或资产批量命令，不混入主数据导入。
-- 按 `org_code`、`employee_code`、`asset_code`、`carrier_uid` 等稳定业务键匹配。
-- 匹配到时更新，匹配不到时按必填字段创建。
+- 资产导入只创建新资产，不匹配或更新既有资产；模板不包含资产编码或卡ID，卡ID由服务端自动生成。
+- 载体内容和员工绑定导入使用 `cardId` 精确解析已有资产，再使用内部数值 `id` 建立关系；组织和员工仍分别使用 `org_code`、`employee_code`。
+- 非空 `carrier_uid` 重复时拒绝新增，不把 UID 用作资产导入的更新匹配键。
 - 文档缺少某行不代表删除、停用或解绑。
 - 解绑或转交必须使用显式 `operation` 类型；不支持通过缺失行推导任何状态变化。
 - 导入必须支持预校验、幂等键、逐行结果和审计。

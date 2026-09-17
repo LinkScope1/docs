@@ -529,10 +529,6 @@ paths:
           description: Card ID prefix; a complete card ID uniquely identifies one asset.
           schema: { type: string, maxLength: 13, pattern: '^PK[0-9]{0,11}$' }
         - in: query
-          name: assetCode
-          required: false
-          schema: { type: string, maxLength: 64 }
-        - in: query
           name: orgCodePrefix
           required: false
           schema: { type: string, minLength: 1, maxLength: 64, pattern: '^1([0-9]{3})*$' }
@@ -571,7 +567,7 @@ paths:
       summary: Create an NFC inventory asset
       x-permission: touchpoint.asset.manage
       x-data-scope: ORG_SUBTREE
-      x-idempotency: domain_key_asset_code
+      x-idempotency: none
       x-audit: true
       x-status: reviewed
       security: [{ sessionCookie: [] }]
@@ -596,8 +592,7 @@ paths:
       security: [{ sessionCookie: [] }]
       parameters:
         - { in: query, name: assetStatus, required: false, schema: { type: string, enum: ['0', '1', '2', '9'] } }
-        - { in: query, name: assetCode, required: false, schema: { type: string, maxLength: 64 } }
-        - { in: query, name: assetId, required: false, schema: { type: string, maxLength: 13 } }
+        - { in: query, name: assetId, required: false, description: Card ID prefix, schema: { type: string, maxLength: 13, pattern: '^PK[0-9]{0,11}$' } }
         - { in: query, name: orgCodePrefix, required: false, schema: { type: string, maxLength: 64 } }
         - { in: query, name: employeeId, required: false, schema: { $ref: '#/components/schemas/Id' } }
         - { in: query, name: employeeName, required: false, schema: { type: string, maxLength: 100 } }
@@ -1494,6 +1489,7 @@ paths:
         and a valid HTTP/HTTPS fallback address. Address-page organization is derived from
         the authenticated importing employee; the address-page template is create-only.
         For mini-program rows, URL is the target and must be an HTTPS Universal Link.
+        After resolving validation errors, submit the file to the import execution endpoint.
       x-permission: import.validate
       x-data-scope: ORG_SUBTREE
       x-idempotency: none
@@ -1528,10 +1524,14 @@ paths:
       description: >-
         Requires a pre-validated CSV (or address-page XLSX) and an Idempotency-Key. At most 1,000
         rows execute synchronously; larger files create a Celery batch and return
-        202. Each row is committed independently. Repeating the same key returns
-        the existing batch and missing rows never delete, disable, unbind or
-        transfer existing data. Payload values are never included in ordinary
-        failure reports or logs.
+        202. Each row is committed independently. Repeating the same key with
+        the same request returns the existing batch; reusing it with a different
+        request returns 409. Asset imports only create assets and do not match
+        or update existing assets. A non-empty carrierUid is protected by its
+        unique constraint, but assets without a carrierUid have no asset-level
+        deduplication: submitting them again with a new key creates new assets.
+        Missing rows never delete, disable, unbind or transfer existing data.
+        Payload values are never included in ordinary failure reports or logs.
       x-permission: import.validate
       x-data-scope: ORG_SUBTREE
       x-idempotency: domain_key_import_batch
@@ -1581,7 +1581,7 @@ paths:
       summary: Download the employee-assignment lifecycle CSV template
       description: >-
         Returns a UTF-8 BOM CSV with the fixed technical header
-        assetCode,targetEmployeeCode,operation,reason. operation is bind,
+        cardId,targetEmployeeCode,operation,reason. operation is bind,
         unbind or transfer; targetEmployeeCode is required for bind/transfer
         and blank for unbind; reason is required for unbind/transfer and is
         limited to 500 characters. Organization import/export is not included.
@@ -1839,9 +1839,10 @@ paths:
           required: false
           schema: { type: string, maxLength: 100 }
         - in: query
-          name: assetCode
+          name: cardId
           required: false
-          schema: { type: string, maxLength: 64 }
+          description: Business Card ID prefix (PKYYYYMMDDNNN).
+          schema: { type: string, maxLength: 13, pattern: '^PK[0-9]{0,11}$' }
         - in: query
           name: carrierUid
           required: false
@@ -2225,16 +2226,14 @@ components:
     TouchpointAssetCreateRequest:
       type: object
       additionalProperties: false
-      description: assetId is server-generated after creation and must not be submitted by the client. Creation also writes exactly one unbound initial Payload and returns its preset shortCode.
-      required: [assetCode, orgId]
+      description: assetId is the server-generated business Card ID and must not be submitted by the client. Creation also writes exactly one unbound initial Payload and returns its preset shortCode. Retrying a request without an idempotency key may create another asset unless carrierUid conflicts.
+      required: [orgId]
       properties:
-        assetCode: { type: string, minLength: 1, maxLength: 64 }
         assetType: { type: integer, const: 1, default: 1 }
         carrierUid: { type: [string, 'null'], maxLength: 128 }
         orgId: { $ref: '#/components/schemas/Id' }
         supplierCode: { type: [string, 'null'], maxLength: 64 }
         supplierBatchNo: { type: [string, 'null'], maxLength: 64 }
-        metadata: { $ref: '#/components/schemas/Metadata' }
         description: { type: [string, 'null'], maxLength: 500 }
         customCode: { type: [string, 'null'], maxLength: 20, description: '可选预设短码；严格复用 Core，仅限制最大 20 位，不限制最小位数、字符或大小写；空字符串按自动生成处理。' }
     TouchpointAssetPatchRequest:
@@ -2245,7 +2244,6 @@ components:
         carrierUid: { type: [string, 'null'], maxLength: 128 }
         supplierCode: { type: [string, 'null'], maxLength: 64 }
         supplierBatchNo: { type: [string, 'null'], maxLength: 64 }
-        metadata: { $ref: '#/components/schemas/Metadata' }
         description: { type: [string, 'null'], maxLength: 500 }
     BatchAssetIds:
       type: array
@@ -2484,11 +2482,10 @@ components:
     TouchpointAsset:
       type: object
       additionalProperties: false
-      required: [id, assetId, assetCode, assetType, orgId, assetStatus]
+      required: [id, assetId, assetType, orgId, assetStatus]
       properties:
         id: { $ref: '#/components/schemas/Id' }
         assetId: { type: string, minLength: 13, maxLength: 13, pattern: '^PK[0-9]{11}$' }
-        assetCode: { type: string, maxLength: 64 }
         assetType: { type: integer, const: 1 }
         carrierUid: { type: [string, 'null'] }
         orgId: { $ref: '#/components/schemas/Id' }
@@ -2545,6 +2542,7 @@ components:
       properties:
         id: { $ref: '#/components/schemas/Id' }
         assetId: { $ref: '#/components/schemas/Id' }
+        cardId: { type: string, minLength: 13, maxLength: 13, pattern: '^PK[0-9]{11}$', description: '仅列表响应提供的资产业务卡ID；assetId 始终是数值内部关联键。' }
         orgId: { $ref: '#/components/schemas/Id' }
         employeeId: { $ref: '#/components/schemas/NullableId' }
         payloadType: { type: integer }

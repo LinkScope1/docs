@@ -26,7 +26,7 @@
 | 横向：权限与审计 | 数据范围、操作审计、幂等、Trace ID、敏感信息脱敏 | 前端隐藏不能替代后端权限校验；不得记录 JWT、Token、密码、密钥或 Webhook Secret |
 | 横向：统计与报表 | 点击、访问统计，以及同步导出；安装/App 统计字段保留兼容结构 | V1.3.2 只验收点击和访问统计；安装/App 聚合读取不纳入当前版本，相关字段保留但未支持时整体返回 `503 DATA_SOURCE_UNAVAILABLE`；统计不包含银行办理量、金额或真实业务转化；异步导出为 V1.4 |
 | 横向：Worker | Webhook、LinkForty 外部调用和关联失败的重试、补偿和审计 | Worker 不是新的业务模块；Redis/Celery 不能作为唯一事实来源；结果通过 `operation_logs` 和 `trace_id` 追踪 |
-| 横向：文档导入契约 | 载体内容、地址页面、载体员工绑定、载体内容关系模板，以及稳定匹配键、预校验和逐行结果 | 使用 `org_code`、`employee_code`、`asset_code`、`carrier_uid`、`address_code` 等稳定键；缺少某行不推导删除、停用或解绑 |
+| 横向：文档导入契约 | 载体内容、地址页面、载体员工绑定、载体内容关系模板，以及稳定匹配键、预校验和逐行结果 | 组织/员工沿用各自稳定键；Payload 和绑定关系使用 `cardId` 定位资产；资产模板只新增，不提供资产编码/卡ID且不匹配或更新既有资产，重复非空 UID 拒绝；缺少某行不推导删除、停用或解绑 |
 | 外部依赖：LinkForty | API 写入、授权事件只读访问、Webhook 事件接入和受控 Secret provisioning | 只读账号只能访问白名单表和字段；银行后台不得直接执行 LinkForty DML、DDL 或 TRUNCATE；Secret 仅通过受控 Core API 一次性交付 |
 | 外部依赖：NFC | NFC 适配器接口和明确的 Mock 流程 | 真实硬件写卡依赖硬件/SDK确认；没有真实设备时 Mock 不得伪造真实核验成功 |
 
