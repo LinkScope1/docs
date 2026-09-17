@@ -469,8 +469,9 @@ LinkForty 的同步状态；外部调用结果仍由 Payload Service、`operatio
 | --- | --- | --- | --- |
 | id | BIGINT | 否 | 明细 ID；API 以字符串传输 |
 | batch_id / asset_id | BIGINT | 否 | 批次和资产逻辑引用；同批次同资产唯一 |
-| status | VARCHAR(16) | 否 | `queued` / `running` / `succeeded` / `failed` |
+| status | VARCHAR(16) | 否 | `queued` / `running` / `succeeded` / `partial` / `failed`；`partial` 表示该资产的员工和地址页面字段仅部分成功 |
 | attempt_count | INTEGER | 否 | 执行尝试次数 |
+| request_data | JSONB | 否 | 该资产本次请求的独立配置快照；`items` 模式下省略字段不写入，显式 `null` 保留为解绑语义；旧统一模式保存该批次的共享配置 |
 | error_code / error_message | VARCHAR(64)/VARCHAR(1024) | 是 | 脱敏错误摘要 |
 | result_data | JSONB | 是 | 当前资产的安全处理结果 |
 | created_at / started_at / finished_at | TIMESTAMPTZ | 否/是 | 明细时间 |
@@ -750,7 +751,7 @@ V1.3.2 删除配置状态、目标资源类型、路由冲突和路由发布相�
 | V1.3.2 | 2026-09-14 | M3 为 `touchpoint_assets` 增加服务端生成的 `asset_id` 卡ID；保留数值内部主键和跨表关联，标准资产导出增加卡ID。 |
 | V1.3.2 | 2026-09-15 | M2 增加服务端生成的 `organization_units.org_abbr` 和 `employees.employee_uid`，保留 `employee_code` 作为 Casdoor 登录工号；M3 地址页面新建编码按内容类型自动生成。 |
 | V1.3.2 | 2026-09-15 | M2/M3 增加已停用员工和地址页面的高风险物理删除接口；主表真实 DELETE，使用 deleted_* 快照和 `master_data_delete_commands` 保留历史、永久占用编码并支持幂等回放。 |
-| V1.3.2 | 2026-09-16 | 横向能力增加 `bulk_operation_batches` / `bulk_operation_items`；地址页面统一模板增加 APP Scheme、APP Payload 和 APP 回退地址，组织导入/导出公开能力移除；资产详情/列表增加绑定信息和本地短链快照；导入批次增加请求指纹。 |
+| V1.3.2 | 2026-09-16 | 横向能力增加 `bulk_operation_batches` / `bulk_operation_items`；`0016_bulk_operation_item_request_data` 增加资产级请求快照并支持 `partial` 明细状态；地址页面统一模板增加 APP Scheme、APP Payload 和 APP 回退地址，组织导入/导出公开能力移除；资产详情/列表增加绑定信息和本地短链快照；导入批次增加请求指纹。 |
 | V1.3.2 | 2026-09-16 | M3 明确 LinkForty Link 仅在资产、Payload、提供方和 Link ID 均满足条件时 active；状态通过 API 同步，不新增外部同步状态字段。 |
 | V1.3.2 | 2026-09-16 | M3 直接切换为单一资产业务卡ID：删除 `asset_code` 列及其查询、创建、导入匹配和重复校验语义；资产导入改为只新增，模板不包含资产编码/卡ID；Payload 与绑定导入通过卡ID定位资产，其他表继续使用数值内部 `id` 关联。 |
 
