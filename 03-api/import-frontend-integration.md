@@ -14,9 +14,9 @@ POST /api/v1/imports/validate
 展示预校验结果；修正文件后重新校验
         ↓
 POST /api/v1/imports/execute（携带 Idempotency-Key）
-        ├─ 200：同步执行完成，检查逐行结果和 failureReport
+        ├─ 200：同步执行完成，检查 completion、failures 和 failureReport
         └─ 202：批次已入队，轮询 GET /api/v1/imports/{batchId}
-                    ↓ completed 且 failed > 0
+                    ↓ completed
              GET /api/v1/imports/{batchId}/failure-report
 ```
 
@@ -45,18 +45,18 @@ POST /api/v1/imports/execute（携带 Idempotency-Key）
 - `rows[]`：逐行 `rowNumber`、`status`、`operation`，以及失败时的 `errorCode`、`message`；
 - `failureReport`：有失败行时为报告对象，无失败行时为 `null`。
 
-`status: "completed"` 表示处理流程结束，不表示所有行都成功。是否有部分失败应依据 `failed` 判断。建议执行结束后展示成功数、失败数；当 `failed > 0` 时，显示失败行摘要和“下载失败报告”按钮。后端不会主动弹出窗口。
+`status: "completed"` 表示处理流程结束，不表示所有行都成功。是否有部分失败应依据 `failed` 判断。执行结束后展示 `completion.message`、成功数、失败数；当 `failed > 0` 时，直接使用 `failures` 显示失败行摘要，并显示“下载失败报告”按钮。后端不负责操作浏览器弹窗，但响应已经提供前端弹窗所需的完成状态和文案。
 
 ### 异步入队：HTTP 202
 
-初始响应提供 `batchId` 和 `status: "queued"`。此时尚无最终逐行结果，不要显示为导入成功，也不要尝试下载失败报告。使用 `GET /api/v1/imports/{batchId}` 轮询状态：
+初始响应提供 `batchId`、`status: "queued"` 和 `completion.outcome: "processing"`。此时尚无最终逐行结果，不要显示为导入成功，也不要尝试下载失败报告。使用 `GET /api/v1/imports/{batchId}` 轮询状态：
 
 | 批次状态 | 前端处理 |
 |---|---|
 | `queued` / `running` | 显示处理中；继续轮询 |
 | `completed` 且 `failed = 0` | 显示全部成功 |
-| `completed` 且 `failed > 0` | 展示成功/失败数量及逐行结果；显示失败报告下载按钮 |
-| `failed` | 显示批次级失败提示，并提供 `batchId` / `requestId` 供排查；不要假设一定有失败 CSV |
+| `completed` 且 `failed > 0` | 展示 `completion.message`、成功/失败数量及 `failures`；显示失败报告下载按钮 |
+| `failed` | 展示 `error.message`、`error.errorCode` 和 `error.stage`，并保留 `batchId` / `requestId` 供排查；不要假设一定有失败 CSV |
 
 建议轮询采用有间隔并逐步退避的策略，在页面离开、用户取消或达到合理超时时停止；不要高频连续请求。
 
@@ -79,13 +79,13 @@ POST /api/v1/imports/execute（携带 Idempotency-Key）
 
 ### 异步批次报告：直接 CSV
 
-批次完成且有失败时，调用：
+批次完成且有逐行失败时，调用：
 
 ```http
 GET /api/v1/imports/{batchId}/failure-report
 ```
 
-成功响应是 `text/csv` 文件流，浏览器端直接读取 Blob 下载，不做 Base64 解码。若没有报告（例如批次没有逐行失败，或发生整批级技术失败），接口会返回 `404`；先读取批次状态再决定是否调用。
+成功响应是 `text/csv` 文件流，浏览器端直接读取 Blob 下载，不做 Base64 解码。若没有报告（例如批次没有逐行失败，或发生整批级技术失败），接口会返回 `404`；先读取批次状态和 `failures` 再决定是否调用。
 
 访问批次和下载报告要求 `import.validate` 权限；非全局用户只能访问自己创建的批次。前端遇到 `403` / `404` 应展示访问或资源提示，不要无限重试。
 
@@ -109,14 +109,15 @@ GET /api/v1/imports/{batchId}/failure-report
 
 ## 7. 当前接口边界与需后端确认项
 
-1. **批次级失败缺少结构化原因。** 当前异步 Worker 遇到整批异常会将批次标记为 `failed` 并写服务端日志；批次查询模型没有稳定的 `errorCode` / 安全提示消息，失败报告也可能不存在。前端暂按通用失败提示处理。若产品要求展示可操作的具体原因，需先由后端扩展并持久化批次级错误字段，再更新 OpenAPI。
+1. **批次级失败已提供结构化原因。** `GET /imports/{batchId}` 在 `status: "failed"` 时返回 `error.stage`、`error.errorCode` 和安全的 `error.message`；整批技术失败可能没有 `failureReport`，前端应直接在完成窗口显示该错误对象。
 2. **员工有两条执行路由。** 新前端默认按本项目导入规范使用统一执行接口；若决定继续用员工专用路由，应在需求/API 契约中明确其 1,000 行同步上限及无幂等批次查询的差异。
-3. **预校验错误没有独立的可下载失败文件。** 预校验逐行错误由 API 响应返回。若页面需要“下载预校验错误清单”，应由前端基于响应生成，或另行定义后端接口；不可假设预校验会生成 `failureReport`。
+3. **预校验错误仍不生成后端失败文件。** 预校验响应新增 `completion`，逐行错误仍由 `data.rows[].errors[]` 返回。若页面需要“下载预校验错误清单”，由前端基于响应生成；不可假设预校验会生成 `failureReport`。
 
 ## 8. 验收清单
 
 - [ ] 校验失败时能展示逐行错误，不把行级失败误当成 HTTP 请求失败。
 - [ ] 执行完成后按 `failed` 显示全成功或部分成功；不会仅依据顶层 `status` 判断。
+- [ ] 完成窗口使用 `completion.message` 和统计字段；行级失败直接使用 `failures`，批次级失败直接使用 `error`。
 - [ ] 同步 Base64 报告能正确解码并按返回文件名下载。
 - [ ] 异步流程能处理 `202`、轮询批次，并直接下载 CSV 响应。
 - [ ] 批次级失败无报告时展示通用提示和关联 ID，不无限重试。
