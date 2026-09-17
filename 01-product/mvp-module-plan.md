@@ -154,17 +154,17 @@ V1.3.2 的正式范围为 8 张银行核心业务表、1 张横向导入任务�
 
 M3 同时拥有 `touchpoint_address_pages`。地址页面是银行后台可复用的内容主数据，不是 `target_resources` 或 `routing_rules`；其 `content_type` 固定为 1 小程序、2 APP、3 网页。`url` 是原始/展示值，只做首尾空格清理；`target_url` 是目标配置，进入 Core 前由 Service 按内容类型解析。小程序要求公开 HTTPS Universal Link，APP 的回退地址允许 HTTP/HTTPS、Bridge 使用公开 HTTPS 的 `card-switch-demo` `app-open.html`，网页直接使用目标 URL。
 
-**输入：**asset_code、asset_type、carrier_uid、责任 org_id/employee_id、资产状态，以及 Payload 类型、值、来源、提供方和外部链接标识。
+**输入：**资产类型、物理 UID、责任组织及资产基础信息，以及 Payload 类型、值、来源、提供方和外部逻辑引用。卡ID由服务端生成，不属于创建请求输入。
 
 **输出：可查询和导入的资产主数据、卡内实际内容、当前责任组织和员工，以及 LinkForty 逻辑引用；外部调用结果作为审计上下文提交 M1。**
 
-**负责事项：**保证 asset_code 全局唯一和非空 carrier_uid 唯一；一期 asset_type 固定为 NFC；维护资产状态和载体内容状态。
+**负责事项：**保证服务端生成的 `touchpoint_assets.asset_id` Card ID 全局唯一，并保证非空 `carrier_uid` 唯一；一期 `asset_type` 固定为 NFC；维护资产状态和载体内容状态。资产表数值 `id` 继续作为内部主键及跨表关联键。
 
 **边界：**Payload 表示卡内实际写入内容，不代表最终跳转目标；`linkforty_link_id` 只是 LinkForty 链接逻辑引用；不直接修改外部平台表。地址页面目标发生变化时，M3 更新同一个 Core Link 并同步 Payload 的 `target_url` 快照，不修改 `payload_value`，因此不需要重新写 NFC。
 
 **依赖：**依赖 M2 的责任组织和员工；通过 LinkForty API 与 NFC 适配能力完成外部登记、写入或核验。
 
-**验收重点：资产编码、物理 UID、NFC 限定、资产和内容状态、地址页面内容类型、责任范围及逻辑引用正确；单条和批量目标切换、Core 外部状态冲突、失败补偿和审计可通过 M1 的 `trace_id` 追踪，不依赖 Payload 同步状态字段。**
+**验收重点：Card ID、物理 UID、NFC 限定、资产和内容状态、地址页面内容类型、责任范围及逻辑引用正确；单条和批量目标切换、Core 外部状态冲突、失败补偿和审计可通过 M1 的 `trace_id` 追踪，不依赖 Payload 同步状态字段。**
 
 ## 7.4 M4 触点载体员工绑定管理
 
@@ -217,11 +217,11 @@ M3 同时拥有 `touchpoint_address_pages`。地址页面是银行后台可复�
 
 - 预留载体内容批量修改、载体与员工绑定关系批量修改、载体与载体内容关系批量修改三类模板。
 
-- 组织使用 org_code、员工使用 employee_code、载体优先使用 asset_code，可辅助使用 carrier_uid。
+- 组织使用 `org_code`、员工使用 `employee_code`；Payload 和绑定关系导入通过 `cardId` 精确定位资产，后端再解析为内部数值 `id`。资产导入只新增，不以卡ID或 UID 匹配并更新既有资产；非空 UID 重复时拒绝新增。
 
-- 载体内容使用 asset_code 与 payload_type 的组合，或使用明确的内容记录 ID。
+- 载体内容使用 Card ID 与 `payload_type` 的组合，或使用明确的内容记录 ID。
 
-- 匹配到记录则更新；未匹配且必填字段完整则新增；缺少某行不推导删除、停用或解绑。
+- 对允许更新的导入资源，匹配到记录则按其契约更新；资产导入例外为只新增。缺少某行不推导删除、停用或解绑。
 
 - 导入必须支持预校验、幂等键、逐行结果和失败原因；每批导入写入 operation_logs。
 

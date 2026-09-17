@@ -8,15 +8,15 @@
 - 预校验：`POST /api/v1/imports/validate`。只读，不写业务表，不调用 LinkForty。
 - 执行：`POST /api/v1/imports/execute`，必须携带 `Idempotency-Key`；1,000 行以内同步，超过 1,000 行落库后由 Celery 异步执行并返回 `202` 与 `batchId`。
 - 批次查询：`GET /api/v1/imports/{batchId}`；失败报告：`GET /api/v1/imports/{batchId}/failure-report`。
-- 每行独立事务；同一文件的稳定键重复报错。重复使用相同幂等键返回原批次，不会因文件缺行删除、停用或解绑数据。
+- 每行独立事务；有稳定键的模板对同一文件重复键报错。资产模板是只新增操作、没有文件级资产匹配键；非空物理 UID 仅用于唯一性冲突检查，不作为选择既有资产更新的匹配键，重复 UID 报错。重复使用相同幂等键和相同请求返回原批次，不会因文件缺行删除、停用或解绑数据。资产行未填写物理 UID 时没有资产级去重键：改用新的幂等键再次导入会新建另一张卡；同一文件中多条 UID 为空的行也分别新建。
 - 导入不承担员工绑定生命周期；绑定、解绑、转交使用绑定接口或批量绑定接口。
 
 ## 模板与字段约束
 
-| 模板 | 下载类型 | 稳定键 | 必填字段 | 可空字段 |
+| 模板 | 下载类型 | 匹配/稳定键 | 必填字段 | 可空字段 |
 | --- | --- | --- | --- | --- |
-| 卡片 | `asset` | 卡片编码 | 卡片编码、责任组织编码 | 物理 UID、状态、供应商编码、供应商批次、备注 |
-| 载体内容 | `payload` | 内容 ID；新增时为卡片编码/物理 UID + 内容类型 + 内容值 | 内容类型、内容值、内容来源；卡片编码和物理 UID 至少一个 | 内容 ID、提供方、内容状态、卡片编码或物理 UID（二选一仍至少一个） |
+| 卡片 | `asset` | 无；只新增 | 责任组织编码 | 物理 UID、供应商编码、供应商批次、自定义短码、备注 |
+| 载体内容 | `payload` | 内容 ID；新增时为卡ID/物理 UID + 内容类型 + 内容值 | 内容类型、内容值、内容来源；卡ID和物理 UID 至少一个 | 内容 ID、提供方、内容状态、卡ID或物理 UID（二选一仍至少一个） |
 | 员工 | `employee` | 工号（`employees.employee_code`） | 姓名、工号、组织编码 | 联系方式（原手机号）、状态 |
 | 地址页面 | `address_page`（XLSX） | 无；仅新建 | 地址标识、URL、跳转类型 | APP 专用字段、说明；APP 行按下方条件必填 |
 
@@ -25,20 +25,20 @@
 下载：`GET /api/v1/imports/templates/assets` 或统一别名 `.../templates/asset`。
 
 ```csv
-卡片编码,物理UID,责任组织编码,状态,供应商编码,供应商批次,备注
+物理UID,责任组织编码,供应商编码,供应商批次,自定义短码,备注
 ```
 
-卡片类型固定为 NFC。状态值为 `库存`、`启用`、`停用`、`作废`。卡片编码是稳定唯一键；物理 UID 填写时全局不得重复。责任组织必须存在、启用并在操作者数据范围内。卡片模板不允许提交责任员工。
+卡片类型固定为 NFC；所有导入资产均以库存状态创建。资产导入只新增，不按卡ID或其他业务字段匹配和更新既有资产。模板没有资产编码或卡ID列，`asset_id` 由服务端根据 `Asia/Shanghai` 业务日期自动生成。物理 UID 可空；填写时仅用于全局唯一性冲突检查，重复 UID 拒绝新增，不会更新已存在的资产。没有 UID 的资产没有资产级去重保证：重传时必须复用同一个 `Idempotency-Key` 才会返回原导入批次；换用新键会生成新的资产和卡ID。责任组织必须存在、启用并在操作者数据范围内。自定义短码可空，最长 20 个字符，仅用于新资产的初始载体内容。卡片模板不允许提交责任员工。
 
 ## 载体内容
 
 下载：`GET /api/v1/imports/templates/payloads` 或 `.../templates/payload`。
 
 ```csv
-内容ID,内容类型,内容值,内容来源,提供方,内容状态,卡片编码,物理UID
+内容ID,内容类型,内容值,内容来源,提供方,内容状态,卡ID,物理UID
 ```
 
-内容类型为 `短链`、`网址`、`文本`、`其他`；内容来源为 `供应商预写`、`本系统`、`外部导入`、`人工录入`；内容状态为 `待登记`、`有效`、`停用`、`失效`。新增时内容 ID 可空，修改时使用已有内容 ID。卡片编码和物理 UID 至少填写一个，同时填写时必须指向同一张卡片。普通导入不允许用名称模糊匹配。
+内容类型为 `短链`、`网址`、`文本`、`其他`；内容来源为 `供应商预写`、`本系统`、`外部导入`、`人工录入`；内容状态为 `待登记`、`有效`、`停用`、`失效`。新增时内容 ID 可空，修改时使用已有内容 ID。卡ID和物理 UID 至少填写一个，同时填写时必须指向同一张卡片。卡ID是业务字符串 `touchpoint_assets.asset_id`；Payload 的 `assetId` 仍是数值内部关联键。普通导入不允许用名称模糊匹配。
 
 ## 员工
 
@@ -76,10 +76,10 @@ APP 页面最终目标继续使用既有拼接规则：由服务端用真实 Lin
 员工绑定不是主数据导入字段。专用生命周期导入模板下载为 `GET /api/v1/imports/templates/assignments`，执行为 `POST /api/v1/imports/assignments/execute`，固定表头为：
 
 ```csv
-assetCode,targetEmployeeCode,operation,reason
+cardId,targetEmployeeCode,operation,reason
 ```
 
-`assetCode` 不可为空；`operation` 只能为 `bind`、`unbind`、`transfer`；`bind`/`transfer` 时 `targetEmployeeCode` 不可为空，`unbind` 时必须为空；`unbind`/`transfer` 时 `reason` 不可为空，最多 500 字符。该专用接口同步最多 1,000 行，失败按行返回。新建系统优先使用 `POST /api/v1/touchpoint-assets/batch-bind`、`batch-unbind`、`batch-configure`，批量接口以内部 BIGINT ID 字符串传输，资产列表不得重复；每个请求必须提供幂等键。`batch-configure` 的 `addressPageId` 必须显式传入，可使用 `null` 清空页面绑定；`employeeId` 同样可使用显式 `null` 清空员工绑定。批量配置页面时由服务端校验页面启用状态、组织层级、资产数据范围及 LinkForty 外部调用结果。
+`cardId` 不可为空；`operation` 只能为 `bind`、`unbind`、`transfer`；`bind`/`transfer` 时 `targetEmployeeCode` 不可为空，`unbind` 时必须为空；`unbind`/`transfer` 时 `reason` 不可为空，最多 500 字符。该专用接口同步最多 1,000 行，失败按行返回。新建系统优先使用 `POST /api/v1/touchpoint-assets/batch-bind`、`batch-unbind`、`batch-configure`，这些 API 的 `assetId` 继续以内部 BIGINT ID 字符串传输；每个请求必须提供幂等键。`batch-configure` 的 `addressPageId` 必须显式传入，可使用 `null` 清空页面绑定；`employeeId` 同样可使用显式 `null` 清空员工绑定。批量配置页面时由服务端校验页面启用状态、组织层级、资产数据范围及 LinkForty 外部调用结果。
 
 ## 安全边界
 

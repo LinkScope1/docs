@@ -11,7 +11,7 @@
 | M2-002 | 员工维护 | `employees` | 员工编码唯一、组织范围、状态 | 待测 |
 | M2-003 | 员工物理删除 | `DELETE /employees/{id}`、`deleted_employees`、`master_data_delete_commands` | 已停用、无当前绑定/责任/写入任务、禁止自删除、主表不存在、归档、审计、幂等、回滚和并发 | 待测 |
 | M2-004 | 员工关联卡只读查询 | `GET /employees`、`GET /employees/{id}/associated-cards` | 当前有效绑定、distinct asset_id、数据库字段投影、分页、组织/资产范围、无敏感 Payload 内容、缺少资产/绑定读取权限不伪装为 0 | 待测 |
-| M3-001 | 触点资产 | `touchpoint_assets` | 卡ID格式、按 Asia/Shanghai 业务日递增、并发唯一、资产编码、UID 唯一、状态、范围字段、导出 | 待测 |
+| M3-001 | 触点资产 | `touchpoint_assets` | 单一业务卡ID格式、按 Asia/Shanghai 业务日递增、并发唯一、旧资产编码已删除、UID 唯一、创建/查询/导出、资产导入只新增、状态、范围字段；Payload/绑定/事件数值关联及内部路径 ID 不变 | 待测 |
 | M3-002 | 载体内容 | `touchpoint_payloads` | 内容类型、实际写入值、范围同步、LinkForty 逻辑引用、无本地同步状态字段；新建选择地址页面创建 Link，地址切换保持 `payload_value`/Link ID 并更新 Core 目标快照 | 待测 |
 | M3-003 | 可复用地址页面 | `touchpoint_address_pages`、`/touchpoint-address-pages`、重新应用任务 | 组织范围、地址编码唯一、内容类型（小程序/APP/网页）、App Bridge 配置、`url` 原始值兼容、页面事务后异步传播、失败补偿、启停保留历史、任务查询/重试、Payload 下拉选项 | 待测 |
 | M3-004 | 地址页面物理删除 | `DELETE /touchpoint-address-pages/{id}`、`deleted_address_pages` | 已停用、queued/running 阻断、Payload/NFC/历史任务不变、归档、主表不存在、审计、幂等、回滚、无 LinkForty 外部调用 | 待测 |
@@ -20,7 +20,7 @@
 | INT-LINKFORTY-NGINX-001 | LinkForty 外部集成 | Nginx `/linkapi/`、Webhook location | `/linkapi/` 路径映射、Core health/API/短链、HTTP/1.1、Header、缓存、方法/Body/`Idempotency-Key` 保留；Webhook 原始 body 和签名 Header 保留 | 待执行：测试拓扑 |
 | CAP-ANL-001 | 统计与报表横向能力（不编号） | analytics | 点击/访问时间、机器人、范围、只读边界、审计；安装/App 不支持时整体 503 | 通过 |
 | IMP-001 | 文档导入预留 | `/imports/validate` | 模板、稳定匹配键、逐行错误 | 待测 |
-| IMP-002 | 文档导入预留 | `/imports/execute` | 更新并新增、幂等、显式解绑、审计 | 待测 |
+| IMP-002 | 导入执行 | `/imports/execute` | 按模板契约新增/更新；资产导入只新增且不匹配或更新既有资产；重复 UID 冲突、无 UID 重传语义、幂等、显式解绑和审计 | 待测 |
 | IMP-003 | 地址页面导入导出 | `address_page`、`touchpoint-address-pages` | 中文固定表头、预校验、逐行失败、重复导入、缺失行不停用、权限范围和字段白名单 | 待测 |
 
 ## 认证外部证据门禁

@@ -20,7 +20,7 @@ assets:
     x-owner: API/后端
     x-permission: touchpoint.asset.manage
     x-data-scope: ORG_SUBTREE
-    x-idempotency: domain_key_asset_code
+    x-idempotency: none
     x-audit: true
     responses: {}
 

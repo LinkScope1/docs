@@ -2,7 +2,7 @@
 
 ## 状态
 
-Accepted（2026-09-14，真实 PostgreSQL 迁移和并发验收待补）
+Superseded by [ADR-006](./ADR-006-touchpoint-asset-single-business-id.md)
 
 ## 背景
 
@@ -25,3 +25,5 @@ Accepted（2026-09-14，真实 PostgreSQL 迁移和并发验收待补）
 
 - 本地专项单元/路由/导出测试和迁移静态契约测试已执行；真实 PostgreSQL migration upgrade/downgrade、历史回填和多会话并发测试需在数据库环境执行。
 - 回滚方式为停止使用新字段后执行经审批的 `alembic downgrade 0006_touchpoint_address_pages`；执行前必须完成备份并确认调用方已回退到不依赖 `assetId` 的版本。
+
+> 本决策记录的是 `asset_id` 与 `asset_code` 并存的历史方案；2026-09-16 起由 ADR-006 取代。
